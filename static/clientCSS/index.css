@@ -1,0 +1,90 @@
+.pop-bar{
+    padding: 0px;
+    min-height: 55px;
+    
+    border-top: 0px solid rgba(46, 46, 47, 1);
+    border-bottom: 0px solid rgba(47, 46, 47, 1);
+    
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    justify-content: space-between;
+}
+#navbarNav-outer{
+    z-index:1;
+    width: calc(100% - 17px);
+    background-image: url('');
+    background-color: #ffffff;
+    min-height: 55px;
+    position: absolute;
+}
+
+@media (max-width: 980px) {
+    #navbarNav-outer{
+        width: calc(100%);
+    }
+}
+
+#navbarNav #stylePickMenuPop{
+    margin-right: 20px;
+    margin-left: auto;
+}
+
+#navbarNav .navbar-brand {
+    padding-left: 5px;
+    font-size: 2.0em;
+}
+
+#navbarNav .navbar-brand > B {
+    padding-left: 10px;
+    color:#367ae0;
+}
+
+#navbarNav .icon {
+    display: inline-block;
+    width: 1.3em;
+    height: 1.3em;
+    stroke-width: 0;
+    stroke: #367ae0;
+    fill: #367ae0;
+    padding-bottom: 0.3em;
+}
+#navbarNav .nav-item{
+    margin-right: 20px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+#navbarNav .nav-item > a {
+    color: #000000;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+#navbarNav .nav-item{
+    margin-left: auto;
+}
+
+#navbarNav .pop-bar .navbar-toggler{
+    margin-right: 5px;
+}
+
+.rrow{
+    min-height: 100%;
+    flex: 1 1 100%;
+}
+
+.tCol {
+    width: 200px;
+}
+
+.main{
+    display: flex;
+    background: #ffffff7b;
+    backdrop-filter: blur(8px);
+    min-height: 100%;
+}
+
+
+<!-- %customCSSInsert% -->

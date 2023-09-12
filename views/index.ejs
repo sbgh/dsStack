@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="/images/ezStack-icon-blue.png">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+    <title>Consol Essence</title>
+
+    <meta name="description" content="Home page for Consol Essence.">
+
+    <!--<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />-->
+    <meta id="myViewport" name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--<meta name="viewport" content="width=980, user-scalable=yes">-->
+
+    <!--     Fonts and icons     -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" />
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css"  />-->
+    <link rel="preload" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" as="font"
+        onload="this.onload=null;this.rel='stylesheet'">
+
+    <!-- CSS Files -->
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css"
+        integrity="sha512-oc9+XSs1H243/FRN9Rw62Fn8EtxjEYWHXRvjS43YtueEewbS6ObfXcJNyohjHqVKFPoXXUxwc+q1K7Dee6vv9g=="
+        crossorigin="anonymous" />
+    <!--jquery js-->
+
+    <script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-awesome-cursor/0.3.1/jquery.awesome-cursor.min.js"
+        integrity="sha512-mR4OOU/ky22CpIhlxfBwQ2ckKWapf+g2+1sbUCkVtFaaRcVLpytf0ERgrXXUUYgFOdbehWOJJdW7QzYJ7XlLiA=="
+        crossorigin="anonymous" defer></script>
+
+    <!--boot strap js-->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"
+        defer></script>
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"
+        integrity="sha512-8qmis31OQi6hIRgvkht0s6mCOittjMa9GMqtK9hes5iEQBQE/Ca6yGE5FsW36vyipGoWQswBj/QBm2JR086Rkw=="
+        crossorigin="anonymous"></script>
+
+    <script src="/jstree-3.3.15/dist/jstree.min.js"></script>
+    <link rel="stylesheet" href="/jstree-3.3.15/dist/themes/default/style.min.css">
+
+    <script src="https://www.unpkg.com/ace-builds@latest/src-noconflict/ace.js"></script>
+
+    <!-- %insertJsSrc% -->
+
+    <!--%insertCSSSrc%-->
+
+    <!--<link rel="stylesheet" href="/clientCSS/index.css" defer />-->
+    <link rel="preload" href="/clientCSS/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="/clientCSS/index.css">
+    </noscript>
+
+    <script type="text/javascript" language="javascript">
+
+        $(document).ready(function () {
+
+            var scriptEditor = ace.edit("comp-script", {
+                theme: "ace/theme/textmate",
+                mode: "ace/mode/javascript",
+                value: ""
+            });
+
+            scriptEditor.setTheme("ace/theme/clouds");
+            scriptEditor.session.setMode("ace/mode/sh");
+
+            // if (screen.width < 650) {
+            //     var mvp = document.getElementById('myViewport');
+            //     mvp.setAttribute('content','user-scalable=yes,width=650');
+            // }
+            //create main tree
+            $("#jstree_div").jstree({
+                "core": {
+                    "themes": {
+                        "name": "default",
+                        "dots": true,
+                        "icons": true
+                    },
+                    "data": {
+                        'url': function (node) {
+                            var searchText = $("#searchInput").val();
+                            return node.id === '#' ?
+                                'getTree?searchSt=' + searchText :
+                                'getTree';
+                        },
+                        'data': function (node) { return { 'id': node.id }; }
+                    },
+                    'check_callback': function (operation, node, node_parent, node_position, more) {
+                        if (operation === "copy_node") {
+
+                            const targetNodeId = node_parent.id;
+                            const pos = node_position;
+                            const targetNode = $('#jstree_div').jstree(true).get_node(targetNodeId);
+                            $('#copyModal_newPosition').val(pos);
+
+                            return showCopyModal(node, targetNodeId, targetNode);
+
+                        }
+                        return true;  //allow all other operations
+                    }
+                },
+                "types": {
+                    "system": {
+                        "icon": "fa fa-server ",
+                        "a_attr": { class: " systemRow " }
+                    },
+                    "job": {
+                        "icon": "fa fa-check-circle-o jobRow"
+                    },
+                    "needfull": {
+                        "icon": "fa fa-wrench", //fa-play-circle-o
+                        "a_attr": { class: " needfull " },
+                        "li_attr": { class: " needfull " }
+                    },
+                    "rerunnable": {
+                        "icon": "fa fa-repeat rerunnableRow",
+                        "a_attr": { class: " rerunnableRow " }
+                    },
+                    "root": {
+                        "icon": "fa fa-folder"
+                    },
+                    "disabled": {
+                        "icon": "fa fa-times-circle-o disabledRow",
+                        "li_attr": { class: "  " }
+                    }
+                },
+                "sort": function (a, b) {
+                    a1 = this.get_node(a);
+                    b1 = this.get_node(b);
+                    return (a1.original.sort < b1.original.sort) ? -1 : 1;
+
+                },
+                "state": { "key": "myTree" },
+                "dnd": {
+                    check_while_dragging: false,
+                    always_copy: true,
+                    large_drop_target: true
+                },
+                "plugins": ["sort", "state", "types", "dnd", "wholerow"]
+            }).on('create_node.jstree', function (e, data) {
+                //console.log('saved');
+            });
+
+            //tree click
+            $('#jstree_div').on("select_node.jstree", function (e, data) {
+                // $("#paste_sys_lib_button").hide();
+
+                // $("#snapButton").popover('dispose').popover({
+                //     animation: true,
+                //     content: "Snap thumbnail image",
+                //     delay: { "show": 500, "hide": 100 },
+                //     trigger: 'hover',
+                //     template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                // });
+
+                // if (refreshFlag || ($("#edit_button").is(":visible") && selectedNode === data.selected[0])) {
+                // refreshFlag = false;
+                // } else {
+
+                // selectedWorkingNode = data.selected[0];
+                selectedNode = data.selected[0];
+                // selectedTree = 'working'
+
+
+                $.get('/getTree', { id: selectedNode }, function (data) {
+                    renderComp(data[0]);
+                });
+
+
+
+                //hide all popovers
+                // $('.clickPop').popover('hide');
+
+                //deselect Lib tree
+                // $('#jslibtree_div').jstree("deselect_all");
+
+                //console.log(data.selected);
+                if (selectedNode === 'local') {
+
+                    // $("#sysScreen").hide();
+                    // $("#jobScreen").hide();
+                    // $(".jstree-children").removeClass("jstree-codeBlock");
+
+                    //            hideBottom();
+                    //            bottomHiddenFlag = true;
+
+                    // if (!currentCopySysObj.hasOwnProperty("id")) {
+                    //     $("#paste_sys_button").hide();
+                    // } else {
+                    //     $("#paste_sys_button").show();
+                    // }
+                } else {
+                    // $("#paste_sys_button").hide();
+                    // if (data.instance.get_node(data.node.id).type === "job"
+                    //     || data.instance.get_node(data.node.id).type === "disabled"
+                    //     || data.instance.get_node(data.node.id).type === "needfull"
+                    //     || data.instance.get_node(data.node.id).type === "rerunnable") {
+
+                    //     //query backend for a specific job and update ui fields
+                    //     getJobByID(selectedNode, "read");
+
+                    //     $.get('/ClosestRerunnableAn', { id: selectedNode }, function (data) {
+                    //         const dataObj = JSON.parse(data);
+                    //         $(".jstree-children").removeClass("jstree-codeBlock");
+                    //         $("#" + dataObj.id + "_anchor").next().addClass("jstree-codeBlock");
+                    //     })
+
+                    //     highlight(selectedNode);
+                    //     $("#comType").val('Job');
+
+                    //     $("#sysScreen").hide();
+                    //     $("#jobScreen").show();
+                    //     showBottom();
+
+                    //     bottomHiddenFlag = false;
+
+                    //     setWindowHeight(currentHeight, false);
+                    //     updateResultsList(selectedNode);
+
+                    //     const targetNode = $('#jstree_div').jstree(true).get_node(data.node.id);
+                    //     const rSystemId = targetNode.parents[targetNode.parents.length - 2];
+                    //     const rSystemNode = $('#jstree_div').jstree(true).get_node(rSystemId);
+                    //     if (rSystemNode.text !== 'Library') {
+
+                    //         if ($("#componentsBtn").hasClass('active')) {
+                    //             showBottom()
+                    //         } else {
+                    //             hideBottom()
+                    //         }
+                    //     } else {
+                    //         hideBottom()
+                    //     }
+
+                    // } else {
+                    // $("#sysScreen").show();
+                    // $("#jobScreen").hide();
+                    // //                            hideBottom();
+                    // //                            bottomHiddenFlag = true;
+                    // $("#comType").val('system');
+                    // readModeSys();
+                    // getSysByID(selectedNode);
+                    // $(".jstree-children").removeClass("jstree-codeBlock");
+                    // $("#" + selectedNode + "_anchor").next().addClass("jstree-codeBlock");
+                    // updateResultsList(selectedNode);
+                    // };
+                }
+
+                // $("#results_html").html('');
+                // $("#codes_btn").hide();
+
+                // $("#results_codes").html('');
+                // $('#messageSpan').html('');
+
+                // $("#resampledNewImage").html('');
+                // $("#newImageURL").val('');
+                // $("#pasteNewImage").val('');
+
+                // var inputFields = $("#job-form-panel").find('textarea');
+                // inputFields.each(setWidth);
+                // function setWidth(index, element) {
+                //     $(element).width = '100%';
+                //     $(element).css('width', '100%');
+                //     $(element).css('margin-right', 0);
+                // }
+                // }
+            });
+
+            function renderComp(data) {
+
+                if (data) {
+                    let id = data.hasOwnProperty('id') ? data.id : ""
+                    let parent = data.hasOwnProperty('text') ? data.parent : ""
+                    let name = data.hasOwnProperty('text') ? data.text : ""
+
+                    $("#comp-id").text(id)
+                    $("#comp-parent").text(parent)
+                    $("#comp-name").text(name)
+
+                } else {
+                    console.log("Error: No render data for component")
+                }
+
+
+            }
+
+            $( "#saveBtn" ).on( "click", function() {
+                saveComp()
+            });
+
+            function saveComp() {
+
+                let id = $("#comp-id").text()
+                let parent = $("#comp-parent").text()
+                let text = $("#comp-name").text()
+                let script = scriptEditor.getValue()
+                let mydata = {"id":id, "text":text, "script":script}
+
+                $.ajax({
+                    type: 'post',
+                    contentType: "application/json",
+                    url: '/saveComp',
+                    data: JSON.stringify(mydata)
+                }).done(function (e) {
+                    //console.log('copy refresh' );
+                    $('#jstree_div').jstree(true).refresh(true);
+                }).fail(function (e) {
+                    console.log('saveComp post failed');
+                    console.log(e);
+                    $('#jstree_div').jstree(true).refresh();
+                });
+
+            }
+
+            function hideThings(fields) {
+                fields.split(';').forEach(function (field) {
+                    var fieldObj = $("#" + field);
+                    if (fieldObj) {
+                        fieldObj.hide();
+                    }
+                })
+            }
+
+        });
+
+    </script>
+
+
+</head>
+
+
+<body class="index-page">
+    <!--<input type="text" id="fakeInput" style="position: absolute; opacity: 0; height: 0px; font-size: 16px; right: 25%; top: 25%;">-->
+
+
+    <!-- pop-in Navbar -->
+
+    <div id="navbarNav-outer">
+
+        <nav id="navbarNav" class="col-md-10 offset-md-1 navbar navbar-expand-md navbar-light pop-bar">
+            <span><a class="navbar-brand" href="/"><svg class="icon">
+                        <use href="#ezStack-icon"></use>
+                    </svg><b>Consol Essence</b></a></span>
+            <!-- %insertPopNavBeforeCollapseItem% -->
+            <button class="fancy-toggler navbar-toggler" type="button" data-toggle="collapse"
+                data-target="#navbarNav-collapsibleNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav-collapsibleNavbar">
+                <ul class="navbar-nav ml-auto">
+                    <!-- <li id="media-link" class="nav-item">
+                        <a href="/ezTube">
+                            <i class="material-icons"></i>Media
+                        </a>
+                    </li>
+
+                    <li id="blog-link" class="nav-item">
+                        <a href="/wpblog">
+                            <i class="material-icons"></i>Blog
+                        </a>
+                    </li>
+
+                    <li id="store-link" class="nav-item">
+                        <a href="/store">
+                            <i class="material-icons"></i>Store
+                        </a>
+                    </li>
+
+                    <li id="contact-link" class="nav-item">
+                        <a href="/contact">
+                            <i class="material-icons"></i>Contact
+                        </a>
+                    </li>
+
+                    <li id="faq-link" class="nav-item">
+                        <a href="/faq">
+                            <i class="material-icons"></i>FAQ
+                        </a>
+                    </li> -->
+
+                    <!-- %insertPopNavItem% -->
+                </ul>
+            </div>
+        </nav>
+    </div>
+    <script>
+        // $('#navbarNav').find('a').on('click', function () {
+        //     $('.navbar-collapse').collapse('hide');
+        // });
+    </script>
+
+    <div id="MainRaisedCol" class="wrapper scroller">
+
+        <div class="main">
+            <div id="rrow" class="rrow">
+                <div id="tCol" class=" tCol">
+                    <div id="jstree_div" class="jstree-default">
+                    </div>
+
+
+                </div>
+
+                <div id="iCol" class="iCol">
+                    <div id="button-row">
+                        <button id="editBtn" class="btn"
+                            style="width:220px;color: #666;background-color: #fff;border-color: #ccc"><i
+                                class="fa fa-pencil-square-o fa-fw"></i>Edit</button>
+
+                        <button id="saveBtn" class="btn"
+                            style="width:220px;color: #666;background-color: #fff;border-color: #ccc"><i
+                                class="fa fa-floppy-o fa-fw"></i>Save</button>
+                    </div>
+
+
+                    <div id="comp-id"></div>
+                    <div id="comp-parent"></div>
+                    <div id="comp-name"></div>
+                    <div id="comp-script" style="height: 400px"></div>
+
+                </div>
+
+                <div id="cCol" class="cCol">
+                    <div id="conTxt">
+                        <textarea id="console"></textarea>
+                    </div>
+
+                </div>
+
+            </div>
+            <style>
+                .rrow {
+                    display: flex;
+                    padding: 5px;
+                    background-color: #ffffff;
+                    box-shadow: rgba(17, 18, 38, 0.15) 0px 0px 20px 0px;
+                    transition: background 200ms ease 0s, box-shadow 200ms ease 0s;
+                    padding-top: 100px;
+                }
+            </style>
+
+        </div>
+    </div>
+    <style>
+        .main {
+            background: #ffffff7b;
+            backdrop-filter: blur(8px);
+            min-height: 100%;
+        }
+
+        .scroller {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            width: 100%;
+            position: absolute;
+        }
+    </style>
+
+
+</body>
+
+<script>
+    // $(".scroller").css({"overflow-y":"hidden"})
+</script>
+<!-- <script src="/clientJs/index.js" defer></script>	 -->
+
+
+
+</html>
