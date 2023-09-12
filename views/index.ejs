@@ -273,6 +273,8 @@
                 // }
             });
 
+            $("#saveBtn").hide();
+            
             function renderComp(data) {
 
                 if (data) {
@@ -297,6 +299,10 @@
 
             function saveComp() {
 
+                $("#editBtn").show();
+                $("#newBtn").show();
+                $("#saveBtn").hide();
+
                 let id = $("#comp-id").text()
                 let parent = $("#comp-parent").text()
                 let text = $("#comp-name").text()
@@ -318,6 +324,22 @@
                 });
 
             }
+
+            $( "#editBtn" ).on( "click", function() {
+                editComp()
+            });
+
+            function editComp(){
+                $("#editBtn").hide();
+                $("#newBtn").hide();
+                $("#saveBtn").show();
+
+                $("#comp-name-edit").val($("#comp-name").text()) 
+                $("#comp-name").fadeOut(0.3)
+                $("#comp-name-edit").fadeIn(0.3)
+
+            }
+
 
             function hideThings(fields) {
                 fields.split(';').forEach(function (field) {
@@ -409,19 +431,19 @@
 
                 <div id="iCol" class="iCol">
                     <div id="button-row">
-                        <button id="editBtn" class="btn"
-                            style="width:220px;color: #666;background-color: #fff;border-color: #ccc"><i
-                                class="fa fa-pencil-square-o fa-fw"></i>Edit</button>
+                        <i id="newBtn" class="fa fa-plus-square-o fa-fw"></i>
+                        <i id="editBtn" class="fa fa-pencil-square-o fa-fw"></i>
 
-                        <button id="saveBtn" class="btn"
-                            style="width:220px;color: #666;background-color: #fff;border-color: #ccc"><i
-                                class="fa fa-floppy-o fa-fw"></i>Save</button>
+                        <i id="saveBtn" class="fa fa-floppy-o fa-fw"></i>
                     </div>
 
 
                     <div id="comp-id"></div>
                     <div id="comp-parent"></div>
-                    <div id="comp-name"></div>
+                    <div id="comp-name-container">
+                        <div id="comp-name"></div>
+                        <input type="text" id="comp-name-edit" style="display:none;">
+                    </div>
                     <div id="comp-script" style="height: 400px"></div>
 
                 </div>
@@ -435,33 +457,12 @@
 
             </div>
             <style>
-                .rrow {
-                    display: flex;
-                    padding: 5px;
-                    background-color: #ffffff;
-                    box-shadow: rgba(17, 18, 38, 0.15) 0px 0px 20px 0px;
-                    transition: background 200ms ease 0s, box-shadow 200ms ease 0s;
-                    padding-top: 100px;
-                }
+                
             </style>
 
         </div>
     </div>
-    <style>
-        .main {
-            background: #ffffff7b;
-            backdrop-filter: blur(8px);
-            min-height: 100%;
-        }
-
-        .scroller {
-            height: 100vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-            width: 100%;
-            position: absolute;
-        }
-    </style>
+    
 
 
 </body>

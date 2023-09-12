@@ -73,10 +73,28 @@
 .rrow{
     min-height: 100%;
     flex: 1 1 100%;
+    display: flex;
+    padding: 5px;
+    background-color: #ffffff;
+    box-shadow: rgba(17, 18, 38, 0.15) 0px 0px 20px 0px;
+    transition: background 200ms ease 0s, box-shadow 200ms ease 0s;
+    padding-top: 100px;
 }
 
-.tCol {
-    width: 200px;
+div#tCol {
+    width: 255px;
+}
+div#cCol {
+    width: 50%;
+}
+
+div#iCol {
+    width: 50%;
+}
+
+textarea#console {
+    width: 100%;
+    height: 83vh;
 }
 
 .main{
@@ -86,5 +104,11 @@
     min-height: 100%;
 }
 
+.scroller {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    position: absolute;
+}
 
-<!-- %customCSSInsert% -->

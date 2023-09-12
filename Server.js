@@ -47,22 +47,21 @@ function generateUUID() {
 }
 
 router.use(function (req, res, next) {
-    if (req.originalUrl.substr(0, 18) !== "/demoMan?task=stat") {
-        var log = {
-            date: new Date().toISOString().replace(/T/, '_').replace(/:/g, '-'),
-            md: req.method,
-            protocol: req.protocol,
-            host: req.get('host'),
-            pathname: req.originalUrl,
-            rad: req.connection.remoteAddress,
-            referrer: req.headers.referrer || req.headers.referer
-        };
+    
+    var log = {
+        date: new Date().toISOString().replace(/T/, '_').replace(/:/g, '-'),
+        md: req.method,
+        protocol: req.protocol,
+        host: req.get('host'),
+        pathname: req.originalUrl,
+        rad: req.connection.remoteAddress,
+        referrer: req.headers.referrer || req.headers.referer
+    };
 
-        fs.appendFile('accesslog.txt', JSON.stringify(log) + "\n", function (err) {
-            if (err) throw err;
-            //console.log('Saved!');
-        });
-    }
+    fs.appendFile('access.log', JSON.stringify(log) + "\n", function (err) {
+        if (err) throw err;
+    });
+    
     next();
 
 });
@@ -103,9 +102,6 @@ router.post("/saveComp",function(req,res){
     var reqJSON= req.body;
     var ids =reqJSON.id;
     
-
-
-
     res.end('');
 });
 
