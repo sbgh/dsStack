@@ -130,3 +130,6 @@ dist
 .pnp.*
 
 access.log
+views/builder.ejs
+
+backup/

@@ -49,6 +49,8 @@
 
     <script src="https://www.unpkg.com/ace-builds@latest/src-noconflict/ace.js"></script>
 
+    <script src="ansi_up/ansi_up.js" type="text/javascript"></script>
+
     <!-- %insertJsSrc% -->
 
     <!--%insertCSSSrc%-->
@@ -149,6 +151,7 @@
                 //console.log('saved');
             });
 
+            var selectedNode;
             //tree click
             $('#jstree_div').on("select_node.jstree", function (e, data) {
                 // $("#paste_sys_lib_button").hide();
@@ -273,18 +276,50 @@
                 // }
             });
 
+            $( "#newChildBtn" ).on( "click", function() {
+                newComp(selectedNode)
+            })
+            function newComp(parent) {
+
+                let id = ""
+                let text = "New Component"
+                let script = ""
+
+                let mydata = {"id":id, "parent":parent, "text":text, "script":script}
+
+                $.ajax({
+                    type: 'post',
+                    contentType: "application/json",
+                    url: '/saveComp',
+                    data: JSON.stringify(mydata)
+                }).done(function (e) {
+                    //console.log('copy refresh' );
+
+                    readComp()
+                    
+                }).fail(function (e) {
+                    console.log('newComp post failed');
+                    console.log(e);
+                    $('#jstree_div').jstree(true).refresh();
+                });
+            }
+
             $("#saveBtn").hide();
-            
+
             function renderComp(data) {
 
                 if (data) {
                     let id = data.hasOwnProperty('id') ? data.id : ""
                     let parent = data.hasOwnProperty('text') ? data.parent : ""
                     let name = data.hasOwnProperty('text') ? data.text : ""
+                    let script = data.hasOwnProperty('script') ? data.script : ""
+                    scriptEditor.session.setValue(script)
 
                     $("#comp-id").text(id)
                     $("#comp-parent").text(parent)
                     $("#comp-name").text(name)
+
+                    $("#comp-name-edit").val(name)
 
                 } else {
                     console.log("Error: No render data for component")
@@ -298,14 +333,8 @@
             });
 
             function saveComp() {
-
-                $("#editBtn").show();
-                $("#newBtn").show();
-                $("#saveBtn").hide();
-
                 let id = $("#comp-id").text()
-                let parent = $("#comp-parent").text()
-                let text = $("#comp-name").text()
+                let text = $("#comp-name-edit").val()
                 let script = scriptEditor.getValue()
                 let mydata = {"id":id, "text":text, "script":script}
 
@@ -316,7 +345,10 @@
                     data: JSON.stringify(mydata)
                 }).done(function (e) {
                     //console.log('copy refresh' );
-                    $('#jstree_div').jstree(true).refresh(true);
+                    $("#comp-name").text($("#comp-name-edit").val())
+
+                    readComp()
+                    
                 }).fail(function (e) {
                     console.log('saveComp post failed');
                     console.log(e);
@@ -325,19 +357,49 @@
 
             }
 
+            function readComp(){
+
+                $("#comp-name").fadeIn(0.3)
+                $("#comp-name-edit").fadeOut(0.3)
+                
+                scriptEditor.renderer.$cursorLayer.element.style.display = "";
+                scriptEditor.setReadOnly(true);
+
+                $("#editBtn").show();
+                $("#newChildBtn").show();
+                $("#saveBtn").hide();
+                $("#deleteBtn").show();
+                $("#copyBtn").show();
+                $('#jstree_div').jstree(true).refresh(true);
+                    
+            }
+
             $( "#editBtn" ).on( "click", function() {
                 editComp()
             });
 
             function editComp(){
                 $("#editBtn").hide();
-                $("#newBtn").hide();
+                $("#newChildBtn").hide();
                 $("#saveBtn").show();
+                $("#deleteBtn").hide();
+                $("#copyBtn").hide();
+
+                scriptEditor.renderer.$cursorLayer.element.style.display = "";
+                scriptEditor.setReadOnly(false);
 
                 $("#comp-name-edit").val($("#comp-name").text()) 
                 $("#comp-name").fadeOut(0.3)
                 $("#comp-name-edit").fadeIn(0.3)
+            }
 
+            $("#deleteBtn").on( "click", function() {
+                deleteComp()
+            });
+
+            function deleteComp(){
+
+                $('#delModal').modal('show');
             }
 
 
@@ -350,7 +412,57 @@
                 })
             }
 
+            //remove component
+            $("#delConfirmButton").on("click", function () {
+
+                // clearJobFields();
+                // clearSysFields();
+
+                var mydata = {};
+                mydata.ids = selectedNode;
+
+                var tree = $('#jstree_div');
+                
+                var treeNode = tree.jstree(true).get_node(selectedNode);
+                var childs = treeNode.children_d;
+                var parent = treeNode.parent;
+                var listOfIds = selectedNode;
+                if (childs.length > 0) {
+                    listOfIds += ';' + childs.join(';');
+                }
+                mydata.ids = listOfIds
+
+                // if (selectedTree === 'working') {
+                //     mydata.tree = 'working'
+                // } else {
+                //     mydata.tree = pickedLib
+                // }
+
+                $.ajax({
+                    type: 'post',
+                    contentType: "application/json",
+                    url: '/remove',
+                    data: JSON.stringify(mydata),
+                    selectedNode: selectedNode,
+                    parent: parent
+                }).done(function (data) {
+                    //console.log(data);
+
+                    tree.jstree(true).delete_node(this.selectedNode);
+                    tree.jstree(true).select_node(this.parent, false);
+                    tree.jstree(true).redraw(true);
+
+                }).fail(function (e) {
+                    console.log('remove refresh fail');
+                    console.log(e);
+                    $('#jstree_div').jstree(true).refresh()
+                });
+
+                $('#delModal').modal('toggle');
+            });
+
         });
+
 
     </script>
 
@@ -377,35 +489,12 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav-collapsibleNavbar">
                 <ul class="navbar-nav ml-auto">
-                    <!-- <li id="media-link" class="nav-item">
-                        <a href="/ezTube">
-                            <i class="material-icons"></i>Media
-                        </a>
-                    </li>
-
-                    <li id="blog-link" class="nav-item">
-                        <a href="/wpblog">
-                            <i class="material-icons"></i>Blog
-                        </a>
-                    </li>
-
-                    <li id="store-link" class="nav-item">
-                        <a href="/store">
-                            <i class="material-icons"></i>Store
-                        </a>
-                    </li>
-
-                    <li id="contact-link" class="nav-item">
-                        <a href="/contact">
-                            <i class="material-icons"></i>Contact
-                        </a>
-                    </li>
-
-                    <li id="faq-link" class="nav-item">
+                   
+                    <!-- <li id="faq-link" class="nav-item">
                         <a href="/faq">
                             <i class="material-icons"></i>FAQ
                         </a>
-                    </li> -->
+                    </li>  -->
 
                     <!-- %insertPopNavItem% -->
                 </ul>
@@ -425,18 +514,15 @@
                 <div id="tCol" class=" tCol">
                     <div id="jstree_div" class="jstree-default">
                     </div>
-
-
                 </div>
 
                 <div id="iCol" class="iCol">
                     <div id="button-row">
-                        <i id="newBtn" class="fa fa-plus-square-o fa-fw"></i>
+                        <i id="newChildBtn" class="fa fa-plus-square-o fa-fw"></i>
                         <i id="editBtn" class="fa fa-pencil-square-o fa-fw"></i>
-
                         <i id="saveBtn" class="fa fa-floppy-o fa-fw"></i>
+                        <i id="deleteBtn" class="fa fa-minus fa-fw"></i>
                     </div>
-
 
                     <div id="comp-id"></div>
                     <div id="comp-parent"></div>
@@ -472,6 +558,22 @@
 </script>
 <!-- <script src="/clientJs/index.js" defer></script>	 -->
 
+    <div id="delModal" class="modal fade" role="dialog">
+        <div class="modal-dialog modal-del-dialog">
+            <nav class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title"><i class="fa fa-minus-square-o fa-fw"></i>Remove</h4>
+                </div>
 
+                <div id='delConfirmationBody' class="modal-body">
+                    Are you sure you want to remove this component and all children?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="delConfirmButton" class="btn btn-default jobFormbtn">Remove</button>
+                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">Cancel</button>
+                </div>
+            </nav>
+        </div>
+    </div>
 
 </html>

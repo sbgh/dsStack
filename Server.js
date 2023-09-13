@@ -32,7 +32,7 @@ app.set('view engine', 'ejs');
 var viewPath = __dirname + '/views/';
 app.use(express.static('static'));
 
-global.treeData = JSON.parse(fs.readFileSync(__dirname + '/treeData.json'));
+global.compData = JSON.parse(fs.readFileSync(__dirname + '/compData.json'));
 
 function generateUUID() { 
     var d = new Date().getTime();
@@ -81,14 +81,14 @@ router.get("/getTree", function (req, res) {
     res.writeHead(200, { "Content-Type": "application/json" });
     var resJSON = [];
     if (id !== '#') {
-        var rowdata = treeData[id];
-        //console.log('gv:' + treeData[id].variables);
+        var rowdata = compData[id];
+        //console.log('gv:' + compData[id].variables);
         rowdata.id = id;
         resJSON.push(rowdata);
     } else {
-        for (var key in treeData) {
-            if (treeData.hasOwnProperty(key)) {
-                var rowdata = treeData[key];
+        for (var key in compData) {
+            if (compData.hasOwnProperty(key)) {
+                var rowdata = compData[key];
                 rowdata.id = key;
                 resJSON.push(rowdata);
             }
@@ -100,10 +100,101 @@ router.get("/getTree", function (req, res) {
 router.post("/saveComp",function(req,res){
     
     var reqJSON= req.body;
-    var ids =reqJSON.id;
+
+    let newFlag = true
+    if(reqJSON.hasOwnProperty("id")){
+        newFlag = reqJSON.id.trim() !== "" ? false : true
+    }
+
+    if(!newFlag){
+        let id =reqJSON.id;
+        compData[id].text = reqJSON.text
+        compData[id].script = reqJSON.script
+    }else{
+        let id =generateUUID();
+        compData[id] = {}
+        compData[id].text = reqJSON.text
+        compData[id].parent = reqJSON.parent
+        compData[id].script = reqJSON.script
+
+    }
+
+    saveAllJSON(true)
     
     res.end('');
 });
+
+router.post("/remove",function(req,res){
+    //remove id from systems json and remove /uploads/ dir
+    var reqJSON= req.body;
+    var ids =reqJSON.ids.split(';');
+    // var tree =reqJSON.tree;
+
+    ids.forEach(function(id) { //Loop throu all ids
+        if(compData.hasOwnProperty(id)) {
+            delete compData[id]; //delete from main datastore
+            // rmDir(filesPath + id + "/"); //delete all uploaded files
+            // fs.readdir(resultsPath, function(err, files){ // delete results files
+            //     if (err){
+            //         console.log(err);
+            //     }else{
+            //         files.forEach(function(mFile){
+            //             if (mFile.substr(0,36) === id){
+            //                 if (fs.statSync(resultsPath + mFile).isFile()){
+            //                     //console.log("removing: " + resultsFilesPath + mFile);
+            //                     fs.unlinkSync(resultsPath + mFile);
+            //                 }
+            //             }
+            //         })
+            //     }
+
+            // });
+        }
+    });
+    saveAllJSON(true);
+
+    res.end('');
+});
+
+function saveAllJSON(backup){
+    //console.log("saving");
+    fs.writeFile(__dirname + '/compData.json', JSON.stringify(compData), function (err) {
+        if (err) {
+            console.log('There has been an error saving your component data json.');
+            console.log(err.message);
+            return;
+        }else if(backup){
+            console.log("backup");
+            var dsString = new Date().toISOString();
+            var fds = dsString.replace(/_/g, '-').replace(/T/, '-').replace(/:/g, '-').replace(/\..+/, '');
+            const fname = 'compData'+fds+'.json';
+            fs.writeFile(__dirname + "/backup/" + fname, JSON.stringify(compData), function (err) {
+                if (err) {
+                    console.log('There has been an error saving your json: /backup/'+fname);
+                    console.log(err.message);
+                    return;
+                }else{
+                    var x = 1;
+                    fs.readdir(__dirname + "/backup/", function(err, files){ // delete older backups files
+                        if (err){
+                            console.log("Error reading " + __dirname + "/backup/ dir\n" + err);
+                        }else{
+                            files.forEach(function(mFile){
+                                if (fs.statSync(__dirname + "/backup/" + mFile).isFile()){
+                                    if((x + 20) <  files.length){
+                                        //console.log("removing"  + __dirname + "/backup/" + mFile );
+                                        fs.unlinkSync(__dirname + "/backup/" + mFile)
+                                    }
+                                    x++
+                                }
+                            })
+                        }
+                    })
+                }
+            })
+        }
+    })
+}
 
 
 
