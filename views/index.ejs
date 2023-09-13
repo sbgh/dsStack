@@ -11,7 +11,7 @@
     <meta name="description" content="Home page for Consol Essence.">
 
     <!--<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />-->
-    <meta id="myViewport" name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <meta id="myViewport" name="viewport" content="width=device-width, initial-scale=1.0"> -->
     <!--<meta name="viewport" content="width=980, user-scalable=yes">-->
 
     <!--     Fonts and icons     -->
@@ -36,10 +36,8 @@
 
     <!--boot strap js-->
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"
-        defer></script>
-        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"
         integrity="sha512-8qmis31OQi6hIRgvkht0s6mCOittjMa9GMqtK9hes5iEQBQE/Ca6yGE5FsW36vyipGoWQswBj/QBm2JR086Rkw=="
         crossorigin="anonymous"></script>
@@ -151,7 +149,7 @@
                 //console.log('saved');
             });
 
-            var selectedNode;
+            var selectedNode
             //tree click
             $('#jstree_div').on("select_node.jstree", function (e, data) {
                 // $("#paste_sys_lib_button").hide();
@@ -276,7 +274,7 @@
                 // }
             });
 
-            $( "#newChildBtn" ).on( "click", function() {
+            $("#newChildBtn").on("click", function () {
                 newComp(selectedNode)
             })
             function newComp(parent) {
@@ -285,18 +283,27 @@
                 let text = "New Component"
                 let script = ""
 
-                let mydata = {"id":id, "parent":parent, "text":text, "script":script}
+                let mydata = { "id": id, "parent": parent, "text": text, "script": script }
 
                 $.ajax({
                     type: 'post',
                     contentType: "application/json",
                     url: '/saveComp',
-                    data: JSON.stringify(mydata)
+                    data: JSON.stringify(mydata),
+                    success: function (data) {
+                        readComp()
+
+                        let id = data
+
+                        $('#jstree_div').jstree("deselect_all");
+                        $('#jstree_div').jstree('select_node', id);
+                        $('#jstree_div').jstree(true).get_node(id, true).children('.jstree-anchor').focus();
+                    }
                 }).done(function (e) {
                     //console.log('copy refresh' );
 
-                    readComp()
-                    
+
+
                 }).fail(function (e) {
                     console.log('newComp post failed');
                     console.log(e);
@@ -328,7 +335,7 @@
 
             }
 
-            $( "#saveBtn" ).on( "click", function() {
+            $("#saveBtn").on("click", function () {
                 saveComp()
             });
 
@@ -336,7 +343,7 @@
                 let id = $("#comp-id").text()
                 let text = $("#comp-name-edit").val()
                 let script = scriptEditor.getValue()
-                let mydata = {"id":id, "text":text, "script":script}
+                let mydata = { "id": id, "text": text, "script": script }
 
                 $.ajax({
                     type: 'post',
@@ -348,7 +355,7 @@
                     $("#comp-name").text($("#comp-name-edit").val())
 
                     readComp()
-                    
+
                 }).fail(function (e) {
                     console.log('saveComp post failed');
                     console.log(e);
@@ -357,11 +364,11 @@
 
             }
 
-            function readComp(){
+            function readComp() {
 
                 $("#comp-name").fadeIn(0.3)
                 $("#comp-name-edit").fadeOut(0.3)
-                
+
                 scriptEditor.renderer.$cursorLayer.element.style.display = "";
                 scriptEditor.setReadOnly(true);
 
@@ -370,36 +377,215 @@
                 $("#saveBtn").hide();
                 $("#deleteBtn").show();
                 $("#copyBtn").show();
+                $("#pasteBtn").show();
                 $('#jstree_div').jstree(true).refresh(true);
-                    
+
             }
 
-            $( "#editBtn" ).on( "click", function() {
+            $("#editBtn").on("click", function () {
                 editComp()
             });
 
-            function editComp(){
+            function editComp() {
                 $("#editBtn").hide();
                 $("#newChildBtn").hide();
                 $("#saveBtn").show();
                 $("#deleteBtn").hide();
                 $("#copyBtn").hide();
+                $("#pasteBtn").hide();
 
                 scriptEditor.renderer.$cursorLayer.element.style.display = "";
                 scriptEditor.setReadOnly(false);
 
-                $("#comp-name-edit").val($("#comp-name").text()) 
+                $("#comp-name-edit").val($("#comp-name").text())
                 $("#comp-name").fadeOut(0.3)
                 $("#comp-name-edit").fadeIn(0.3)
             }
 
-            $("#deleteBtn").on( "click", function() {
+            $("#deleteBtn").on("click", function () {
                 deleteComp()
             });
 
-            function deleteComp(){
+            function deleteComp() {
 
                 $('#delModal').modal('show');
+            }
+
+            var copiedText = ""
+            $("#copyBtn").on("click", function () {
+                copiedText = $("#comp-name").text()
+
+                currentCopyObj = { "id": selectedNode, "lib": "working", "name": $("#comp-name").text() };
+                $("#pasteBtn").show();
+                $("#pasteBtn").popover('dispose').popover({
+                    animation: true,
+                    content: "Paste: " + copiedText,
+                    delay: { "show": 500, "hide": 100 },
+                    trigger: 'hover',
+                    template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                });
+                $(this).popover('dispose').popover({
+                    animation: true,
+                    content: "Copied: " + copiedText,
+                    delay: { "show": 500, "hide": 100 },
+                    trigger: 'hover',
+                    template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                });
+                $(this).popover("show");
+
+            });
+
+            var currentCopyObj = {};
+            $("#pasteBtn").on("click", function () {
+                const targetNodeId = selectedNode;
+                const pos = 1;
+                const targetNode = $('#jstree_div').jstree(true).get_node(targetNodeId);
+                const fromNode = $('#jstree_div').jstree(true).get_node(currentCopyObj.id);
+                $('#copyModal_newPosition').val(pos);
+
+                showCopyModal(fromNode, targetNodeId, targetNode);
+            });
+
+            function showCopyModal(node, targetNodeId, targetNode) {
+
+                if (targetNode.id === "#") {
+                    return false;
+                } else {
+                    $('#copyModal_listOfIds').val(node.original.id);
+
+                    var fromTree;
+                    if (node.parents[node.parents.length - 2] === 'lib') {
+                        fromTree = $('#jslibtree_div');
+                        $('#copyModal_lib').val(pickedLib)
+                    } else {
+                        fromTree = $('#jstree_div');
+                        $('#copyModal_lib').val('local')
+                    }
+                    const treeNode = fromTree.jstree(true).get_node(node.original.id);
+
+                    var childs = treeNode.children_d;
+                    var listOfIds = [node.original.id];
+                    $("#copyInfoText").html("<b>" + node.original.text + "</b> will be copied to <b>" + targetNode.text + "</b>");
+
+                    if (childs.length > 0) {
+                        listOfIds += ';' + childs.join(';');
+                        $('#copyModal_listOfIds').val(listOfIds);
+                        $('#copyModalForm').show()
+                    } else {
+                        $('#copyModalForm').hide()
+                    }
+
+                    if (targetNode.id === "local") {
+                        $('#copyModal_newParent').val('#')
+                    } else {
+                        $('#copyModal_newParent').val(targetNode.id);  //targetId
+                    }
+
+                    $('#copyModal').modal('show');
+                    $('#copyChildrenCb').prop('checked', false);
+
+                    return false;
+                }
+            }
+
+            $("#copyConfirmButton").on("click", function () {
+                var mydata = {};
+                mydata.ids = $('#copyModal_listOfIds').val();
+                mydata.parent = $('#copyModal_newParent').val();
+                mydata.pos = $('#copyModal_newPosition').val();
+                // mydata.lib = $('#copyModal_lib').val();
+
+                if (!$('#copyChildrenCb').is(':checked')) {
+                    if (mydata.ids.split(';').length > 1) {
+                        mydata.ids = mydata.ids.split(';')[0]
+                    }
+                }
+
+                $.ajax({
+                    type: 'post',
+                    contentType: "application/json",
+                    url: '/copy',
+                    data: JSON.stringify(mydata)
+                }).done(function (e) {
+                    //console.log('copy refresh' );
+                    $('#jstree_div').jstree(true).refresh(true);
+                }).fail(function (e) {
+                    console.log('copy failed');
+                    console.log(e);
+                    $('#jstree_div').jstree(true).refresh();
+                });
+                $('#copyModal').modal('toggle');
+            });
+
+            $("#moveUp_button").click(function (event) {
+                //console.log("up");
+                $.get('/Move', { id: selectedNode, direction: 'up' }, function (data) {
+                    var newPos = data.newPos;
+                    var oldPos = data.oldPos;
+                    var otherId = data.otherId;
+                    if (otherId !== '') {
+                        var nodeInst = $('#jstree_div').jstree(true).get_node(selectedNode);
+                        var otherInst = $('#jstree_div').jstree(true).get_node(otherId);
+                        nodeInst.original.sort = newPos;
+                        otherInst.original.sort = oldPos;
+                        var parent = $("#comp-parent").text();
+                        $('#jstree_div').jstree("move_node", nodeInst, parent, newPos);
+                        $('#jstree_div').jstree("move_node", otherInst, parent, oldPos);
+                    }
+                })
+            })
+
+            $("#moveDn_button").click(function (event) {
+                //console.log("down");
+                $.get('/Move', { id: selectedNode, direction: 'down' }, function (data) {
+                    var newPos = data.newPos;
+                    var oldPos = data.oldPos;
+                    var otherId = data.otherId;
+                    if (otherId !== '') {
+                        var nodeInst = $('#jstree_div').jstree(true).get_node(selectedNode);
+                        var otherInst = $('#jstree_div').jstree(true).get_node(otherId);
+                        nodeInst.original.sort = newPos;
+                        otherInst.original.sort = oldPos;
+                        var parent = $("#comp-parent").text();
+                        $('#jstree_div').jstree("move_node", nodeInst, parent, newPos);
+                        $('#jstree_div').jstree("move_node", otherInst, parent, oldPos);
+                    }
+                })
+            })
+
+
+            $(function () {
+                var widthHandle = $('#tCol-handle');
+                widthHandle.on('mousedown', function (e) {
+                    isResizingWidth = true;
+                });
+            })
+
+            var isResizingWidth = false
+            $(document).on('mousemove', function (e) {
+                const container = $('#tCol');
+                if (!isResizingWidth)
+                    return;
+
+                if (isResizingWidth) {
+                    e.preventDefault();
+
+                    var leftWidth =  e.pageX  -8  
+
+                    container.width(leftWidth);
+
+                    localStorage['locTreeWidth'] = JSON.stringify({ width: leftWidth });
+
+                }
+
+            }).on('mouseup', function (e) {
+                isResizingWidth = false;
+            });
+            
+            if (!localStorage['locTreeWidth']) {
+                $('#tCol').width(250)
+            } else {
+                $('#tCol').width(JSON.parse(localStorage['locTreeWidth']).width)
             }
 
 
@@ -422,7 +608,7 @@
                 mydata.ids = selectedNode;
 
                 var tree = $('#jstree_div');
-                
+
                 var treeNode = tree.jstree(true).get_node(selectedNode);
                 var childs = treeNode.children_d;
                 var parent = treeNode.parent;
@@ -489,7 +675,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav-collapsibleNavbar">
                 <ul class="navbar-nav ml-auto">
-                   
+
                     <!-- <li id="faq-link" class="nav-item">
                         <a href="/faq">
                             <i class="material-icons"></i>FAQ
@@ -516,12 +702,19 @@
                     </div>
                 </div>
 
+                <div id="tCol-handle" class="tCol-handle">
+                </div>
+
                 <div id="iCol" class="iCol">
                     <div id="button-row">
-                        <i id="newChildBtn" class="fa fa-plus-square-o fa-fw"></i>
-                        <i id="editBtn" class="fa fa-pencil-square-o fa-fw"></i>
+                        <i id="newChildBtn" class="fa fa-plus fa-fw"></i>
+                        <i id="editBtn" class="fa fa-pencil fa-fw"></i>
                         <i id="saveBtn" class="fa fa-floppy-o fa-fw"></i>
                         <i id="deleteBtn" class="fa fa-minus fa-fw"></i>
+                        <i id="copyBtn" class="fa fa-copy fa-fw"></i>
+                        <i id="pasteBtn" class="fa fa-paste fa-fw"></i>
+                        <i id="moveUp_button" class="fa fa-chevron-up fa-fw"></i>
+                        <i id="moveDn_button" class="fa fa-chevron-down fa-fw"></i>
                     </div>
 
                     <div id="comp-id"></div>
@@ -543,12 +736,12 @@
 
             </div>
             <style>
-                
+
             </style>
 
         </div>
     </div>
-    
+
 
 
 </body>
@@ -558,22 +751,53 @@
 </script>
 <!-- <script src="/clientJs/index.js" defer></script>	 -->
 
-    <div id="delModal" class="modal fade" role="dialog">
-        <div class="modal-dialog modal-del-dialog">
-            <nav class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title"><i class="fa fa-minus-square-o fa-fw"></i>Remove</h4>
-                </div>
+<div id="delModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-del-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-minus-square-o fa-fw"></i>Remove</h4>
+            </div>
 
-                <div id='delConfirmationBody' class="modal-body">
-                    Are you sure you want to remove this component and all children?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="delConfirmButton" class="btn btn-default jobFormbtn">Remove</button>
-                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">Cancel</button>
-                </div>
-            </nav>
-        </div>
+            <div id='delConfirmationBody' class="modal-body">
+                Are you sure you want to remove this component and all children?
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="delConfirmButton" class="btn btn-default jobFormbtn">Remove</button>
+                <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">Cancel</button>
+            </div>
+        </nav>
     </div>
+</div>
+
+<div id="copyModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-run-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-code-fork fa-fw"></i>Copy</h4>
+            </div>
+            <div id='copyConfirmationBody' class="modal-body">
+                <div id="copyInfoText" class="text-info"></div>
+                <form class="form" id="copyModalForm">
+                    <div class="form-group">
+                        <div class="radio">
+                            <label class="build-label"><input name="copyChildrenCb" id="copyChildrenCb" value="yes"
+                                    type="checkbox" />Copy all children?</label>
+                        </div>
+                    </div>
+                </form>
+                <br />
+
+                <input type="hidden" id="copyModal_listOfIds">
+                <input type="hidden" id="copyModal_newParent">
+                <input type="hidden" id="copyModal_newPosition">
+                <input type="hidden" id="copyModal_lib">
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="copyConfirmButton" class="btn btn-default jobFormbtn">Copy</button>
+                <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">Cancel</button>
+            </div>
+        </nav>
+    </div>
+</div>
 
 </html>

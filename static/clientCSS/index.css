@@ -83,13 +83,16 @@
 
 div#tCol {
     width: 255px;
-}
-div#cCol {
-    width: 50%;
+    overflow-x: auto;
 }
 
 div#iCol {
-    width: 50%;
+    /* width: 50%; */
+    flex: 1 1 auto;
+}
+div#cCol {
+    /* width: 50%; */
+    flex: 1 1 auto;
 }
 
 textarea#console {
@@ -110,5 +113,19 @@ textarea#console {
     overflow-x: hidden;
     width: 100%;
     position: absolute;
+}
+
+div#tCol-handle {
+    width: 2px;
+    background: black;
+}
+
+div#tCol-handle {
+    float: right;
+    width: 3px;
+    margin-left: 3px;
+    margin-right: 3px;
+    height: 100%;
+    cursor: w-resize;
 }
 

@@ -34,7 +34,9 @@ app.use(express.static('static'));
 
 global.compData = JSON.parse(fs.readFileSync(__dirname + '/compData.json'));
 
-function generateUUID() { 
+const config = {"username":"admin"}
+
+function generateUUID() {
     var d = new Date().getTime();
     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
         d += performance.now(); //use high-precision timer if available
@@ -47,7 +49,7 @@ function generateUUID() {
 }
 
 router.use(function (req, res, next) {
-    
+
     var log = {
         date: new Date().toISOString().replace(/T/, '_').replace(/:/g, '-'),
         md: req.method,
@@ -61,7 +63,7 @@ router.use(function (req, res, next) {
     fs.appendFile('access.log', JSON.stringify(log) + "\n", function (err) {
         if (err) throw err;
     });
-    
+
     next();
 
 });
@@ -97,21 +99,24 @@ router.get("/getTree", function (req, res) {
     res.end(JSON.stringify(resJSON));
 });
 
-router.post("/saveComp",function(req,res){
-    
-    var reqJSON= req.body;
+router.post("/saveComp", function (req, res) {
+
+    var reqJSON = req.body;
+    var retId = ""
 
     let newFlag = true
-    if(reqJSON.hasOwnProperty("id")){
+    if (reqJSON.hasOwnProperty("id")) {
         newFlag = reqJSON.id.trim() !== "" ? false : true
     }
 
-    if(!newFlag){
-        let id =reqJSON.id;
+    if (!newFlag) {
+        let id = reqJSON.id;
+        retId = id
         compData[id].text = reqJSON.text
         compData[id].script = reqJSON.script
-    }else{
-        let id =generateUUID();
+    } else {
+        let id = generateUUID();
+        retId = id
         compData[id] = {}
         compData[id].text = reqJSON.text
         compData[id].parent = reqJSON.parent
@@ -120,18 +125,18 @@ router.post("/saveComp",function(req,res){
     }
 
     saveAllJSON(true)
-    
-    res.end('');
+
+    res.end(retId);
 });
 
-router.post("/remove",function(req,res){
+router.post("/remove", function (req, res) {
     //remove id from systems json and remove /uploads/ dir
-    var reqJSON= req.body;
-    var ids =reqJSON.ids.split(';');
+    var reqJSON = req.body;
+    var ids = reqJSON.ids.split(';');
     // var tree =reqJSON.tree;
 
-    ids.forEach(function(id) { //Loop throu all ids
-        if(compData.hasOwnProperty(id)) {
+    ids.forEach(function (id) { //Loop throu all ids
+        if (compData.hasOwnProperty(id)) {
             delete compData[id]; //delete from main datastore
             // rmDir(filesPath + id + "/"); //delete all uploaded files
             // fs.readdir(resultsPath, function(err, files){ // delete results files
@@ -156,32 +161,269 @@ router.post("/remove",function(req,res){
     res.end('');
 });
 
-function saveAllJSON(backup){
+router.post("/copy", function (req, res) {
+    var reqJSON = req.body;
+
+    var fromIds = reqJSON.ids.split(';');
+    var targetId = reqJSON.parent;
+    var position = reqJSON.pos;
+    // var lib = reqJSON.lib;
+
+    var error = false;
+    var errorID = '';
+
+    //Set error flag if target not exist
+    if ((!compData.hasOwnProperty(targetId)) && (targetId !== '#')) {
+        error = true;
+        errorID = targetId;
+    }
+
+    //set error flag if from ID not exist
+    fromIds.forEach(function (id) {
+        if (!compData.hasOwnProperty(id) && error === false) {
+            error = true;
+            errorID = id;
+        }
+    });
+
+    //If no error
+    if (error === false) {
+
+        //build id map of old parents and new parents
+        var idMap = {};
+
+        //add from parent and new parent to id map
+        idMap[compData[fromIds[0]].parent] = targetId;
+
+        //loop through all fromIds and copy
+        fromIds.forEach(function (fromId) {
+            var fromNode = compData[fromId];
+            var id = generateUUID();
+
+            //update parent id map
+            idMap[fromId] = id;
+            var newParentId = idMap[compData[fromId].parent];
+            //console.log('move to:'+compData[newParentId].name);
+
+            //initial history json
+            var ds = new Date().toISOString();
+            var hist = [{ username: config.username, ds: ds, fromId: fromId }];
+
+            //Build new component obj. Version 1
+            var NewRow = {
+                parent: newParentId,
+                text: fromNode.text,
+                // description: fromNode.description,
+                // ver: 1,
+                // comType: fromNode.comType,
+                // sort: fromNode.sort,
+                // text: fromNode.name,
+                hist: hist
+            };
+
+            //Add new family tree
+            // if (newParentId === "#") {
+            //     NewRow.ft = "#"
+            // } else {
+            //     NewRow.ft = compData[newParentId].ft + '/' + newParentId;
+            // }
+
+            //Add more properties to the new component obj if type = 'job' (ie component)
+            if (fromNode.comType === 'job') {
+                NewRow.enabled = fromNode.enabled;
+                NewRow.promoted = fromNode.promoted;
+
+                NewRow.variables = {};
+                //copy vars that are not private
+                for (var ind in compData[fromId].variables) {
+                    if (compData[fromId].variables.hasOwnProperty(ind)) {
+                        if (!fromNode.variables[ind].private) {
+                            NewRow.variables[ind] = fromNode.variables[ind]
+                        } else {
+                            NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
+                            NewRow.variables[ind].value = "";
+                        }
+                    }
+                }
+
+                // NewRow.icon = fromNode.icon;
+
+                NewRow.script = fromNode.script;
+                
+                if (fromNode.hasOwnProperty('thumbnail')) {
+                    NewRow.thumbnail = fromNode.thumbnail;
+                }
+            }
+
+            compData[id] = NewRow;
+
+            //Copy file resources
+            // if (fs.existsSync(filesPath + fromId)) { //copy file resources if they exist
+            //     fs.mkdirSync(filesPath + id);
+            //     const files = fs.readdirSync(filesPath + fromId);
+            //     files.forEach(function (file) {
+            //         if (!fs.lstatSync(filesPath + fromId + '/' + file).isDirectory()) {
+            //             const targetFile = filesPath + id + '/' + file;
+            //             const source = filesPath + fromId + '/' + file;
+            //             fs.writeFileSync(targetFile, fs.readFileSync(source))
+            //         }
+            //     })
+            // }
+        });
+
+        //add new sort order value to the 1st id
+        var posInt = parseInt(position, 10);
+        for (var key in compData) {
+            if (compData[key].parent === targetId) {
+                if (compData[key].sort >= posInt) {
+                    compData[key].sort = compData[key].sort + 1;
+                }
+            }
+        }
+        compData[idMap[fromIds[0]]].sort = posInt;
+        fixChildsSort(targetId);
+
+        //Save compData and backup
+        saveAllJSON(true);
+
+        //Return OK status
+        res.sendStatus(200);
+        res.end('');
+        //console.log("saving script"+ JSON.stringify(foundRow));
+
+    } else {
+        //error detected. Return error message
+        res.sendStatus(500);
+        res.end("Error:System ID not found - " + errorID)
+    }
+
+});
+
+router.get("/move",function(req,res){
+    //console.log("move...");
+    var id = req.query.id;
+    var direction = req.query.direction[0]; //either u or d
+    var oldPos = compData[id].sort;
+    var otherId="";
+
+    if(!id || !direction){
+        res.end('');
+    }
+
+    var parent = compData[id].parent;
+
+    fixChildsSort(parent);
+
+    var beforeId = '';
+    var afterId = '';
+
+    //get all siblings
+    var siblings = [];
+    for (var key in compData) {
+        if(compData.hasOwnProperty(key)){
+            if (parent === compData[key].parent) {
+                //console.log("found: " , compData[key].name,  compData[key].sort, parent , compData[key].parent);
+                siblings.push(key);
+            }
+        }
+    }
+
+    //sort
+    siblings.sort((a, b) => (compData[a].sort > compData[b].sort) ? 1 : -1);
+
+    //re-apply sort # because there could be dups or gaps
+    var x = 0;
+    for (var key in siblings) {
+        compData[siblings[key]].sort = x;
+        x++
+    }
+
+    //find the before and after ids
+    for (var key in siblings) {
+        if (compData[id].sort + 1 === compData[siblings[key]].sort ){
+            afterId = siblings[key]
+        }
+        if (compData[id].sort - 1 === compData[siblings[key]].sort ){
+            beforeId = siblings[key]
+        }
+    }
+
+    //set new sort para for current and before if up
+    //var newPos = compData[posId].sort;
+    if(direction === 'u' && beforeId !== ''){
+        var tmp = compData[beforeId].sort;
+        compData[beforeId].sort = compData[id].sort;
+        compData[id].sort = tmp;
+        otherId = beforeId;
+    }
+
+    //set new sort para for current and after if down
+    if(direction === 'd' && afterId !== ''){
+        var tmp = compData[afterId].sort;
+        compData[afterId].sort = compData[id].sort;
+        compData[id].sort = tmp;
+        otherId = afterId;
+    }
+
+    //Save the resorted SystemJSON
+    saveAllJSON(true);
+
+    var newPos = compData[id].sort;
+    res.writeHead(200, {"Content-Type": "application/json"});
+    res.end(JSON.stringify({newPos:newPos, oldPos:oldPos, otherId:otherId}));
+
+});
+
+
+function fixChildsSort(parentId){
+    //get all siblings
+    var siblings = [];
+    for (var key in compData) {
+        if(compData.hasOwnProperty(key)){
+            if (parentId === compData[key].parent) {
+                siblings.push(key);
+            }
+        }
+    }
+
+    //sort
+    siblings.sort((a, b) => (compData[a].sort > compData[b].sort) ? 1 : -1);
+
+    //re-apply sort # because there could be dups or gaps
+    var x = 0;
+    for (var key in siblings) {
+        compData[siblings[key]].sort = x;
+        x++
+    }
+}
+
+
+function saveAllJSON(backup) {
     //console.log("saving");
     fs.writeFile(__dirname + '/compData.json', JSON.stringify(compData), function (err) {
         if (err) {
             console.log('There has been an error saving your component data json.');
             console.log(err.message);
             return;
-        }else if(backup){
+        } else if (backup) {
             console.log("backup");
             var dsString = new Date().toISOString();
             var fds = dsString.replace(/_/g, '-').replace(/T/, '-').replace(/:/g, '-').replace(/\..+/, '');
-            const fname = 'compData'+fds+'.json';
+            const fname = 'compData' + fds + '.json';
             fs.writeFile(__dirname + "/backup/" + fname, JSON.stringify(compData), function (err) {
                 if (err) {
-                    console.log('There has been an error saving your json: /backup/'+fname);
+                    console.log('There has been an error saving your json: /backup/' + fname);
                     console.log(err.message);
                     return;
-                }else{
+                } else {
                     var x = 1;
-                    fs.readdir(__dirname + "/backup/", function(err, files){ // delete older backups files
-                        if (err){
+                    fs.readdir(__dirname + "/backup/", function (err, files) { // delete older backups files
+                        if (err) {
                             console.log("Error reading " + __dirname + "/backup/ dir\n" + err);
-                        }else{
-                            files.forEach(function(mFile){
-                                if (fs.statSync(__dirname + "/backup/" + mFile).isFile()){
-                                    if((x + 20) <  files.length){
+                        } else {
+                            files.forEach(function (mFile) {
+                                if (fs.statSync(__dirname + "/backup/" + mFile).isFile()) {
+                                    if ((x + 20) < files.length) {
                                         //console.log("removing"  + __dirname + "/backup/" + mFile );
                                         fs.unlinkSync(__dirname + "/backup/" + mFile)
                                     }
