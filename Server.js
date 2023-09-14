@@ -4,6 +4,9 @@ var bodyParser = require("body-parser");
 var cors = require('cors');
 
 var http = require('http');
+const https = require('https');
+
+const {NodeSSH} = require('node-ssh')
 //<add_Requires>
 
 var app = express();
@@ -114,6 +117,7 @@ router.post("/saveComp", function (req, res) {
         retId = id
         compData[id].text = reqJSON.text
         compData[id].script = reqJSON.script
+        compData[id].description = reqJSON.description
     } else {
         let id = generateUUID();
         retId = id
@@ -121,6 +125,7 @@ router.post("/saveComp", function (req, res) {
         compData[id].text = reqJSON.text
         compData[id].parent = reqJSON.parent
         compData[id].script = reqJSON.script
+        compData[id].description = reqJSON.description
 
     }
 
@@ -451,6 +456,13 @@ app.use("*", function (req, res) {
     //console.log('404 '+ req.baseUrl)
 });
 
-http.createServer(app).listen('8088');
-console.log("Express server listening on port 8088");
-//<add_listen>
+// http.createServer(app).listen('80');
+// console.log("Express server listening on port 80");
+
+var secureServer = https.createServer({
+    key: fs.readFileSync('/home/ubuntu/.ssh/privkey.pem'),
+    cert: fs.readFileSync('/home/ubuntu/.ssh/fullchain.pem'),
+    rejectUnauthorized: false
+}, app).listen('8443', function() {
+    console.log("Secure Express server listening on port 8443");
+});

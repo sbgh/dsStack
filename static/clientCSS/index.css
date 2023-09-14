@@ -129,3 +129,42 @@ div#tCol-handle {
     cursor: w-resize;
 }
 
+div#dashCompDescription {
+    height: auto;
+    min-height: 100px;
+    padding: 4px 4px;
+    margin: 10px 5px;
+}
+
+div#comp-script {
+    margin: 10px 5px;
+}
+
+input#comp-name-edit {
+    margin: 10px 5px;
+}
+
+.ql-toolbar.ql-snow {
+    margin: 10px 5px;
+    padding: 0;
+}
+
+div#button-row {
+    margin: 10px 5px;
+}
+
+div#comp-name {
+    margin: 10px 5px;
+}
+
+div#console-button-row{
+    margin: 10px 5px;
+    float: right;
+}
+
+textbox#settingsKey1 {
+    width: 100%;
+    height: 200px;
+    display: block;
+    box-shadow: 3px 3px 2px 3px #c2c2c2;
+}
