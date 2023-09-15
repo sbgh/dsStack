@@ -168,3 +168,16 @@ textbox#settingsKey1 {
     display: block;
     box-shadow: 3px 3px 2px 3px #c2c2c2;
 }
+
+div#console {
+    width: 2000px;
+}
+div#cCol {
+    width: 331px;
+    flex: 1 1 auto;
+    overflow: auto;
+}
+
+div#connectPick {
+    display: inline-block;
+}

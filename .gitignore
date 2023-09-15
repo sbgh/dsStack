@@ -133,3 +133,4 @@ access.log
 views/builder.ejs
 
 backup/
+views/builder.js

@@ -6,7 +6,9 @@ var cors = require('cors');
 var http = require('http');
 const https = require('https');
 
-const {NodeSSH} = require('node-ssh')
+// const { NodeSSH } = require('node-ssh')
+const Client = require('ssh2').Client
+const formidable = require('formidable');
 //<add_Requires>
 
 var app = express();
@@ -37,7 +39,7 @@ app.use(express.static('static'));
 
 global.compData = JSON.parse(fs.readFileSync(__dirname + '/compData.json'));
 
-const config = {"username":"admin"}
+const config = { "username": "admin" }
 
 function generateUUID() {
     var d = new Date().getTime();
@@ -254,7 +256,7 @@ router.post("/copy", function (req, res) {
                 // NewRow.icon = fromNode.icon;
 
                 NewRow.script = fromNode.script;
-                
+
                 if (fromNode.hasOwnProperty('thumbnail')) {
                     NewRow.thumbnail = fromNode.thumbnail;
                 }
@@ -304,14 +306,14 @@ router.post("/copy", function (req, res) {
 
 });
 
-router.get("/move",function(req,res){
+router.get("/move", function (req, res) {
     //console.log("move...");
     var id = req.query.id;
     var direction = req.query.direction[0]; //either u or d
     var oldPos = compData[id].sort;
-    var otherId="";
+    var otherId = "";
 
-    if(!id || !direction){
+    if (!id || !direction) {
         res.end('');
     }
 
@@ -325,7 +327,7 @@ router.get("/move",function(req,res){
     //get all siblings
     var siblings = [];
     for (var key in compData) {
-        if(compData.hasOwnProperty(key)){
+        if (compData.hasOwnProperty(key)) {
             if (parent === compData[key].parent) {
                 //console.log("found: " , compData[key].name,  compData[key].sort, parent , compData[key].parent);
                 siblings.push(key);
@@ -345,17 +347,17 @@ router.get("/move",function(req,res){
 
     //find the before and after ids
     for (var key in siblings) {
-        if (compData[id].sort + 1 === compData[siblings[key]].sort ){
+        if (compData[id].sort + 1 === compData[siblings[key]].sort) {
             afterId = siblings[key]
         }
-        if (compData[id].sort - 1 === compData[siblings[key]].sort ){
+        if (compData[id].sort - 1 === compData[siblings[key]].sort) {
             beforeId = siblings[key]
         }
     }
 
     //set new sort para for current and before if up
     //var newPos = compData[posId].sort;
-    if(direction === 'u' && beforeId !== ''){
+    if (direction === 'u' && beforeId !== '') {
         var tmp = compData[beforeId].sort;
         compData[beforeId].sort = compData[id].sort;
         compData[id].sort = tmp;
@@ -363,7 +365,7 @@ router.get("/move",function(req,res){
     }
 
     //set new sort para for current and after if down
-    if(direction === 'd' && afterId !== ''){
+    if (direction === 'd' && afterId !== '') {
         var tmp = compData[afterId].sort;
         compData[afterId].sort = compData[id].sort;
         compData[id].sort = tmp;
@@ -374,17 +376,17 @@ router.get("/move",function(req,res){
     saveAllJSON(true);
 
     var newPos = compData[id].sort;
-    res.writeHead(200, {"Content-Type": "application/json"});
-    res.end(JSON.stringify({newPos:newPos, oldPos:oldPos, otherId:otherId}));
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ newPos: newPos, oldPos: oldPos, otherId: otherId }));
 
 });
 
 
-function fixChildsSort(parentId){
+function fixChildsSort(parentId) {
     //get all siblings
     var siblings = [];
     for (var key in compData) {
-        if(compData.hasOwnProperty(key)){
+        if (compData.hasOwnProperty(key)) {
             if (parentId === compData[key].parent) {
                 siblings.push(key);
             }
@@ -402,6 +404,138 @@ function fixChildsSort(parentId){
     }
 }
 
+
+router.post("/run", function (req, res) {
+
+    var form = new formidable.IncomingForm();
+
+    // var ids, runChildren, settingsHostName1, settingsLoginName1, settingsKey1
+
+    form.parse(req, function (err, fields, files) {
+        if (err) {
+            console.log(err);
+            //message(err);
+        } else {
+
+            ids = fields.ids[0];
+            runChildren = fields.runChildren[0];
+
+            settingsHostName1 = fields.settingsHostName1[0];
+            settingsLoginName1 = fields.settingsLoginName1[0];
+            settingsKey1 = fields.settingsKey1[0];
+
+        }
+    });
+    form.multiples = false;
+    form.uploadDir = __dirname;
+
+    // log any errors
+    form.on('error', function (err) {
+        console.log('An error has occured.\n/run \n' + err);
+    });
+
+    // once form is uploaded, run first component
+    form.on('end', function () {
+        res.setHeader('Connection', 'Transfer-Encoding');
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        res.setHeader('Transfer-Encoding', 'chunked');
+
+        conn = new Client(); //connection obj
+
+        //connection error event. Message UI
+        conn.on('error', function (err) {
+            console.log('SSH - Connection Error: ' + err);
+            // message('SSH - Connection Error: ' + err);
+            // flushMessQueue();
+            res.end("status:Scripts Aborted\n");
+        });
+
+        //connection (job run) end event.
+        conn.on('end', function () {
+
+        });
+
+        //connection ready event. create shell and send commands
+        conn.on('ready', function () {
+            // message('connected To: ' + connectHost);
+            runScript(ids);
+        });
+
+        function runScript(id){
+            var respBufferAccu = new Buffer.from([]); 
+            var prompt = "[SysStack]"; 
+            
+            conn.shell(function (err, stream) {
+                if (err) throw err;
+
+                const script = compData[id].script.split("\n")
+                var lineInx=0
+
+                stream.on('close', function (code, signal){
+                    var dsString = new Date().toISOString(); //date stamp
+                    
+                });
+
+                //event when data is returned on ssh session
+                stream.on('data', function (data) {
+                    //send data to ui
+                    res.write(data.toString());
+
+                    respBufferAccu = Buffer.concat([respBufferAccu, data]);
+
+                    if( respBufferAccu.toString().includes(prompt) ){
+                        respBufferAccu = new Buffer.from([]);
+
+                        if(lineInx < script.length){
+                            stream.write(script[lineInx] + '\n');
+                        }else{
+                            lineInx=0
+                            stream.write("exit" + '\n');
+                        }
+                        lineInx++
+
+                        
+                    }
+                });
+
+                stream.stderr.on('data', function (data) {
+                    console.log('STDERR: ' + data);
+                    res.end('STDERR: ' + data);
+                });
+
+                //first command
+                stream.write('stty cols 200' + '\n' + "PS1='[SysStack]'" + '\n\n\n'); //set prompt
+                
+                
+            });
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        conOptions = {
+            host: settingsHostName1,
+            port: '22',
+            username: settingsLoginName1,
+            privateKey: settingsKey1
+        }
+        conn.connect(conOptions);
+
+
+
+
+    })
+
+
+
+
+});
 
 function saveAllJSON(backup) {
     //console.log("saving");
@@ -463,6 +597,6 @@ var secureServer = https.createServer({
     key: fs.readFileSync('/home/ubuntu/.ssh/privkey.pem'),
     cert: fs.readFileSync('/home/ubuntu/.ssh/fullchain.pem'),
     rejectUnauthorized: false
-}, app).listen('8443', function() {
+}, app).listen('8443', function () {
     console.log("Secure Express server listening on port 8443");
 });
