@@ -97,6 +97,8 @@ router.get("/getTree", function (req, res) {
             if (compData.hasOwnProperty(key)) {
                 var rowdata = compData[key];
                 rowdata.id = key;
+                
+                rowdata.type = "code";
                 resJSON.push(rowdata);
             }
         }
