@@ -184,28 +184,37 @@ input#comp-name-edit {
     margin: 10px 5px;
     display: inline-block;
 }
-
+.form-control:focus {
+    color: #545454;
+    background-color: #fff;
+    border-color: #959595;
+    outline: 0;
+    box-shadow: 0 0 0 .2rem rgba(134, 134, 134, 0.25);
+}
 input#searchInput {
-    width: 100%;
     max-width: 152px;
+    min-width: 60px;
     padding: 0px;
     line-height: 10px;
     font-size: 13px;
     display: inline-block;
+    height: 20px;
+    width: 100%;
+    padding-left: 5px;
+    margin-top: 2px;
 }
 .tCol-top-row {
     text-wrap: nowrap;
 }
-.search-group {
-    float: right;
-    width: calc(100% - 150px);
-    max-width: 200px;
+#compSearch {
+    display: inline-block;
+    width: calc(100% - 120px);
     margin-bottom: 0px;
     padding-left: 5px;
 }
 
 i#search-icon {
-    float: right;
+    /* float: right; */
 }
 
 div#comp-name {

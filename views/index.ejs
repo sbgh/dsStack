@@ -131,7 +131,11 @@
                 //console.log('saved');
             }).on('refresh.jstree', function (e, data) {
                 $('#jstree_div').jstree('select_node', selectedNode);
-                $('#jstree_div').jstree(true).get_node(selectedNode, true).children('.jstree-anchor').focus();
+                let nd = $('#jstree_div').jstree(true).get_node(selectedNode, true)
+                if(nd.children){
+                    $('#jstree_div').jstree(true).get_node(selectedNode, true).children('.jstree-anchor').focus()
+                }
+                
             });
 
             //tree click
@@ -868,6 +872,17 @@
 
                 });
             }
+        
+            $("#search-icon").on("click", function () {
+                $('#jstree_div').jstree(true).refresh(true);
+                //    $('#jstree_div').jstree(true).redraw(true);
+            });
+            $("#searchInput").on('keyup', function (e) {
+                if (e.keyCode == 13) {
+                    $('#jstree_div').jstree(true).refresh(true);
+                }
+            });
+            
         });
 
     </script>
@@ -911,10 +926,10 @@
                             <i id="moveUpBtn" class="fa fa-chevron-up fa-fw"></i>
                             <i id="moveDnBtn" class="fa fa-chevron-down fa-fw"></i>
                         </div>
-                        <span id="compSearch" class="form-group search-group">
+                        <div id="compSearch" class="form-group search-group">
                             <input class="form-control form-custom searchInput" placeholder="" id="searchInput">
-                        </span>
-                        <i id="search-icon" class="fa fa-search  fa-fw search-icon"></i>
+                            <i id="search-icon" class="fa fa-search  fa-fw search-icon"></i>
+                        </div>
                     </div>
 
                     

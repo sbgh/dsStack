@@ -85,21 +85,61 @@ router.get("/", function (req, res) {
 router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
+    var rowdata = compData[id];
+
+    var searchSt = ""
+    if (req.query.hasOwnProperty("searchSt")) {
+        if (req.query.searchSt.trim() !== "") {
+            searchSt = req.query.searchSt.toLowerCase()
+        }
+    }
+
     res.writeHead(200, { "Content-Type": "application/json" });
     var resJSON = [];
     if (id !== '#') {
-        var rowdata = compData[id];
+
         //console.log('gv:' + compData[id].variables);
         rowdata.id = id;
+
         resJSON.push(rowdata);
     } else {
+        var found = false
+        var foundIds = [];
         for (var key in compData) {
             if (compData.hasOwnProperty(key)) {
                 var rowdata = compData[key];
-                rowdata.id = key;
-                
-                rowdata.type = "code";
-                resJSON.push(rowdata);
+
+                found = false
+                if (searchSt === "" || !rowdata.hasOwnProperty("text") || !rowdata.hasOwnProperty("description") || !rowdata.hasOwnProperty("script")) {
+                    found = true
+                } else 
+                if (rowdata.text.toLowerCase().includes(searchSt)) {
+                    found = true
+                    rowdata.found = true
+                } else if (rowdata.description.ops.some(str => str.insert.toLowerCase().includes(searchSt))) {
+                    found = true
+                    rowdata.found = true
+                } else if (rowdata.script.toLowerCase().includes(searchSt)) {
+                    found = true
+                    rowdata.found = true
+                }
+
+                if (found === true) {
+
+                    var a = compData[key].parent
+                    while (a && a !== '#') {
+                        if (!foundIds.includes(compData[a].id)){
+                            resJSON.unshift(compData[a])
+                            foundIds.push(a)
+                        }
+                        a = compData[a].parent
+                    }
+
+                    rowdata.id = key
+                    rowdata.type = "code"
+                    resJSON.push(rowdata)
+                    foundIds.push(key)
+                }
             }
         }
     }
@@ -463,19 +503,19 @@ router.post("/run", function (req, res) {
             runScript(ids);
         });
 
-        function runScript(id){
-            var respBufferAccu = new Buffer.from([]); 
-            var prompt = "[SysStack]"; 
-            
+        function runScript(id) {
+            var respBufferAccu = new Buffer.from([]);
+            var prompt = "[SysStack]";
+
             conn.shell(function (err, stream) {
                 if (err) throw err;
 
                 const script = compData[id].script.split("\n")
-                var lineInx=0
+                var lineInx = 0
 
-                stream.on('close', function (code, signal){
+                stream.on('close', function (code, signal) {
                     var dsString = new Date().toISOString(); //date stamp
-                    
+
                 });
 
                 //event when data is returned on ssh session
@@ -485,18 +525,18 @@ router.post("/run", function (req, res) {
 
                     respBufferAccu = Buffer.concat([respBufferAccu, data]);
 
-                    if( respBufferAccu.toString().includes(prompt) ){
+                    if (respBufferAccu.toString().includes(prompt)) {
                         respBufferAccu = new Buffer.from([]);
 
-                        if(lineInx < script.length){
+                        if (lineInx < script.length) {
                             stream.write(script[lineInx] + '\n');
-                        }else{
-                            lineInx=0
+                        } else {
+                            lineInx = 0
                             stream.write("exit" + '\n');
                         }
                         lineInx++
 
-                        
+
                     }
                 });
 
@@ -507,20 +547,11 @@ router.post("/run", function (req, res) {
 
                 //first command
                 stream.write('stty cols 200' + '\n' + "PS1='[SysStack]'" + '\n\n\n'); //set prompt
-                
-                
+
+
             });
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
         conOptions = {
             host: settingsHostName1,
             port: '22',
@@ -528,9 +559,6 @@ router.post("/run", function (req, res) {
             privateKey: settingsKey1
         }
         conn.connect(conOptions);
-
-
-
 
     })
 
