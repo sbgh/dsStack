@@ -35,7 +35,7 @@
         integrity="sha512-8qmis31OQi6hIRgvkht0s6mCOittjMa9GMqtK9hes5iEQBQE/Ca6yGE5FsW36vyipGoWQswBj/QBm2JR086Rkw=="
         crossorigin="anonymous"></script>
 
-    <script src="/jstree-3.3.15/dist/jstree.min.js"></script>
+    <script src="/jstree-3.3.15/dist/jstree.js"></script>
     <link rel="stylesheet" href="/jstree-3.3.15/dist/themes/default/style.min.css">
 
     <script src="https://www.unpkg.com/ace-builds@latest/src-noconflict/ace.js"></script>
@@ -132,10 +132,10 @@
             }).on('refresh.jstree', function (e, data) {
                 $('#jstree_div').jstree('select_node', selectedNode);
                 let nd = $('#jstree_div').jstree(true).get_node(selectedNode, true)
-                if(nd.children){
+                if (nd.children) {
                     $('#jstree_div').jstree(true).get_node(selectedNode, true).children('.jstree-anchor').focus()
                 }
-                
+
             });
 
             //tree click
@@ -859,9 +859,12 @@
 
                             newLines.forEach(function (row) {
 
-                                $("#console").append(row + '<br>');
-                                $('#console')[0].scrollTop = $('#console')[0].scrollHeight;
+                                $("#console").append(row + '<br>')
+                                $('#console')[0].scrollTop = $('#console')[0].scrollHeight
                             })
+                            const console = document.querySelector("#console");
+                            console.focus()
+                            setEndOfContenteditable(console)
                         };
                         return xhr;
                     }
@@ -872,7 +875,7 @@
 
                 });
             }
-        
+
             $("#search-icon").on("click", function () {
                 $('#jstree_div').jstree(true).refresh(true);
                 //    $('#jstree_div').jstree(true).redraw(true);
@@ -882,7 +885,19 @@
                     $('#jstree_div').jstree(true).refresh(true);
                 }
             });
-            
+
+            function setEndOfContenteditable(elem) {
+                let sel = window.getSelection()
+                sel.selectAllChildren(elem)
+                sel.collapseToEnd()
+            }
+
+            $("#console").on("click", function () {
+                const console = document.querySelector("#console")                          
+                setEndOfContenteditable(console)
+            })
+
+
         });
 
     </script>
@@ -932,7 +947,7 @@
                         </div>
                     </div>
 
-                    
+
                     <div id="jstree_div" class="jstree-default">
                     </div>
                 </div>

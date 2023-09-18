@@ -112,23 +112,23 @@ router.get("/getTree", function (req, res) {
                 found = false
                 if (searchSt === "" || !rowdata.hasOwnProperty("text") || !rowdata.hasOwnProperty("description") || !rowdata.hasOwnProperty("script")) {
                     found = true
-                } else 
-                if (rowdata.text.toLowerCase().includes(searchSt)) {
-                    found = true
-                    rowdata.found = true
-                } else if (rowdata.description.ops.some(str => str.insert.toLowerCase().includes(searchSt))) {
-                    found = true
-                    rowdata.found = true
-                } else if (rowdata.script.toLowerCase().includes(searchSt)) {
-                    found = true
-                    rowdata.found = true
-                }
+                } else
+                    if (rowdata.text.toLowerCase().includes(searchSt)) {
+                        found = true
+                        rowdata.found = true
+                    } else if (rowdata.description.ops.some(str => str.insert.toLowerCase().includes(searchSt))) {
+                        found = true
+                        rowdata.found = true
+                    } else if (rowdata.script.toLowerCase().includes(searchSt)) {
+                        found = true
+                        rowdata.found = true
+                    }
 
                 if (found === true) {
 
                     var a = compData[key].parent
                     while (a && a !== '#') {
-                        if (!foundIds.includes(compData[a].id)){
+                        if (!foundIds.includes(compData[a].id)) {
                             resJSON.unshift(compData[a])
                             foundIds.push(a)
                         }
@@ -446,12 +446,46 @@ function fixChildsSort(parentId) {
     }
 }
 
+var connections = []
+var shells = []
+function getConn(conOptions, ids, res, callback) {
+    if (connections.length !== 1) {
+        connections = []
+
+        var c = new Client();
+
+        c.connect(conOptions);
+        c.on('error', function (err) {
+            console.log('SSH - Connection Error: ' + err);
+        });
+
+        //connection (job run) end event.
+        c.on('end', function () {
+
+        });
+
+        //connection ready event. create shell and send commands
+        c.on('ready', function () {
+            c.shell(function (err, stream) {
+                let conObj = { "err": err, "conn": c, "stream": stream }
+                connections.push(conObj)
+
+                streamEvents(stream, res)
+                stream.write('stty cols 200' + '\n' + "PS1='[SysStack]'" + '\n\n\n'); //set prompt
+
+                callback(ids, stream)
+            })
+        });
+
+
+    } else {
+        callback(ids, connections[0].stream)
+    }
+}
 
 router.post("/run", function (req, res) {
 
     var form = new formidable.IncomingForm();
-
-    // var ids, runChildren, settingsHostName1, settingsLoginName1, settingsKey1
 
     form.parse(req, function (err, fields, files) {
         if (err) {
@@ -482,90 +516,66 @@ router.post("/run", function (req, res) {
         res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
 
-        conn = new Client(); //connection obj
-
-        //connection error event. Message UI
-        conn.on('error', function (err) {
-            console.log('SSH - Connection Error: ' + err);
-            // message('SSH - Connection Error: ' + err);
-            // flushMessQueue();
-            res.end("status:Scripts Aborted\n");
-        });
-
-        //connection (job run) end event.
-        conn.on('end', function () {
-
-        });
-
-        //connection ready event. create shell and send commands
-        conn.on('ready', function () {
-            // message('connected To: ' + connectHost);
-            runScript(ids);
-        });
-
-        function runScript(id) {
-            var respBufferAccu = new Buffer.from([]);
-            var prompt = "[SysStack]";
-
-            conn.shell(function (err, stream) {
-                if (err) throw err;
-
-                const script = compData[id].script.split("\n")
-                var lineInx = 0
-
-                stream.on('close', function (code, signal) {
-                    var dsString = new Date().toISOString(); //date stamp
-
-                });
-
-                //event when data is returned on ssh session
-                stream.on('data', function (data) {
-                    //send data to ui
-                    res.write(data.toString());
-
-                    respBufferAccu = Buffer.concat([respBufferAccu, data]);
-
-                    if (respBufferAccu.toString().includes(prompt)) {
-                        respBufferAccu = new Buffer.from([]);
-
-                        if (lineInx < script.length) {
-                            stream.write(script[lineInx] + '\n');
-                        } else {
-                            lineInx = 0
-                            stream.write("exit" + '\n');
-                        }
-                        lineInx++
-
-
-                    }
-                });
-
-                stream.stderr.on('data', function (data) {
-                    console.log('STDERR: ' + data);
-                    res.end('STDERR: ' + data);
-                });
-
-                //first command
-                stream.write('stty cols 200' + '\n' + "PS1='[SysStack]'" + '\n\n\n'); //set prompt
-
-
-            });
-        }
-
         conOptions = {
             host: settingsHostName1,
             port: '22',
             username: settingsLoginName1,
             privateKey: settingsKey1
         }
-        conn.connect(conOptions);
+        getConn(conOptions, ids, res, runScript)
 
     })
 
+    function runScript(id, stream) {
 
+        var respBufferAccu = new Buffer.from([]);
+        var prompt = "[SysStack]";
+       
+        // res.write("running: " + id+ '\n');
+        stream.write("#running: " + id+ '\n');
+
+        const script = compData[id].script ? compData[id].script.split("\n") : ""
+        var lineInx = 0
+
+        stream.removeAllListeners('data');
+
+        stream.on('data', function (data) {
+            //send data to ui
+            res.write(data.toString());
+            // console.log("res write")
+    
+            respBufferAccu = Buffer.concat([respBufferAccu, data]);
+    
+            if (respBufferAccu.toString().includes(prompt)) {
+                respBufferAccu = new Buffer.from([]);
+    
+                if (lineInx < script.length) {
+                    stream.write(script[lineInx] + '\n');
+                } else {
+                    // console.log("res end")
+                }
+                lineInx++
+            }
+        });
+    }
 
 
 });
+
+function streamEvents(stream, res){
+
+    stream.on('close', function (code, signal) {
+        var dsString = new Date().toISOString(); //date stamp
+        console.log('Stream close: ' + dsString);
+        res.end();
+
+    });
+
+    stream.stderr.on('data', function (data) {
+        console.log('STDERR: ' + data);
+        res.end('STDERR: ' + data);
+    });
+}
 
 function saveAllJSON(backup) {
     //console.log("saving");
@@ -617,7 +627,6 @@ app.use("/", router);
 
 app.use("*", function (req, res) {
     res.status(404).sendFile(__dirname + "/404.html");
-    //console.log('404 '+ req.baseUrl)
 });
 
 // http.createServer(app).listen('80');
