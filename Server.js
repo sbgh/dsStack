@@ -1,4 +1,7 @@
 var express = require("express");
+
+var WebSocket = require('ws');
+
 var fs = require('fs');
 var bodyParser = require("body-parser");
 var cors = require('cors');
@@ -396,9 +399,7 @@ router.get("/move", function (req, res) {
             beforeId = siblings[key]
         }
     }
-
-    //set new sort para for current and before if up
-    //var newPos = compData[posId].sort;
+    
     if (direction === 'u' && beforeId !== '') {
         var tmp = compData[beforeId].sort;
         compData[beforeId].sort = compData[id].sort;
@@ -447,7 +448,6 @@ function fixChildsSort(parentId) {
 }
 
 var connections = []
-var shells = []
 function getConn(conOptions, ids, res, callback) {
     if (connections.length !== 1) {
         connections = []
@@ -471,12 +471,11 @@ function getConn(conOptions, ids, res, callback) {
                 connections.push(conObj)
 
                 streamEvents(stream, res)
-                stream.write('stty cols 200' + '\n' + "PS1='[SysStack]'" + '\n\n\n'); //set prompt
+                stream.write('stty cols 200' + '\n' + "PS1='[SysStack] '" + '\n'); //set prompt
 
                 callback(ids, stream)
             })
         });
-
 
     } else {
         callback(ids, connections[0].stream)
@@ -638,4 +637,20 @@ var secureServer = https.createServer({
     rejectUnauthorized: false
 }, app).listen('8443', function () {
     console.log("Secure Express server listening on port 8443");
+});
+
+var wsserver = new WebSocket.Server({ server: secureServer });
+
+wsserver.on('connection', function connection(ws) {
+  ws.on('message', function(data, isBinary) {
+    var message = data.toString()
+    // const message = b.toString();
+    if (connections.length > 0) {
+        stream = connections[0].stream
+        stream.write(message)
+    }
+    console.log('received:', message);
+  });
+
+//   ws.send('something');
 });

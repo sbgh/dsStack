@@ -87,6 +87,7 @@ div#tCol {
     /* width: 255px; */
     flex: 0 0 300px;
     overflow-x: auto;
+    max-width: 30%
 }
 
 div#jstree_div {
@@ -98,7 +99,9 @@ div#jstree_div {
 div#iCol {
     /* width: 50%; */
     /* flex: 1 1 auto; */
-    flex: 0 0 300px
+    flex: 0 0 300px;
+    max-width: 60%;
+    min-width: 20%;
 }
 
 div#cCol {

@@ -140,127 +140,11 @@
 
             //tree click
             $('#jstree_div').on("select_node.jstree", function (e, data) {
-                // $("#paste_sys_lib_button").hide();
-
-                // $("#snapButton").popover('dispose').popover({
-                //     animation: true,
-                //     content: "Snap thumbnail image",
-                //     delay: { "show": 500, "hide": 100 },
-                //     trigger: 'hover',
-                placement: 'top',
-                    //     template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
-                    // });
-
-                    // if (refreshFlag || ($("#edit_button").is(":visible") && selectedNode === data.selected[0])) {
-                    // refreshFlag = false;
-                    // } else {
-
-                    // selectedWorkingNode = data.selected[0];
-                    selectedNode = data.selected[0];
-                // selectedTree = 'working'
-
+                selectedNode = data.selected[0]
 
                 $.get('/getTree', { id: selectedNode }, function (data) {
                     renderComp(data[0]);
                 });
-
-
-
-                //hide all popovers
-                // $('.clickPop').popover('hide');
-
-                //deselect Lib tree
-                // $('#jslibtree_div').jstree("deselect_all");
-
-                //console.log(data.selected);
-                if (selectedNode === 'local') {
-
-                    // $("#sysScreen").hide();
-                    // $("#jobScreen").hide();
-                    // $(".jstree-children").removeClass("jstree-codeBlock");
-
-                    //            hideBottom();
-                    //            bottomHiddenFlag = true;
-
-                    // if (!currentCopySysObj.hasOwnProperty("id")) {
-                    //     $("#paste_sys_button").hide();
-                    // } else {
-                    //     $("#paste_sys_button").show();
-                    // }
-                } else {
-                    // $("#paste_sys_button").hide();
-                    // if (data.instance.get_node(data.node.id).type === "job"
-                    //     || data.instance.get_node(data.node.id).type === "disabled"
-                    //     || data.instance.get_node(data.node.id).type === "needfull"
-                    //     || data.instance.get_node(data.node.id).type === "rerunnable") {
-
-                    //     //query backend for a specific job and update ui fields
-                    //     getJobByID(selectedNode, "read");
-
-                    //     $.get('/ClosestRerunnableAn', { id: selectedNode }, function (data) {
-                    //         const dataObj = JSON.parse(data);
-                    //         $(".jstree-children").removeClass("jstree-codeBlock");
-                    //         $("#" + dataObj.id + "_anchor").next().addClass("jstree-codeBlock");
-                    //     })
-
-                    //     highlight(selectedNode);
-                    //     $("#comType").val('Job');
-
-                    //     $("#sysScreen").hide();
-                    //     $("#jobScreen").show();
-                    //     showBottom();
-
-                    //     bottomHiddenFlag = false;
-
-                    //     setWindowHeight(currentHeight, false);
-                    //     updateResultsList(selectedNode);
-
-                    //     const targetNode = $('#jstree_div').jstree(true).get_node(data.node.id);
-                    //     const rSystemId = targetNode.parents[targetNode.parents.length - 2];
-                    //     const rSystemNode = $('#jstree_div').jstree(true).get_node(rSystemId);
-                    //     if (rSystemNode.text !== 'Library') {
-
-                    //         if ($("#componentsBtn").hasClass('active')) {
-                    //             showBottom()
-                    //         } else {
-                    //             hideBottom()
-                    //         }
-                    //     } else {
-                    //         hideBottom()
-                    //     }
-
-                    // } else {
-                    // $("#sysScreen").show();
-                    // $("#jobScreen").hide();
-                    // //                            hideBottom();
-                    // //                            bottomHiddenFlag = true;
-                    // $("#comType").val('system');
-                    // readModeSys();
-                    // getSysByID(selectedNode);
-                    // $(".jstree-children").removeClass("jstree-codeBlock");
-                    // $("#" + selectedNode + "_anchor").next().addClass("jstree-codeBlock");
-                    // updateResultsList(selectedNode);
-                    // };
-                }
-
-                // $("#results_html").html('');
-                // $("#codes_btn").hide();
-
-                // $("#results_codes").html('');
-                // $('#messageSpan').html('');
-
-                // $("#resampledNewImage").html('');
-                // $("#newImageURL").val('');
-                // $("#pasteNewImage").val('');
-
-                // var inputFields = $("#job-form-panel").find('textarea');
-                // inputFields.each(setWidth);
-                // function setWidth(index, element) {
-                //     $(element).width = '100%';
-                //     $(element).css('width', '100%');
-                //     $(element).css('margin-right', 0);
-                // }
-                // }
             });
 
             $("#newChildBtn").on("click", function () {
@@ -322,12 +206,6 @@
 
                     $("#comp-name-edit").val(name)
 
-                    // dashCompDescription = new Quill('#dashCompDescription', {
-                    //     theme: 'snow',
-                    //     modules: {
-                    //         "toolbar": true
-                    //     }
-                    // });
                     dashCompDescription.enable(false);
                     if (description.hasOwnProperty("ops")) {
                         dashCompDescription.setContents(description.ops)
@@ -652,6 +530,7 @@
                 });
             }) //setup popups
 
+            //Set flag if mouse is down while hovering column resize handles
             $(function () {
                 var widthHandle = $('#tCol-handle');
                 var widthCenterHandle = $('#iCol-handle');
@@ -739,12 +618,6 @@
                     listOfIds += ';' + childs.join(';');
                 }
                 mydata.ids = listOfIds
-
-                // if (selectedTree === 'working') {
-                //     mydata.tree = 'working'
-                // } else {
-                //     mydata.tree = pickedLib
-                // }
 
                 $.ajax({
                     type: 'post',
@@ -852,24 +725,16 @@
                             currentRespText = rText;
                             var rTextNew = remainder + ansi_up.ansi_to_html(rTextNew).replace(/(?:\r\n|\r|\n)/g, '<br>');
 
-                            var newLines = rTextNew.split('<br>');
-
-                            remainder = newLines[newLines.length - 1];
-                            newLines.pop();
-
-                            newLines.forEach(function (row) {
-
-                                $("#console").append(row + '<br>')
-                                $('#console')[0].scrollTop = $('#console')[0].scrollHeight
-                            })
+                            $("#console").append(rTextNew.replace(/ /g, "&nbsp;"))
+                            $('#console')[0].scrollTop = $('#console')[0].scrollHeight
+                            
                             const console = document.querySelector("#console");
-                            console.focus()
+                            // console.focus()
                             setEndOfContenteditable(console)
                         };
                         return xhr;
                     }
                 }).done(function (e) {
-
                     $('#jstree_div').jstree(true).refresh(true)
                 }).fail(function (e) {
 
@@ -878,7 +743,6 @@
 
             $("#search-icon").on("click", function () {
                 $('#jstree_div').jstree(true).refresh(true);
-                //    $('#jstree_div').jstree(true).redraw(true);
             });
             $("#searchInput").on('keyup', function (e) {
                 if (e.keyCode == 13) {
@@ -887,16 +751,44 @@
             });
 
             function setEndOfContenteditable(elem) {
+                // $("#console").append(" ")
                 let sel = window.getSelection()
                 sel.selectAllChildren(elem)
                 sel.collapseToEnd()
             }
 
             $("#console").on("click", function () {
-                const console = document.querySelector("#console")                          
-                setEndOfContenteditable(console)
+                // $("#console").append(" ")
+                const console = document.querySelector("#console")
+                // setEndOfContenteditable(console)
             })
 
+
+            $("#console").on('keypress', function (e) {
+                e.preventDefault();
+                keycode = e.keyCode
+                if(ws){
+                    var c = String.fromCharCode(e.which);
+                    ws.send(c);
+                }
+                
+                if (keycode == 13) {
+
+                }
+            });
+
+
+            var formData = new FormData();
+
+            var ws = new WebSocket('wss://consol.cybera.ca:8443');
+
+            ws.addEventListener('open', function (e) {
+                ws.addEventListener('message', function (e) {
+                    console.log('received:', e.data);
+                });
+
+                // ws.send('something else');
+            });
 
         });
 
