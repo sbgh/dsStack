@@ -260,15 +260,15 @@ i.fa {
 }
 
 div#console {
-    width: 2000px;
-    background: black;
-    color: rgb(176, 176, 176);
+    /* width: 2000px; */
+    background: #2b2b2b;
+    /* color: rgb(176, 176, 176); */
     padding: 5px;
-    font-family: monospace;
-    font-size: 13px;
+    /* font-family: monospace; */
+    /* font-size: 13px; */
     overflow-x: auto;
     height: calc(100vh - 115px);
-    scroll-behavior: smooth;
+    /* scroll-behavior: smooth; */
 }
 
 .jstree-wholerow.jstree-wholerow-clicked {
