@@ -9,16 +9,14 @@ var cors = require('cors');
 var http = require('http');
 const https = require('https');
 
-// const { NodeSSH } = require('node-ssh')
 const Client = require('ssh2').Client
 const formidable = require('formidable');
-//<add_Requires>
 
 var app = express();
 
 const corsOptions = {
     // origin: process.env.CORS_ALLOW_ORIGIN || '*',
-    origin: 'https://containerPlz.cybera.ca/',
+    origin: 'https://coonsol.cybera.ca/',
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
@@ -399,7 +397,7 @@ router.get("/move", function (req, res) {
             beforeId = siblings[key]
         }
     }
-    
+
     if (direction === 'u' && beforeId !== '') {
         var tmp = compData[beforeId].sort;
         compData[beforeId].sort = compData[id].sort;
@@ -420,7 +418,7 @@ router.get("/move", function (req, res) {
 
     var newPos = compData[id].sort;
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ newPos: newPos, oldPos: oldPos, otherId: otherId }));
+    res.end(JSON.stringify({ "newPos": newPos, "oldPos": oldPos, "otherId": otherId }));
 
 });
 
@@ -449,8 +447,20 @@ function fixChildsSort(parentId) {
 
 var connections = []
 function getConn(conOptions, ids, res, callback) {
-    if (connections.length !== 1) {
-        connections = []
+    let token = conOptions.token
+
+    let found = false
+    connections.forEach(function (value, index, array) {
+        if (value.token === token){
+            callback(ids, connections[index].stream, connections[index].token)
+            found = true
+        }
+    });
+
+
+
+    if (found !== true) {
+        // connections = []
 
         var c = new Client();
 
@@ -459,26 +469,27 @@ function getConn(conOptions, ids, res, callback) {
             console.log('SSH - Connection Error: ' + err);
         });
 
-        //connection (job run) end event.
+        //connection end event.
         c.on('end', function () {
 
         });
 
-        //connection ready event. create shell and send commands
+        //connection ready event. 
         c.on('ready', function () {
             c.shell(function (err, stream) {
-                let conObj = { "err": err, "conn": c, "stream": stream }
+                let token = generateUUID()
+                let conObj = { "err": err, "conn": c, "stream": stream, "token": token }
                 connections.push(conObj)
 
                 streamEvents(stream, res)
                 stream.write('stty cols 200' + '\n' + "PS1='[SysStack] '" + '\n'); //set prompt
 
-                callback(ids, stream)
+                callback(ids, stream, token)
             })
         });
 
-    } else {
-        callback(ids, connections[0].stream)
+    // } else {
+    //     callback(ids, connections[0].stream, connections[0].token)
     }
 }
 
@@ -495,9 +506,10 @@ router.post("/run", function (req, res) {
             ids = fields.ids[0];
             runChildren = fields.runChildren[0];
 
-            settingsHostName1 = fields.settingsHostName1[0];
-            settingsLoginName1 = fields.settingsLoginName1[0];
-            settingsKey1 = fields.settingsKey1[0];
+            settingsHostName = fields.settingsHostName[0];
+            settingsLoginName = fields.settingsLoginName[0];
+            settingsKey = fields.settingsKey[0];
+            token = fields.token[0];
 
         }
     });
@@ -511,27 +523,30 @@ router.post("/run", function (req, res) {
 
     // once form is uploaded, run first component
     form.on('end', function () {
-        res.setHeader('Connection', 'Transfer-Encoding');
-        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-        res.setHeader('Transfer-Encoding', 'chunked');
+        res.setHeader('Connection', 'Transfer-Encoding')
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+        res.setHeader('Transfer-Encoding', 'chunked')
+
 
         conOptions = {
-            host: settingsHostName1,
-            port: '22',
-            username: settingsLoginName1,
-            privateKey: settingsKey1
+            "host": settingsHostName,
+            "port": '22',
+            "username": settingsLoginName,
+            "privateKey": settingsKey,
+            "token": token
         }
         getConn(conOptions, ids, res, runScript)
 
     })
 
-    function runScript(id, stream) {
+    function runScript(id, stream, token) {
+        res.setHeader("access-Token", token)
 
         var respBufferAccu = new Buffer.from([]);
         var prompt = "[SysStack]";
-       
+
         // res.write("running: " + id+ '\n');
-        stream.write("#running: " + id+ '\n');
+        stream.write("#running: " + id + '\n');
 
         const script = compData[id].script ? compData[id].script.split("\n") : ""
         var lineInx = 0
@@ -540,18 +555,25 @@ router.post("/run", function (req, res) {
 
         stream.on('data', function (data) {
             //send data to ui
-            res.write(data.toString());
+            // if (data[0] == 8) {   //"\b\u001b[K\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+            //     console.log("res k " + data.toString());
+            //     res.write(8);
+            // }else{
+                res.write(data.toString());
+                console.log("res write not del " + data)
+            // }
             // console.log("res write")
-    
+
             respBufferAccu = Buffer.concat([respBufferAccu, data]);
-    
+
             if (respBufferAccu.toString().includes(prompt)) {
                 respBufferAccu = new Buffer.from([]);
-    
+
                 if (lineInx < script.length) {
                     stream.write(script[lineInx] + '\n');
-                } else {
+                } else if (lineInx === script.length) {
                     // console.log("res end")
+                    // res.end()
                 }
                 lineInx++
             }
@@ -561,7 +583,7 @@ router.post("/run", function (req, res) {
 
 });
 
-function streamEvents(stream, res){
+function streamEvents(stream, res) {
 
     stream.on('close', function (code, signal) {
         var dsString = new Date().toISOString(); //date stamp
@@ -642,15 +664,24 @@ var secureServer = https.createServer({
 var wsserver = new WebSocket.Server({ server: secureServer });
 
 wsserver.on('connection', function connection(ws) {
-  ws.on('message', function(data, isBinary) {
-    var message = data.toString()
-    // const message = b.toString();
-    if (connections.length > 0) {
-        stream = connections[0].stream
-        stream.write(message)
-    }
-    console.log('received:', message);
-  });
+    ws.on('message', function (data, isBinary) {
+        var message = JSON.parse(data.toString())
 
-//   ws.send('something');
+        connections.forEach(function (value, index, array) {
+            if (value.token === message.token){
+                stream = value.stream
+                let key  = message.key
+                stream.write(key)
+                console.log("key: " + message.key)
+            }
+        });
+
+        // if (connections.length > 0) {
+        //     stream = connections[0].stream
+        //     stream.write(message)
+        // }
+        // console.log('received:', message);
+    });
+
+    //   ws.send('something');
 });
