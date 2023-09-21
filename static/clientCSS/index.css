@@ -100,6 +100,8 @@ div#iCol {
     /* width: 50%; */
     /* flex: 1 1 auto; */
     flex: 0 0 300px;
+    display: flex;
+    flex-direction: column;
     max-width: 60%;
     min-width: 20%;
 }
@@ -160,14 +162,16 @@ div#iCol-handle {
 }
 
 div#dashCompDescription {
-    height: auto;
-    /* min-height: 100px; */
-    padding: 4px 4px;
+    flex: 1 1;
+    flex-basis: 100px;
+    max-height: 300px;
     margin: 10px 5px;
 }
 
 div#comp-script {
     margin: 10px 5px;
+    flex: 1 1;
+    flex-basis: 100%;
 }
 
 input#comp-name-edit {
@@ -282,4 +286,15 @@ div#console {
 
 .ace-clouds .ace_marker-layer .ace_active-line {
     background: #f7f7f7;
+}
+
+.jstree-default .jstree-anchor {
+    /* line-height: 24px; */
+    /* height: 24px; */
+    font-size: 13px;
+    color: #424242;
+}
+
+.jstree-default .jstree-wholerow-hovered {
+    background: #e7e7e7
 }

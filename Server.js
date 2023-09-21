@@ -546,7 +546,7 @@ router.post("/run", function (req, res) {
         var prompt = "[SysStack]";
 
         // res.write("running: " + id+ '\n');
-        stream.write("#running: " + id + '\n');
+        stream.write("#running: " + compData[id].text + '\n');
 
         const script = compData[id].script ? compData[id].script.split("\n") : ""
         var lineInx = 0
