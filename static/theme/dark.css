@@ -1,0 +1,167 @@
+
+body{
+    font-family: "Open Sans",Arial,sans-serif;
+    color: #f7f7f7;
+}
+
+input, textarea {
+    color: #f7f7f7;
+}
+
+button{
+    color: #dedede;
+}
+
+.navbar-nav > div > .dropdown-menu { 
+    color: #dedede;
+    background-color: #242424; 
+}
+
+a.dropdown-item.newCompVarTypeDropdownItem{
+    color: #dedede;
+    background-color: #242424; 
+}
+
+div#newCompVarTypeDropdownMenu {
+    background-color: black;
+}
+
+a {
+    color: #dedede;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+.pop-bar {
+    border-top: 0px solid rgb(147, 147, 147);
+    border-bottom: 0px solid rgba(147, 147, 147, 1);
+}
+
+#navbarNav-outer {
+    background-image: url('');
+    background-color: #242424;
+}
+
+#navbarNav .navbar-brand>B {
+    color: #dadada;
+}
+
+#navbarNav .nav-item>a {
+    color: #d5d5d5;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+.modal-body {
+    background-color: #242424;
+}
+.modal-header {
+    background-color: #272727;
+}
+.modal-footer {
+    background-color: #272727;
+}
+
+.rrow {
+    background-color: #1d1d1d;
+    box-shadow: rgba(17, 18, 38, 0.15) 0px 0px 0px 0px;
+    transition: background 200ms ease 0s, box-shadow 200ms ease 0s;
+    padding-top: 60px;
+}
+.main {
+    background: #1c1c1c7b;
+    backdrop-filter: blur(8px);
+}
+
+div#tCol-handle {
+    background: black;
+}
+
+div#iCol-handle {
+    background: rgb(0, 0, 0);
+}
+
+.form-control:focus {
+    color: #cecece;
+    background-color: #393939;
+    border-color: #959595;
+    box-shadow: 0 0 0 0rem rgba(134, 134, 134, 0.25);
+}
+
+i#settingsBtn {
+    float: right;
+}
+
+input, textarea, .searchInput {
+    color: #f7f7f7;
+    background-color: #323232;
+}
+
+textarea#settingsKey1 {
+    color: transparent;
+    text-shadow: rgb(206, 206, 206) 0px 0px 8px;
+}
+
+div#console {
+    background: #000000;
+}
+
+.jstree-wholerow.jstree-wholerow-clicked {
+    background: #494949;
+}
+
+.ace-clouds .ace_gutter {
+    background: #0c0c0c;
+    color: #c5c5c5;
+}
+
+.ace-clouds .ace_marker-layer .ace_active-line {
+    background: #3a3a3a;
+}
+
+.jstree-default .jstree-anchor {
+    color: #a3a3a3;
+}
+
+.jstree-default .jstree-wholerow-hovered {
+    background: #494949
+}
+
+.table {
+    color: #bbbbbb;
+}
+
+.newCompVarTypeButton {
+    background: none;
+}
+
+.newCompVarName, .newCompVarValue {
+    color: #f7f7f7;
+    background-color: #323232;
+
+}
+
+.colorPicker {
+    border-width: 0px;
+    border-style: solid;
+    border-color: rgb(109, 109, 109);
+    background-color: transparent;
+    color: rgb(197, 197, 197);
+}
+
+.colorPickerView {
+    border-style: solid;
+    border-color: rgb(93, 93, 93);
+    background-color: transparent;
+    color: rgb(198, 198, 198);
+}
+
+.btn{
+    color: rgb(198, 198, 198);
+}
+
+.btn:hover {
+    color: #bfbfbf;
+    text-decoration: none;
+}
+

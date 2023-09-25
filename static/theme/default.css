@@ -1,0 +1,126 @@
+
+body{
+    font-family: "Open Sans",Arial,sans-serif;
+}
+
+a {
+    color: #000000;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+.pop-bar {
+    border-top: 0px solid rgba(46, 46, 47, 1);
+    border-bottom: 0px solid rgba(47, 46, 47, 1);
+}
+
+#navbarNav-outer {
+    background-image: url('');
+    background-color: #ffffff;
+}
+
+#navbarNav .navbar-brand>B {
+    color: #000000;
+}
+
+#navbarNav .nav-item>a {
+    color: #000000;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+.rrow {
+    background-color: #ffffff;
+    box-shadow: rgba(17, 18, 38, 0.15) 0px 0px 20px 0px;
+    transition: background 200ms ease 0s, box-shadow 200ms ease 0s;
+    padding-top: 60px;
+}
+.main {
+    background: #ffffff7b;
+    backdrop-filter: blur(8px);
+}
+
+input, textarea, .searchInput {
+    color: #000;
+    background-color: #e2e2e2;
+}
+
+div#tCol-handle {
+    background: black;
+}
+
+div#iCol-handle {
+    background: black;
+}
+
+.form-control:focus {
+    color: #545454;
+    background-color: #fff;
+    border-color: #959595;
+    box-shadow: 0 0 0 .2rem rgba(134, 134, 134, 0.25);
+}
+
+i#settingsBtn {
+    float: right;
+}
+
+textarea#settingsKey1 {
+    color: transparent;
+    text-shadow: rgb(0, 0, 0) 0px 0px 8px;
+}
+
+
+div#console {
+    background: #ebebeb;
+}
+
+.jstree-wholerow.jstree-wholerow-clicked {
+    background: #d8d8d8;
+}
+
+.ace-clouds .ace_gutter {
+    background: #ffffff;
+    color: #c5c5c5;
+}
+
+.ace-clouds .ace_marker-layer .ace_active-line {
+    background: #f7f7f7;
+}
+
+.jstree-default .jstree-anchor {
+    color: #424242;
+}
+
+.jstree-default .jstree-wholerow-hovered {
+    background: #e7e7e7
+}
+
+.table {
+    color: #212529;
+}
+
+.newCompVarTypeButton {
+    background: none;
+}
+
+.newCompVarName, .newCompVarValue {
+    color: #323232;
+    background-color: #f7f7f7  ;
+
+}
+
+.colorPicker {
+    border-width: 0px;
+    border-style: solid;
+    border-color: black;
+    background-color: transparent;
+    color: black;
+}
+
+.colorPickerView {
+    border-style: solid;
+    border-color: black;
+    background-color: transparent;
+    color: black;
+}
+

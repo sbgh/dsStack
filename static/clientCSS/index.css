@@ -1,3 +1,18 @@
+
+body{
+    font-family: "Open Sans",Arial,sans-serif;
+}
+
+div, input, textarea{
+    transition: background 200ms ease 0s, color 200ms ease 0s;
+}
+
+a {
+    color: #000000;
+    text-decoration: none;
+    background-color: transparent;
+}
+
 .pop-bar {
     padding: 0px;
     min-height: 55px;
@@ -97,8 +112,7 @@ div#jstree_div {
 }
 
 div#iCol {
-    /* width: 50%; */
-    /* flex: 1 1 auto; */
+    overflow-x: hidden;
     flex: 0 0 300px;
     display: flex;
     flex-direction: column;
@@ -191,6 +205,9 @@ input#comp-name-edit {
     margin: 10px 5px;
     display: inline-block;
 }
+.button-row.button-row-script {
+    margin-bottom: 0;
+}
 .form-control:focus {
     color: #545454;
     background-color: #fff;
@@ -264,15 +281,10 @@ i.fa {
 }
 
 div#console {
-    /* width: 2000px; */
-    background: #2b2b2b;
-    /* color: rgb(176, 176, 176); */
+    background: #ebebeb;
     padding: 5px;
-    /* font-family: monospace; */
-    /* font-size: 13px; */
     overflow-x: auto;
     height: calc(100vh - 115px);
-    /* scroll-behavior: smooth; */
 }
 
 .jstree-wholerow.jstree-wholerow-clicked {
@@ -297,4 +309,145 @@ div#console {
 
 .jstree-default .jstree-wholerow-hovered {
     background: #e7e7e7
+}
+
+.build-label {
+    white-space: nowrap;
+    font-size: .8rem;
+    font-weight: 400;
+    line-height: 24px;
+    margin-bottom: 0px;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+}
+
+.varTable > thead > tr > th {
+    padding: 0px;
+    margin-bottom: 6px;
+}
+
+.dashboardLabel, .varLabel {
+    font-size: .8rem;
+    font-weight: 400;
+    line-height: 24px;
+}
+
+.center {
+    text-align: center;
+}
+
+.dashboardLabel, .varLabel {
+    font-size: .8rem;
+    font-weight: 400;
+    line-height: 24px;
+}
+.varFlagLabels {
+    display: flex;
+    justify-content: space-between;
+}
+
+tr {
+    width: 100%;
+    display: inline-table;
+    table-layout: fixed;
+}
+
+.varRow, .actionRow {
+    white-space: nowrap;
+}
+.varRow> td {
+    font-weight: 500;
+    font-size: .8em;
+    border: none;
+    padding: 0px;
+    min-width: min-content;
+}
+
+.newCompVarName, .newCompVarValue {
+    width: 90%;
+    height: 20px;
+}
+
+.newCompVarValue {
+    padding: 0;
+    resize: none;
+}
+
+.newCompVarTypeButton {
+    background: none;
+    padding: 0;
+    border: none;
+    font-weight: 500;
+    font-size: 1.0em;
+}
+
+label.varFlag {
+    margin-bottom: 2px;
+    width: 33%;
+}
+
+.compVarButtonRow {
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.compVarEditValRow {
+    display: flex;
+    /* margin-left: -30px; */
+}
+
+.newCompVarButtonRow {
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.colorPicker {
+    padding: 0px;
+    margin: 0px;
+    padding-bottom: 3px;
+    margin-left: -27px;
+    width: 25px;
+    cursor: pointer;
+    border-width: 0px;
+    border-style: solid;
+    border-color: black;
+    background-color: transparent;
+    color: black;
+}
+
+.colorPickerView {
+    padding: 0px;
+    margin: 0px;
+    padding-bottom: 3px;
+    width: 25px;
+    cursor: default;
+    border-width: 0px;
+    border-style: solid;
+    border-color: black;
+    background-color: transparent;
+    color: black;
+}
+
+div#stylePickMenu {
+    vertical-align: top;
+    float: right;
+    padding: 0;
+    margin: 0;
+    padding-right: 10px;
+    height: 17px;
+    font-size: 14px;
+}
+
+.modal {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    /* opacity: .75; */
+    transition: backdrop-filter .3s;
+    backdrop-filter: blur(3px);
 }

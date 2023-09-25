@@ -35,7 +35,8 @@ var router = express.Router();
 // all templates are located in `/views` directory
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
-var viewPath = __dirname + '/views/';
+const viewPath = __dirname + '/views/';
+const stylesPath = __dirname + '/static/theme/';
 app.use(express.static('static'));
 
 global.compData = JSON.parse(fs.readFileSync(__dirname + '/compData.json'));
@@ -117,9 +118,17 @@ router.get("/getTree", function (req, res) {
                     if (rowdata.text.toLowerCase().includes(searchSt)) {
                         found = true
                         rowdata.found = true
-                    } else if (rowdata.description.ops.some(str => str.insert.toLowerCase().includes(searchSt))) {
-                        found = true
-                        rowdata.found = true
+                    } else if (compData[key].description.hasOwnProperty("ops")) {
+                        compData[key].description.ops.forEach(function (row) {
+                            if (row.hasOwnProperty("insert")) {
+                                var rTxt = row.insert;
+                                if (rTxt.hasOwnProperty("includes")) { //could be image
+                                    if (rTxt.includes(searchSt)) {
+                                        found = true
+                                    }
+                                }
+                            }
+                        })
                     } else if (rowdata.script.toLowerCase().includes(searchSt)) {
                         found = true
                         rowdata.found = true
@@ -128,18 +137,27 @@ router.get("/getTree", function (req, res) {
                 if (found === true) {
 
                     var a = compData[key].parent
+                    var x = 0
                     while (a && a !== '#') {
                         if (!foundIds.includes(compData[a].id)) {
                             resJSON.unshift(compData[a])
                             foundIds.push(a)
                         }
                         a = compData[a].parent
+                        x++
+                        if (x > 100) {
+                            console.log("Error: too many grand parents found during search [" + key + "]")
+                            res.end("500")
+                            return ("Error: too many grand parents found during search [" + key + "]")
+                        }
                     }
 
                     rowdata.id = key
                     rowdata.type = "code"
                     resJSON.push(rowdata)
                     foundIds.push(key)
+                } else {
+
                 }
             }
         }
@@ -163,6 +181,7 @@ router.post("/saveComp", function (req, res) {
         compData[id].text = reqJSON.text
         compData[id].script = reqJSON.script
         compData[id].description = reqJSON.description
+        compData[id].variables = reqJSON.compVariables
     } else {
         let id = generateUUID();
         retId = id
@@ -279,31 +298,31 @@ router.post("/copy", function (req, res) {
             // }
 
             //Add more properties to the new component obj if type = 'job' (ie component)
-            if (fromNode.comType === 'job') {
-                NewRow.enabled = fromNode.enabled;
-                NewRow.promoted = fromNode.promoted;
+            // if (fromNode.comType === 'job') {
+            // NewRow.enabled = fromNode.enabled;
+            // NewRow.promoted = fromNode.promoted;
 
-                NewRow.variables = {};
-                //copy vars that are not private
-                for (var ind in compData[fromId].variables) {
-                    if (compData[fromId].variables.hasOwnProperty(ind)) {
-                        if (!fromNode.variables[ind].private) {
-                            NewRow.variables[ind] = fromNode.variables[ind]
-                        } else {
-                            NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
-                            NewRow.variables[ind].value = "";
-                        }
+            NewRow.variables = {};
+            //copy vars that are not private
+            for (var ind in compData[fromId].variables) {
+                if (compData[fromId].variables.hasOwnProperty(ind)) {
+                    if (!fromNode.variables[ind].private) {
+                        NewRow.variables[ind] = fromNode.variables[ind]
+                    } else {
+                        NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
+                        NewRow.variables[ind].value = "";
                     }
                 }
-
-                // NewRow.icon = fromNode.icon;
-
-                NewRow.script = fromNode.script;
-
-                if (fromNode.hasOwnProperty('thumbnail')) {
-                    NewRow.thumbnail = fromNode.thumbnail;
-                }
             }
+
+            // NewRow.icon = fromNode.icon;
+
+            NewRow.script = fromNode.script;
+
+            // if (fromNode.hasOwnProperty('thumbnail')) {
+            //     NewRow.thumbnail = fromNode.thumbnail;
+            // }
+            // }
 
             compData[id] = NewRow;
 
@@ -451,7 +470,7 @@ function getConn(conOptions, ids, res, callback) {
 
     let found = false
     connections.forEach(function (value, index, array) {
-        if (value.token === token){
+        if (value.token === token) {
             callback(ids, connections[index].stream, connections[index].token)
             found = true
         }
@@ -482,14 +501,11 @@ function getConn(conOptions, ids, res, callback) {
                 connections.push(conObj)
 
                 streamEvents(stream, res)
-                stream.write('stty cols 200' + '\n' + "PS1='[SysStack] '" + '\n'); //set prompt
+                stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //set prompt
 
                 callback(ids, stream, token)
             })
         });
-
-    // } else {
-    //     callback(ids, connections[0].stream, connections[0].token)
     }
 }
 
@@ -503,7 +519,7 @@ router.post("/run", function (req, res) {
             //message(err);
         } else {
 
-            ids = fields.ids[0];
+            ids = fields.ids;
             runChildren = fields.runChildren[0];
 
             settingsHostName = fields.settingsHostName[0];
@@ -539,30 +555,31 @@ router.post("/run", function (req, res) {
 
     })
 
-    function runScript(id, stream, token) {
+    function runScript(ids, stream, token) {
         res.setHeader("access-Token", token)
 
         var respBufferAccu = new Buffer.from([]);
-        var prompt = "[SysStack]";
+        var prompt = "[ceStack]";
 
-        // res.write("running: " + id+ '\n');
-        stream.write("#running: " + compData[id].text + '\n');
-
-        const script = compData[id].script ? compData[id].script.split("\n") : ""
+        var script = ''
+        if (ids.length == 1 && ids[0].trim() == "") {
+            stream.write("\n");
+            script = "\n"
+        } else if (ids.length == 0) {
+            stream.write("\n");
+            script = "\n"
+        } else {
+            let id = ids[0]
+            stream.write("#running: " + compData[id].text + '\n');
+            script = compData[id].script ? compData[id].script.split("\n") : ""
+        }
         var lineInx = 0
 
         stream.removeAllListeners('data');
 
         stream.on('data', function (data) {
-            //send data to ui
-            // if (data[0] == 8) {   //"\b\u001b[K\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
-            //     console.log("res k " + data.toString());
-            //     res.write(8);
-            // }else{
-                res.write(data.toString());
-                console.log("res write not del " + data)
-            // }
-            // console.log("res write")
+            res.write(data.toString());
+            console.log("res write not del " + data)
 
             respBufferAccu = Buffer.concat([respBufferAccu, data]);
 
@@ -570,14 +587,135 @@ router.post("/run", function (req, res) {
                 respBufferAccu = new Buffer.from([]);
 
                 if (lineInx < script.length) {
-                    stream.write(script[lineInx] + '\n');
+                    var command = ""
+                    if (compData.hasOwnProperty(ids[0])) {
+                        command = replaceVar(script[lineInx], compData[ids[0]])
+                    } else {
+                        command = ''
+                    }
+
+                    stream.write(command + '\n');
                 } else if (lineInx === script.length) {
-                    // console.log("res end")
-                    // res.end()
+
                 }
                 lineInx++
             }
         });
+    }
+
+    function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{p.mVar4}}
+
+        const items = commandStr.split(new RegExp('{{', 'g'));
+        items.forEach(function (item) {
+            item = item.substr(0, item.indexOf('}}'));
+
+            if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'c.') {
+                var targetVarName = item.substr(2);
+                var pid = job.parent;
+                var repStr = "{{c." + targetVarName + "}}";
+                if (job.variables[targetVarName]) {
+                    var val = job.variables[targetVarName].value;
+                    commandStr = commandStr.replace(repStr, val)
+                }
+            } //look in job for vars
+            // if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'p.') {
+            //     var targetVarName = item.substr(2);
+            //     var pid = job.parent;
+            //     var repStr = "{{p." + targetVarName + "}}";
+            //     if (typeof latestVarCache[pid] !== "undefined"){
+            //         if (typeof latestVarCache[pid][targetVarName] !== "undefined"){
+            //             var val = latestVarCache[pid][targetVarName].replace(/\n$/, "").replace(/\r$/, "")
+            //             commandStr = commandStr.replace(repStr, val)
+            //         }
+            //     }
+            // } //look in parent for vars
+
+            // if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'a.') {
+            //     var targetVarName = item.substr(2);
+            //     var repStr = "{{a." + targetVarName + "}}";
+            //     var anArr = job.ft.replace('#/', '').split('/');
+            //     anArr.reverse().forEach(function (an) {
+            //         if (typeof latestVarCache[an] !== "undefined"){
+            //             if (typeof latestVarCache[an][targetVarName] !== "undefined"){
+            //                 var val = latestVarCache[an][targetVarName];
+            //                 commandStr = commandStr.replace(repStr, val)
+            //             }
+            //         }
+            //     })//reverse the ancestor list so that closer ancestor values are used first.
+            // } //look in ancestors for vars
+
+            // if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 's.') {
+            //     var targetVarName = item.substr(2);
+            //     var ft = job.ft;
+            //     var repStr = "{{s." + targetVarName + "}}";
+            //     var bestVal;
+            //     var relativeScore = 0; //track how close of a relative the job the varwas found in and give pref to closer relatives.
+
+            //     for (var id in SystemsJSON) { //look in all jobs for var.
+            //         if (SystemsJSON.hasOwnProperty(id) && SystemsJSON[id].comType === 'job') {
+            //             var resultsSystem = SystemsJSON[id].ft.split('/')[1];
+            //             if (resultsSystem === ft.split('/')[1]){ //if same system...
+            //                 if (typeof latestVarCache[id] !== "undefined"){
+            //                     if (typeof latestVarCache[id][targetVarName] !== "undefined"){
+            //                         var thisScore = calcRelativeScore(ft, SystemsJSON[id].ft);
+            //                         var val = latestVarCache[id][targetVarName];
+            //                         if(relativeScore < thisScore){
+            //                             relativeScore = thisScore;
+            //                             bestVal = val;
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     }
+            //     //now look in system for the var
+            //     if (typeof latestVarCache[ft.split('/')[1]] !== "undefined"){
+            //         if (typeof latestVarCache[ft.split('/')[1]][targetVarName] !== "undefined"){
+            //             var val = latestVarCache[ft.split('/')[1]][targetVarName];
+            //             var thisScore = 2;
+            //             if(relativeScore < thisScore){
+            //                 relativeScore = thisScore;
+            //                 bestVal = val;
+            //             }
+            //         }
+            //     }
+            //     if (typeof bestVal !== "undefined"){
+            //         commandStr = commandStr.replace(repStr, bestVal);
+            //     }
+            // } //look in same system for vars
+            // //function to return number of ancestors the current running job has in common with the found var job. Requires: jobFT and foundFT job ID strings separated by "/".
+            // function calcRelativeScore(jobFT, foundFT){//how many gr/parents does the current running job have in common with the found var job..
+            //     const jobFTArr = jobFT.split('/');
+            //     const foundFTArr = foundFT.split('/');
+            //     var x = 0;
+            //     var score = 0;
+            //     while((typeof jobFTArr[x] !== "undefined")&&(typeof foundFTArr[x] !== "undefined")){
+            //         if (jobFTArr[x] === foundFTArr[x]){
+            //             score++;
+            //         }
+            //         x++;
+            //     }
+            //     return score;
+            // }
+        });
+
+        //If there are any {{ patterns left in the line then raise error and abort
+        const remainingItemsCount = commandStr.split(new RegExp('{{', 'g')).length;
+        const remainingItems = commandStr.split(new RegExp('{{', 'g'));
+        if (remainingItemsCount > 1) {
+            var item = remainingItems[1]
+            item = item.substr(0, item.indexOf('}}'));
+
+            if (item.length > 2 && item.length < 32) {
+                //console.log("Error: Component Variable not found: " + item + '\n');
+                message("Error: Component Variable not found: " + item + '\n');
+                flushMessQueue();
+                sshSuccess = false;
+                // stream.close();
+                return ('');
+            }
+        }
+        return (commandStr);
     }
 
 
@@ -597,6 +735,38 @@ function streamEvents(stream, res) {
         res.end('STDERR: ' + data);
     });
 }
+
+router.get("/getStyle", function (req, res) {
+    var styleName = req.query.styleName;
+
+    //If user config does not have property to store style then add default as current style.
+    if (styleName === 'dark') {//return dark.css
+        try {
+            var cssJson = fs.readFileSync(stylesPath + 'dark.css').toString();
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            const respJson = { css: cssJson };
+            res.end(JSON.stringify(respJson));
+        } catch (e) {
+            res.writeHead(300, { "Content-Type": "text/plain" });
+            res.end('');
+            throw e;
+        }
+    } else { //return default.css
+        try {
+            var cssJson = fs.readFileSync(stylesPath + 'default.css').toString();
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            const respJson = { css: cssJson };
+            res.end(JSON.stringify(respJson));
+        } catch (e) {
+            res.writeHead(300, { "Content-Type": "text/plain" });
+            res.end('');
+            throw e;
+        }
+    }
+
+});
 
 function saveAllJSON(backup) {
     //console.log("saving");
@@ -638,8 +808,6 @@ function saveAllJSON(backup) {
     })
 }
 
-
-
 //bodyParser must be below proxy
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
@@ -668,9 +836,9 @@ wsserver.on('connection', function connection(ws) {
         var message = JSON.parse(data.toString())
 
         connections.forEach(function (value, index, array) {
-            if (value.token === message.token){
+            if (value.token === message.token) {
                 stream = value.stream
-                let key  = message.key
+                let key = message.key
                 stream.write(key)
                 console.log("key: " + message.key)
             }
