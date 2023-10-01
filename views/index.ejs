@@ -90,8 +90,6 @@
             // };
             fitAddon.fit();
 
-
-
             window.addEventListener("resize", handleResize);
 
             function handleResize() {
@@ -330,9 +328,6 @@
             });
 
 
-            //---------------------
-
-
             function loadVarTable(variables, showTools) {
                 for (var varName in variables) {
                     //new row
@@ -400,9 +395,6 @@
             }
 
 
-
-
-
             function setVarEditBtnEvent() {
 
                 $(".compVarEditButton").on('click', function () {
@@ -444,10 +436,6 @@
                 });
 
             }
-
-
-            //---------------------
-
 
             function saveComp() {
                 let id = $("#comp-id").text()
@@ -503,7 +491,6 @@
                 });
 
             }
-
 
             function readComp() {
 
@@ -893,7 +880,6 @@
                 $('#delModal').modal('toggle');
             });
 
-
             //theme
             termLightTheme = {
                 "foreground": "#53676d",
@@ -942,7 +928,7 @@
                 "brightWhite": "#3a4d53",
                 "cursor": "#3a4d53"
             }
-            
+
             term.options = {
                 fontSize: 13,
                 fontWeight: 200,
@@ -1010,6 +996,7 @@
                 })
 
             }
+
             function shuffleArray(array) {
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -1037,7 +1024,9 @@
                 {
                     "settingsHostName1": $("#settingsHostName1").val(),
                     "settingsLoginName1": $("#settingsLoginName1").val(),
-                    "settingsKey1": $("#settingsKey1").val()
+                    "settingsKey1": $("#settingsKey1").val(),
+                    // "saveHost1": $("#saveHost1").val(),
+                    // "savePath1": $("#savePath1").val()
                 }
                 localStorage['settings'] = JSON.stringify(settings)
             })
@@ -1046,6 +1035,8 @@
                 $("#settingsHostName1").val(settings.settingsHostName1)
                 $("#settingsLoginName1").val(settings.settingsLoginName1)
                 $("#settingsKey1").val(settings.settingsKey1)
+                // $("#saveHost1").val(settings.saveHost1)
+                // $("#savePath1").val(settings.savePath1)
             }
 
             //run
@@ -1056,11 +1047,9 @@
 
             $("#connectBtn").click(function (event) {
                 term.focus()
-                term.write("connecting....\n")
+                term.write("connecting....\r\n")
                 runJob([], false)
             });
-
-            
 
             $("#runConfirmButton").click(function (event) {
 
@@ -1075,7 +1064,6 @@
                 $('#runModal').modal('toggle');
             });
 
-
             var accessToken = ""
             function runJob(ids, runChildren) {
 
@@ -1086,72 +1074,87 @@
                     console.log("ERROR: Local storage 'Settings' not found")
                     return (1)
                 }
+                var runData = {}
 
-                var formData = new FormData();
-
-                formData.append('runChildren', runChildren);
-
-                formData.append('ids', ids);
-
+                runData["runChildren"] = runChildren
+                runData["ids"] = ids
                 settingsHostName = settings.settingsHostName1 ? settings.settingsHostName1 : ""
                 settingsLoginName = settings.settingsLoginName1 ? settings.settingsLoginName1 : ""
                 settingsKey = settings.settingsKey1 ? settings.settingsKey1 : ""
-                formData.append('settingsHostName', settingsHostName);
-                formData.append('settingsLoginName', settingsLoginName);
-                formData.append('settingsKey', settingsKey);
+                runData["settingsHostName"] = settingsHostName
+                runData["settingsLoginName"] = settingsLoginName
+                runData["settingsKey"] = settingsKey
+                runData["token"] = accessToken
 
-                formData.append('token', accessToken);
+                ws.send(JSON.stringify(runData))
 
-                var currentRespText = ""
-                var remainder = ""
+                // var formData = new FormData();
+                // formData.append('runChildren', runChildren);
+                // formData.append('ids', ids);
 
-                $.ajax({
-                    url: '/run',
-                    processData: false,
-                    contentType: false,
-                    type: 'POST',
-                    data: formData,
-                    xhr: function () {
+                // settingsHostName = settings.settingsHostName1 ? settings.settingsHostName1 : ""
+                // settingsLoginName = settings.settingsLoginName1 ? settings.settingsLoginName1 : ""
+                // settingsKey = settings.settingsKey1 ? settings.settingsKey1 : ""
+                // // saveHost = settings.saveHost1 ? settings.saveHost1 : ""
+                // // savePath = settings.savePath1 ? settings.savePath1 : ""
 
-                        var xhr = $.ajaxSettings.xhr();
-                        xhr.onprogress = function e() {
+                // formData.append('settingsHostName', settingsHostName);
+                // formData.append('settingsLoginName', settingsLoginName);
+                // formData.append('settingsKey', settingsKey);
+                // // formData.append('saveHost', saveHost);
+                // // formData.append('savePath', savePath);
+                // formData.append('token', accessToken);
 
-                            accessToken = xhr.getResponseHeader("access-token")
+                // var currentRespText = ""
+                // var remainder = ""
 
-                            var rText = xhr.responseText
+                // $.ajax({
+                //     url: '/run',
+                //     processData: false,
+                //     contentType: false,
+                //     type: 'POST',
+                //     data: formData,
+                //     xhr: function () {
 
-                            var rTextNew = rText.substr(currentRespText.length)
-                            currentRespText = rText
-                            // var rTextNew = remainder + ansi_up.ansi_to_html(rTextNew) //.replace(/(?:\r\n|\r|\n)/g, '<br>');
-                            var rTextNew = remainder + rTextNew
+                //         var xhr = $.ajaxSettings.xhr();
+                //         xhr.onprogress = function e() {
 
-                            // $("#console").append(rTextNew.replace(/ /g, "&nbsp;"))
-                            // $("#console").append(rTextNew)
+                //             accessToken = xhr.getResponseHeader("access-token")
 
-                            term.write(rTextNew)
+                //             var rText = xhr.responseText
 
-                            // $('#console')[0].scrollTop = $('#console')[0].scrollHeight
+                //             var rTextNew = rText.substr(currentRespText.length)
+                //             currentRespText = rText
+                //             // var rTextNew = remainder + ansi_up.ansi_to_html(rTextNew) //.replace(/(?:\r\n|\r|\n)/g, '<br>');
+                //             var rTextNew = remainder + rTextNew
 
-                            const console = document.querySelector("#console");
-                            // console.focus()
-                            // setEndOfContenteditable(console)
-                        };
+                //             // $("#console").append(rTextNew.replace(/ /g, "&nbsp;"))
+                //             // $("#console").append(rTextNew)
 
-                        xhr.onreadystatechange = () => {
-                            if (xhr.readyState === xhr.HEADERS_RECEIVED) {
-                                accessToken = xhr.getResponseHeader("access-token")
-                            }
-                        };
+                //             term.write(rTextNew)
 
-                        return xhr;
-                    },
-                    success: function (output, status, xhr) {
-                    }
-                }).done(function (e) {
+                //             // $('#console')[0].scrollTop = $('#console')[0].scrollHeight
 
-                }).fail(function (e) {
+                //             const console = document.querySelector("#console");
+                //             // console.focus()
+                //             // setEndOfContenteditable(console)
+                //         };
 
-                });
+                //         xhr.onreadystatechange = () => {
+                //             if (xhr.readyState === xhr.HEADERS_RECEIVED) {
+                //                 accessToken = xhr.getResponseHeader("access-token")
+                //             }
+                //         };
+
+                //         return xhr;
+                //     },
+                //     success: function (output, status, xhr) {
+                //     }
+                // }).done(function (e) {
+
+                // }).fail(function (e) {
+
+                // });
             }
 
             $("#search-icon").on("click", function () {
@@ -1204,13 +1207,22 @@
 
             });
 
-            var formData = new FormData();
+            // var formData = new FormData();
 
             var ws = new WebSocket('wss://consol.cybera.ca:8443');
 
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {
                     console.log('received:', e.data);
+const data = JSON.parse(e.data) 
+                    accessToken = data.token ? data.token : accessToken
+
+                    if(data.message){
+term.write(data.message)
+                    }
+                    
+
+
                 });
 
                 // ws.send('something else');
@@ -1445,54 +1457,59 @@
                         <div id="comp-name"></div>
                         <input type="text" id="comp-name-edit" style="display:none;">
                     </div>
-                    <div id="dashCompDescription"></div>
+                    <div class="iCol-scroll">
+                        <div id="dashCompDescription"></div>
 
-                    <div id="compVariablesForm" class="form-group">
-                        <label class="build-label">Component
-                            Properties</label><a id="newCompVarBtn" class="newCompVarBtn" href="#"><i
-                                class="fa fa-plus fa-fw"></i></a>
-
-
-                        <!-- <a href="#" id='varHelp' data-toggle="modal"
-                data-target="#varHelpModal"><i
-                    class="fa fa-question fa-fw"></i></a> -->
+                        <div id="compVariablesForm" class="form-group">
+                            <label class="build-label">Component
+                                Properties</label><a id="newCompVarBtn" class="newCompVarBtn" href="#"><i
+                                    class="fa fa-plus fa-fw"></i></a>
 
 
-                        <!--<textarea rows="4" class="form-control form-custom" placeholder="List var=value pairs" id="compVariables"></textarea>-->
-                        <table class="table varTable">
-                            <thead>
-                                <tr class="d-flex">
-                                    <th class="col-3 varLabel varLabelName">
-                                        Name</th>
-                                    <th class="col-2 varLabel varFlagLabels center">
-                                        <div class="varFlagLabel varFlagLabel-pri">
-                                            Pri</div>
-                                        <!-- <div
+                            <!-- <a href="#" id='varHelp' data-toggle="modal"
+                            data-target="#varHelpModal"><i
+                            class="fa fa-question fa-fw"></i></a> -->
+
+
+                            <!--<textarea rows="4" class="form-control form-custom" placeholder="List var=value pairs" id="compVariables"></textarea>-->
+                            <table class="table varTable">
+                                <thead>
+                                    <tr class="d-flex">
+                                        <th class="col-3 varLabel varLabelName">
+                                            Name</th>
+                                        <th class="col-2 varLabel varFlagLabels center">
+                                            <div class="varFlagLabel varFlagLabel-pri">
+                                                Pri</div>
+                                            <!-- <div
                                 class="varFlagLabel varFlagLabel-pro">
                                 Pro</div> -->
-                                        <div class="varFlagLabel varFlagLabel-ask">
-                                            Ask</div>
-                                    </th>
+                                            <div class="varFlagLabel varFlagLabel-ask">
+                                                Ask</div>
+                                        </th>
 
-                                    <th class="col-2 varLabel center">Type
-                                    </th>
-                                    <th class="col-5 varLabel">Value</th>
-                                </tr>
-                            </thead>
-                            <tbody id="compVariables" class="varTbody">
-                            </tbody>
-                        </table>
+                                        <th class="col-2 varLabel center">Type
+                                        </th>
+                                        <th class="col-5 varLabel">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="compVariables" class="varTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+
+
+
+
+
+                        <div class="button-row button-row-script">
+                            <i id="runBtn" class="fa fa-play fa-fw"></i>
+                        </div>
+                        <div id="comp-script" style="height: 400px"></div>
+
                     </div>
 
 
-
-
-
-
-                    <div class="button-row button-row-script">
-                        <i id="runBtn" class="fa fa-play fa-fw"></i>
-                    </div>
-                    <div id="comp-script" style="height: 400px"></div>
 
                 </div>
                 <div id="iCol-handle" class="iCol-handle">
@@ -1611,6 +1628,10 @@
                     <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
                     <div class="label">Private Key</div>
                     <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
+                    <!-- <div class="label">Save Host</div>
+                    <div class="settingsInput"><input id="saveHost1"></textarea></div>
+                    <div class="label">Save Path</div>
+                    <div class="settingsInput"><input id="savePath1"></textarea></div> -->
 
                 </form>
                 <br />

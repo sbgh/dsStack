@@ -465,22 +465,27 @@ function fixChildsSort(parentId) {
 }
 
 var connections = []
-function getConn(conOptions, ids, res, callback) {
-    let token = conOptions.token
 
-    let found = false
+//Create and register connection or lookup connection
+function getConn(conOptions, callback) {
+    let token = conOptions.token
+    let ids = conOptions.ids ? conOptions.ids : []
+    let ws = conOptions.ws
+    let key = conOptions.key
+    // let key = conOptions.settingsKey
+    // let found = false
+    let conn = false
     connections.forEach(function (value, index, array) {
         if (value.token === token) {
-            callback(ids, connections[index].stream, connections[index].token)
-            found = true
+            conn = connections[index]
         }
     });
 
-
-
-    if (found !== true) {
-        // connections = []
-
+    if (conn) {
+        conn.key = key
+        conn.ids = ids
+        callback(conn)
+    } else {
         var c = new Client();
 
         c.connect(conOptions);
@@ -490,25 +495,36 @@ function getConn(conOptions, ids, res, callback) {
 
         //connection end event.
         c.on('end', function () {
-
+            console.log('SSH - Connection ended');
+            // todo---remove connection from connections object
         });
 
         //connection ready event. 
         c.on('ready', function () {
             c.shell(function (err, stream) {
                 let token = generateUUID()
-                let conObj = { "err": err, "conn": c, "stream": stream, "token": token }
+                let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "ids": ids, "key": key }
+
                 connections.push(conObj)
 
-                streamEvents(stream, res)
-                stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //set prompt
+                stream.token = token
+                streamEvents(conObj, ws)
+                stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
 
-                callback(ids, stream, token)
+                callback(conObj)
             })
         });
     }
 }
 
+// function lookupConn(token) {
+//     connections.forEach(function (value, index, array) {
+//         if (value.token === token) {
+//             return (true)
+//         }
+//     });
+//     return (false)
+// }
 router.post("/run", function (req, res) {
 
     var form = new formidable.IncomingForm();
@@ -526,6 +542,8 @@ router.post("/run", function (req, res) {
             settingsLoginName = fields.settingsLoginName[0];
             settingsKey = fields.settingsKey[0];
             token = fields.token[0];
+            // saveHost = fields.saveHost[0];
+            // savePath = fields.savePath[0];
 
         }
     });
@@ -550,13 +568,16 @@ router.post("/run", function (req, res) {
             "username": settingsLoginName,
             "privateKey": settingsKey,
             "token": token
+            // ,
+            // "saveHost": saveHost,
+            // "savePath": savePath
         }
         getConn(conOptions, ids, res, runScript)
 
     })
 
-    function runScript(ids, stream, token) {
-        res.setHeader("access-Token", token)
+    function runScript(ids, stream) {
+        // res.setHeader("access-Token", token)
 
         var respBufferAccu = new Buffer.from([]);
         var prompt = "[ceStack]";
@@ -721,18 +742,88 @@ router.post("/run", function (req, res) {
 
 });
 
-function streamEvents(stream, res) {
+function streamEvents(conn, ws) {
+    let stream = conn.stream
+
+    // var respBufferAccu = new Buffer.from([]);
+    // var prompt = "[ceStack]";
+
+    // var script = ''
+    // if (ids.length == 1 && ids[0].trim() == "") {
+    //     stream.write("\n");
+    //     script = "\n"
+    // } else if (ids.length == 0) {
+    //     stream.write("\n");
+    //     script = "\n"
+    // } else {
+    //     let id = ids[0]
+    //     stream.write("#running: " + compData[id].text + '\n');
+    //     script = compData[id].script ? compData[id].script.split("\n") : ""
+    // }
+    // var lineInx = 0
+
+
+    stream.on('data', function (data) {
+        let token = this.token
+
+        mess = JSON.stringify({
+            "message": data.toString()
+        })
+        ws.send(mess)
+
+        connections.forEach(function (value, index, array) {
+            if (value.token === token) {
+                let ids = value.ids
+                let ind = value.index
+
+                if(compData[ids[0]] && compData[ids[0]].script){
+                    let script = compData[ids[0]].script
+                    let lines = script.split('\n')
+                    if (connections[index].index < lines.length) {
+                        command = lines[ind]
+                        stream.write(command + '\n');
+                        connections[index].index++
+                    }
+
+                }
+
+            }
+        });
+        
+        // console.log("res write not del " + data)
+
+        // respBufferAccu = Buffer.concat([respBufferAccu, data]);
+
+        // if (respBufferAccu.toString().includes(prompt)) {
+        //     respBufferAccu = new Buffer.from([]);
+
+        //     if (lineInx < script.length) {
+        //         var command = ""
+        //         if (compData.hasOwnProperty(ids[0])) {
+        //             command = replaceVar(script[lineInx], compData[ids[0]])
+        //         } else {
+        //             command = ''
+        //         }
+
+        //         stream.write(command + '\n');
+        //     } else if (lineInx === script.length) {
+
+        //     }
+        //     lineInx++
+        // }
+
+    });
 
     stream.on('close', function (code, signal) {
         var dsString = new Date().toISOString(); //date stamp
         console.log('Stream close: ' + dsString);
-        res.end();
+        // res.end();
 
     });
 
     stream.stderr.on('data', function (data) {
         console.log('STDERR: ' + data);
-        res.end('STDERR: ' + data);
+        // res.end('STDERR: ' + data);
     });
 }
 
@@ -768,8 +859,10 @@ router.get("/getStyle", function (req, res) {
 
 });
 
-function saveAllJSON(backup) {
+
+function saveAllJSON(backup, token) {
     //console.log("saving");
+
     fs.writeFile(__dirname + '/compData.json', JSON.stringify(compData), function (err) {
         if (err) {
             console.log('There has been an error saving your component data json.');
@@ -806,6 +899,11 @@ function saveAllJSON(backup) {
             })
         }
     })
+    // if (lookupConn(token)) {
+
+    // }
+
+
 }
 
 //bodyParser must be below proxy
@@ -831,18 +929,66 @@ var secureServer = https.createServer({
 
 var wsserver = new WebSocket.Server({ server: secureServer });
 
-wsserver.on('connection', function connection(ws) {
-    ws.on('message', function (data, isBinary) {
-        var message = JSON.parse(data.toString())
 
-        connections.forEach(function (value, index, array) {
-            if (value.token === message.token) {
-                stream = value.stream
-                let key = message.key
-                stream.write(key)
-                console.log("key: " + message.key)
+wsserver.on('connection', function connection(ws) {
+
+    function processMessage(conn) {
+
+        let mess = ""
+
+        if (!conn.token) {
+            mess = JSON.stringify({
+                "token": "",
+                "message": "Connection Failed\r\n"
+            })
+            ws.send(mess)
+        } else {
+            mess = JSON.stringify({
+                "token": conn.token
+            })
+            ws.send(mess)
+
+            if (conn.key) {
+                let key = conn.key
+                conn.stream.write(key)
+            } else if (conn.ids[0]) {
+                let id = conn.ids[0]
+                conn.stream.write("#running: " + compData[id].text + '\n')
+                conn.index = 0
+            } else {
+                conn.stream.write("\n")
             }
-        });
+        }
+    }
+
+    ws.on('message', function (data, isBinary) {
+        var dataObj = JSON.parse(data.toString())
+
+
+        conOptions = {
+            "host": dataObj.settingsHostName,
+            "port": '22',
+            "username": dataObj.settingsLoginName,
+            "privateKey": dataObj.settingsKey,
+            "token": dataObj.token,
+            "ids": dataObj.ids,
+            "ws": ws,
+            "key": dataObj.key
+            // ,
+            // "saveHost": saveHost,
+            // "savePath": savePath
+        }
+        getConn(conOptions, processMessage)
+
+
+        // connections.forEach(function (value, index, array) {
+        //     if (value.token === message.token) {
+        //         stream = value.stream
+        //         let key = message.key
+        //         stream.write(key)
+        //         console.log("key: " + message.key)
+        //     }
+        // });
 
         // if (connections.length > 0) {
         //     stream = connections[0].stream
