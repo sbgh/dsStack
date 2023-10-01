@@ -624,121 +624,6 @@ router.post("/run", function (req, res) {
         });
     }
 
-    function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{p.mVar4}}
-
-        const items = commandStr.split(new RegExp('{{', 'g'));
-        items.forEach(function (item) {
-            item = item.substr(0, item.indexOf('}}'));
-
-            if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'c.') {
-                var targetVarName = item.substr(2);
-                var pid = job.parent;
-                var repStr = "{{c." + targetVarName + "}}";
-                if (job.variables[targetVarName]) {
-                    var val = job.variables[targetVarName].value;
-                    commandStr = commandStr.replace(repStr, val)
-                }
-            } //look in job for vars
-            // if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'p.') {
-            //     var targetVarName = item.substr(2);
-            //     var pid = job.parent;
-            //     var repStr = "{{p." + targetVarName + "}}";
-            //     if (typeof latestVarCache[pid] !== "undefined"){
-            //         if (typeof latestVarCache[pid][targetVarName] !== "undefined"){
-            //             var val = latestVarCache[pid][targetVarName].replace(/\n$/, "").replace(/\r$/, "")
-            //             commandStr = commandStr.replace(repStr, val)
-            //         }
-            //     }
-            // } //look in parent for vars
-
-            // if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'a.') {
-            //     var targetVarName = item.substr(2);
-            //     var repStr = "{{a." + targetVarName + "}}";
-            //     var anArr = job.ft.replace('#/', '').split('/');
-            //     anArr.reverse().forEach(function (an) {
-            //         if (typeof latestVarCache[an] !== "undefined"){
-            //             if (typeof latestVarCache[an][targetVarName] !== "undefined"){
-            //                 var val = latestVarCache[an][targetVarName];
-            //                 commandStr = commandStr.replace(repStr, val)
-            //             }
-            //         }
-            //     })//reverse the ancestor list so that closer ancestor values are used first.
-            // } //look in ancestors for vars
-
-            // if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 's.') {
-            //     var targetVarName = item.substr(2);
-            //     var ft = job.ft;
-            //     var repStr = "{{s." + targetVarName + "}}";
-            //     var bestVal;
-            //     var relativeScore = 0; //track how close of a relative the job the varwas found in and give pref to closer relatives.
-
-            //     for (var id in SystemsJSON) { //look in all jobs for var.
-            //         if (SystemsJSON.hasOwnProperty(id) && SystemsJSON[id].comType === 'job') {
-            //             var resultsSystem = SystemsJSON[id].ft.split('/')[1];
-            //             if (resultsSystem === ft.split('/')[1]){ //if same system...
-            //                 if (typeof latestVarCache[id] !== "undefined"){
-            //                     if (typeof latestVarCache[id][targetVarName] !== "undefined"){
-            //                         var thisScore = calcRelativeScore(ft, SystemsJSON[id].ft);
-            //                         var val = latestVarCache[id][targetVarName];
-            //                         if(relativeScore < thisScore){
-            //                             relativeScore = thisScore;
-            //                             bestVal = val;
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         }
-            //     }
-            //     //now look in system for the var
-            //     if (typeof latestVarCache[ft.split('/')[1]] !== "undefined"){
-            //         if (typeof latestVarCache[ft.split('/')[1]][targetVarName] !== "undefined"){
-            //             var val = latestVarCache[ft.split('/')[1]][targetVarName];
-            //             var thisScore = 2;
-            //             if(relativeScore < thisScore){
-            //                 relativeScore = thisScore;
-            //                 bestVal = val;
-            //             }
-            //         }
-            //     }
-            //     if (typeof bestVal !== "undefined"){
-            //         commandStr = commandStr.replace(repStr, bestVal);
-            //     }
-            // } //look in same system for vars
-            // //function to return number of ancestors the current running job has in common with the found var job. Requires: jobFT and foundFT job ID strings separated by "/".
-            // function calcRelativeScore(jobFT, foundFT){//how many gr/parents does the current running job have in common with the found var job..
-            //     const jobFTArr = jobFT.split('/');
-            //     const foundFTArr = foundFT.split('/');
-            //     var x = 0;
-            //     var score = 0;
-            //     while((typeof jobFTArr[x] !== "undefined")&&(typeof foundFTArr[x] !== "undefined")){
-            //         if (jobFTArr[x] === foundFTArr[x]){
-            //             score++;
-            //         }
-            //         x++;
-            //     }
-            //     return score;
-            // }
-        });
-
-        //If there are any {{ patterns left in the line then raise error and abort
-        const remainingItemsCount = commandStr.split(new RegExp('{{', 'g')).length;
-        const remainingItems = commandStr.split(new RegExp('{{', 'g'));
-        if (remainingItemsCount > 1) {
-            var item = remainingItems[1]
-            item = item.substr(0, item.indexOf('}}'));
-
-            if (item.length > 2 && item.length < 32) {
-                //console.log("Error: Component Variable not found: " + item + '\n');
-                message("Error: Component Variable not found: " + item + '\n');
-                flushMessQueue();
-                sshSuccess = false;
-                // stream.close();
-                return ('');
-            }
-        }
-        return (commandStr);
-    }
-
 
 });
 
@@ -780,7 +665,8 @@ function streamEvents(conn, ws) {
                     let script = compData[ids[0]].script
                     let lines = script.split('\n')
                     if (connections[index].index < lines.length) {
-                        command = lines[ind]
+                        let command = replaceVar(lines[ind], compData[ids[0]])
+                        // command = lines[ind]
                         stream.write(command + '\n');
                         connections[index].index++
                     }
@@ -788,6 +674,45 @@ function streamEvents(conn, ws) {
                 }
 
             }
+
+            function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{p.mVar4}}
+
+                const items = commandStr.split(new RegExp('{{', 'g'));
+                items.forEach(function (item) {
+                    item = item.substr(0, item.indexOf('}}'));
+        
+                    if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'c.') {
+                        var targetVarName = item.substr(2);
+                        var pid = job.parent;
+                        var repStr = "{{c." + targetVarName + "}}";
+                        if (job.variables[targetVarName]) {
+                            var val = job.variables[targetVarName].value;
+                            commandStr = commandStr.replace(repStr, val)
+                        }
+                    } 
+                });
+        
+                //If there are any {{ patterns left in the line then raise error and abort
+                const remainingItemsCount = commandStr.split(new RegExp('{{', 'g')).length;
+                const remainingItems = commandStr.split(new RegExp('{{', 'g'));
+                if (remainingItemsCount > 1) {
+                    var item = remainingItems[1]
+                    item = item.substr(0, item.indexOf('}}'));
+        
+                    if (item.length > 2 && item.length < 32) {
+                        //console.log("Error: Component Variable not found: " + item + '\n');
+                        message("Error: Component Variable not found: " + item + '\n');
+                        flushMessQueue();
+                        sshSuccess = false;
+                        // stream.close();
+                        return ('');
+                    }
+                }
+                return (commandStr);
+            }
+
+
+
         });
         
         // console.log("res write not del " + data)
