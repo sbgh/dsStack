@@ -802,7 +802,7 @@
                 if (isResizingCenterWidth) {
                     e.preventDefault();
 
-                    var centerWidth = e.pageX - $("#tCol").width() - 15
+                    var centerWidth = e.pageX - $("#tCol").width() - 18
 
                     centerContainer.css("flex", "0 0 " + centerWidth + "px")
 
@@ -1087,74 +1087,6 @@
                 runData["token"] = accessToken
 
                 ws.send(JSON.stringify(runData))
-
-                // var formData = new FormData();
-                // formData.append('runChildren', runChildren);
-                // formData.append('ids', ids);
-
-                // settingsHostName = settings.settingsHostName1 ? settings.settingsHostName1 : ""
-                // settingsLoginName = settings.settingsLoginName1 ? settings.settingsLoginName1 : ""
-                // settingsKey = settings.settingsKey1 ? settings.settingsKey1 : ""
-                // // saveHost = settings.saveHost1 ? settings.saveHost1 : ""
-                // // savePath = settings.savePath1 ? settings.savePath1 : ""
-
-                // formData.append('settingsHostName', settingsHostName);
-                // formData.append('settingsLoginName', settingsLoginName);
-                // formData.append('settingsKey', settingsKey);
-                // // formData.append('saveHost', saveHost);
-                // // formData.append('savePath', savePath);
-                // formData.append('token', accessToken);
-
-                // var currentRespText = ""
-                // var remainder = ""
-
-                // $.ajax({
-                //     url: '/run',
-                //     processData: false,
-                //     contentType: false,
-                //     type: 'POST',
-                //     data: formData,
-                //     xhr: function () {
-
-                //         var xhr = $.ajaxSettings.xhr();
-                //         xhr.onprogress = function e() {
-
-                //             accessToken = xhr.getResponseHeader("access-token")
-
-                //             var rText = xhr.responseText
-
-                //             var rTextNew = rText.substr(currentRespText.length)
-                //             currentRespText = rText
-                //             // var rTextNew = remainder + ansi_up.ansi_to_html(rTextNew) //.replace(/(?:\r\n|\r|\n)/g, '<br>');
-                //             var rTextNew = remainder + rTextNew
-
-                //             // $("#console").append(rTextNew.replace(/ /g, "&nbsp;"))
-                //             // $("#console").append(rTextNew)
-
-                //             term.write(rTextNew)
-
-                //             // $('#console')[0].scrollTop = $('#console')[0].scrollHeight
-
-                //             const console = document.querySelector("#console");
-                //             // console.focus()
-                //             // setEndOfContenteditable(console)
-                //         };
-
-                //         xhr.onreadystatechange = () => {
-                //             if (xhr.readyState === xhr.HEADERS_RECEIVED) {
-                //                 accessToken = xhr.getResponseHeader("access-token")
-                //             }
-                //         };
-
-                //         return xhr;
-                //     },
-                //     success: function (output, status, xhr) {
-                //     }
-                // }).done(function (e) {
-
-                // }).fail(function (e) {
-
-                // });
             }
 
             $("#search-icon").on("click", function () {
@@ -1183,7 +1115,7 @@
                 if (key.code === 'KeyV') {
                     if (key.metaKey) {
                         $("#console").focus()
-                        // return false;
+                        
                         navigator.clipboard
                             .readText()
                             .then(
@@ -1207,28 +1139,19 @@
 
             });
 
-            // var formData = new FormData();
-
             var ws = new WebSocket('wss://consol.cybera.ca:8443');
 
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {
                     console.log('received:', e.data);
-const data = JSON.parse(e.data) 
+                    const data = JSON.parse(e.data)
                     accessToken = data.token ? data.token : accessToken
 
-                    if(data.message){
-term.write(data.message)
+                    if (data.message) {
+                        term.write(data.message)
                     }
-                    
-
-
-                });
-
-                // ws.send('something else');
-            });
-
-
+                })
+            })
 
             //function to create a block of var input html for new vars and edits. provide index str eg "0" or "1" ...
             function createVarEditHtml(currentRowCntStr) {
@@ -1542,7 +1465,7 @@ term.write(data.message)
 
                     <div id="console-button-row">
                         <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
-                        <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
+                       
                         <div id="stylePickMenu">
                             <span class="radio stylePickTop" data-id="default">
                                 <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
@@ -1553,6 +1476,7 @@ term.write(data.message)
                                         class='fa  fa-moon-o fa-fw '></i></label>
                             </span>
                         </div>
+                        <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
                     </div>
                     <div id="conTxt">
                         <div id="console"></div>

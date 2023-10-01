@@ -4,6 +4,12 @@ body{
     color: #f7f7f7;
 }
 
+
+  html {
+    background-color: #3b3b3b;
+  }
+  
+
 input, textarea {
     color: #f7f7f7;
 }
@@ -78,7 +84,7 @@ div#tCol-handle {
 }
 
 div#iCol-handle {
-    background: rgb(0, 0, 0);
+    background: black;
 }
 
 .form-control:focus {

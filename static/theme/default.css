@@ -46,11 +46,11 @@ input, textarea, .searchInput {
 }
 
 div#tCol-handle {
-    background: black;
+    background: #cdcdcd;
 }
 
 div#iCol-handle {
-    background: black;
+    background: #cdcdcd;
 }
 
 .form-control:focus {
