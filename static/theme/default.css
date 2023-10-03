@@ -124,3 +124,10 @@ div#console {
     color: black;
 }
 
+i.fa.up{
+    color: #0075ff
+}
+i.fa.down{
+    color: #666666
+}
+

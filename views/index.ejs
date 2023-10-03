@@ -435,6 +435,15 @@
                     currentCompVarObj[varName].changed = idn;
                 });
 
+                $(".compVarDelButton").on('click', function () {
+                    var idn = $(this).attr('data-idn');
+                    for (varName in currentCompVarObj) {
+                        if (currentCompVarObj[varName].idn == idn) {
+                            delete currentCompVarObj[varName]; break
+                        }
+                    }
+                    $("#varRow_" + idn).remove();
+                });
             }
 
             function saveComp() {
@@ -492,6 +501,7 @@
 
             }
 
+            //Place component inputs and buttons into read mode
             function readComp() {
 
                 enableTree()
@@ -521,6 +531,13 @@
             $("#editBtn").on("click", function () {
                 editComp()
             });
+
+            $("#cancelSaveBtn").on("click", function () {
+                $('#jstree_div').jstree(true).refresh(true)
+                readComp()
+            });
+
+
 
             function editComp() {
                 $("#editBtn").hide();
@@ -753,6 +770,14 @@
                 $("#saveBtn").popover('dispose').popover({
                     animation: true,
                     content: "Save Component",
+                    delay: { "show": 500, "hide": 100 },
+                    trigger: 'hover',
+                    placement: 'top',
+                    template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                });
+                $("#cancelSaveBtn").popover('dispose').popover({
+                    animation: true,
+                    content: "Cancel Edit",
                     delay: { "show": 500, "hide": 100 },
                     trigger: 'hover',
                     placement: 'top',
@@ -1042,6 +1067,7 @@
             //run
             $("#runBtn").click(function (event) {
                 $("#idToBeRun").val(selectedNode)
+                $("#buildModalTitleName").text($("#comp-name").text());
                 $('#runModal').modal('show');
             });
 
@@ -1049,6 +1075,14 @@
                 term.focus()
                 term.write("connecting....\r\n")
                 runJob([], false)
+            });
+            $("#connectBtn").popover('dispose').popover({
+                animation: true,
+                content: "Connect to host",
+                delay: { "show": 500, "hide": 100 },
+                trigger: 'hover',
+                placement: 'top',
+                template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
             });
 
             $("#runConfirmButton").click(function (event) {
@@ -1115,7 +1149,7 @@
                 if (key.code === 'KeyV') {
                     if (key.metaKey) {
                         $("#console").focus()
-                        
+
                         navigator.clipboard
                             .readText()
                             .then(
@@ -1135,7 +1169,7 @@
 
                     ws.send(JSON.stringify({ "token": accessToken, "key": key.key }));
                 }
-                console.log("keypress " + key)
+                // console.log("keypress " + key)
 
             });
 
@@ -1143,12 +1177,21 @@
 
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {
-                    console.log('received:', e.data);
+                    // console.log('received:', e.data);
                     const data = JSON.parse(e.data)
                     accessToken = data.token ? data.token : accessToken
 
                     if (data.message) {
                         term.write(data.message)
+                    }
+                    if (data.status) {
+                        if(data.status === "up"){
+                            $("#connectBtn").addClass("up")
+                            $("#connectBtn").removeClass("down")
+                        }else{
+                            $("#connectBtn").addClass("down")
+                            $("#connectBtn").removeClass("up")
+                        }
                     }
                 })
             })
@@ -1370,6 +1413,7 @@
                         <i id="newChildBtn" class="fa fa-plus fa-fw"></i>
                         <i id="deleteBtn" class="fa fa-minus fa-fw"></i>
                         <i id="saveBtn" class="fa fa-floppy-o fa-fw"></i>
+                        <i id="cancelSaveBtn" class="fa fa-close fa-fw"></i>
                         <i id="copyBtn" class="fa fa-copy fa-fw"></i>
                         <i id="pasteBtn" class="fa fa-paste fa-fw"></i>
                     </div>
@@ -1465,7 +1509,7 @@
 
                     <div id="console-button-row">
                         <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
-                       
+
                         <div id="stylePickMenu">
                             <span class="radio stylePickTop" data-id="default">
                                 <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
@@ -1575,15 +1619,15 @@
         <nav class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><i class="fa fa-play fa-fw"></i>Run Script</h4>
-                <label id="buildModalTitleName"></label>
             </div>
             <div id='runConfirmationBody' class="modal-body run-model-body">
                 <form class="form">
                     <input name="idToBeRun" id="idToBeRun" type="hidden" />
-                    <div class="form-group" id="runChildrenGroup">
+                    <label id="buildModalTitleName"></label>
+                    <!-- <div class="form-group" id="runChildrenGroup">
                         <span class="model-label"><input name="runChildrenCb" id="runChildrenCb" value="yes"
                                 type="checkbox" checked />Run children?</span>
-                    </div>
+                    </div> -->
                 </form>
             </div>
 

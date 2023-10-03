@@ -10,7 +10,7 @@ var http = require('http');
 const https = require('https');
 
 const Client = require('ssh2').Client
-const formidable = require('formidable');
+// const formidable = require('formidable');
 
 var app = express();
 
@@ -282,7 +282,7 @@ router.post("/copy", function (req, res) {
             var NewRow = {
                 parent: newParentId,
                 text: fromNode.text,
-                // description: fromNode.description,
+                description: fromNode.description,
                 // ver: 1,
                 // comType: fromNode.comType,
                 // sort: fromNode.sort,
@@ -486,34 +486,82 @@ function getConn(conOptions, callback) {
         conn.ids = ids
         callback(conn)
     } else {
-        var c = new Client();
+        let c = new Client();
 
-        c.connect(conOptions);
-        c.on('error', function (err) {
-            console.log('SSH - Connection Error: ' + err);
-        });
-
-        //connection end event.
-        c.on('end', function () {
-            console.log('SSH - Connection ended');
-            // todo---remove connection from connections object
-        });
-
-        //connection ready event. 
-        c.on('ready', function () {
-            c.shell(function (err, stream) {
-                let token = generateUUID()
-                let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "ids": ids, "key": key }
-
-                connections.push(conObj)
-
-                stream.token = token
-                streamEvents(conObj, ws)
-                stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
-
-                callback(conObj)
+        if (!conOptions.username || !conOptions.privateKey || !conOptions.host) {
+            let mess = JSON.stringify({
+                "message": "\r\n# Not Connected to SSH host\r\n",
+                "status": "down"
             })
-        });
+            ws.send(mess)
+
+        } else {
+
+            try {
+                c.connect(conOptions);
+
+                c.on('error', function (err) {
+                    console.log('SSH - Connection Error: ' + err);
+                    let mess = JSON.stringify({
+                        "message": "\r\n# Error: Connection error\r\n" + err + "\r\n",
+                        "status": "down"
+                    })
+                    ws.send(mess)
+                    connections.every((element, index, array) => {
+                        if (element.token === token) {
+                            delete connections[index]
+                            return false;
+                        }
+                        return true;
+                    });
+                });
+
+                //connection end event.
+                c.on('end', function () {
+                    console.log('SSH - Connection ended');
+                    let mess = JSON.stringify({
+                        "message": "\r\n# SSH connection ended\r\n",
+                        "status": "down"
+                    })
+                    ws.send(mess)
+                    connections.every((element, index, array) => {
+                        if (element.token === token) {
+                            delete connections[index]
+                            return false;
+                        }
+                        return true;
+                    });
+                });
+
+                //connection ready event. 
+                c.on('ready', function () {
+                    c.shell(function (err, stream) {
+                        let token = generateUUID()
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "ids": ids, "key": key }
+
+                        connections.push(conObj)
+
+                        stream.token = token
+                        streamEvents(conObj, ws)
+                        let mess = JSON.stringify({
+                            "status": "up"
+                        })
+                        stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
+
+                        callback(conObj)
+                    })
+                });
+            } catch (error) {
+                console.log('SSH - Connection Error: ' + error);
+                let mess = JSON.stringify({
+                    "message": "# Error: Connection error\r\n" + error + "\r\n",
+                    "status": "down"
+                })
+                ws.send(mess)
+            }
+        }
+
+
     }
 }
 
@@ -652,7 +700,8 @@ function streamEvents(conn, ws) {
         let token = this.token
 
         mess = JSON.stringify({
-            "message": data.toString()
+            "message": data.toString(),
+            "status": "up"
         })
         ws.send(mess)
 
@@ -661,12 +710,11 @@ function streamEvents(conn, ws) {
                 let ids = value.ids
                 let ind = value.index
 
-                if(compData[ids[0]] && compData[ids[0]].script){
+                if (compData[ids[0]] && compData[ids[0]].script) {
                     let script = compData[ids[0]].script
                     let lines = script.split('\n')
                     if (connections[index].index < lines.length) {
                         let command = replaceVar(lines[ind], compData[ids[0]])
-                        // command = lines[ind]
                         stream.write(command + '\n');
                         connections[index].index++
                     }
@@ -680,7 +728,7 @@ function streamEvents(conn, ws) {
                 const items = commandStr.split(new RegExp('{{', 'g'));
                 items.forEach(function (item) {
                     item = item.substr(0, item.indexOf('}}'));
-        
+
                     if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'c.') {
                         var targetVarName = item.substr(2);
                         var pid = job.parent;
@@ -689,16 +737,16 @@ function streamEvents(conn, ws) {
                             var val = job.variables[targetVarName].value;
                             commandStr = commandStr.replace(repStr, val)
                         }
-                    } 
+                    }
                 });
-        
+
                 //If there are any {{ patterns left in the line then raise error and abort
                 const remainingItemsCount = commandStr.split(new RegExp('{{', 'g')).length;
                 const remainingItems = commandStr.split(new RegExp('{{', 'g'));
                 if (remainingItemsCount > 1) {
                     var item = remainingItems[1]
                     item = item.substr(0, item.indexOf('}}'));
-        
+
                     if (item.length > 2 && item.length < 32) {
                         //console.log("Error: Component Variable not found: " + item + '\n');
                         message("Error: Component Variable not found: " + item + '\n');
@@ -714,7 +762,7 @@ function streamEvents(conn, ws) {
 
 
         });
-        
+
         // console.log("res write not del " + data)
 
         // respBufferAccu = Buffer.concat([respBufferAccu, data]);
@@ -742,13 +790,46 @@ function streamEvents(conn, ws) {
     stream.on('close', function (code, signal) {
         var dsString = new Date().toISOString(); //date stamp
         console.log('Stream close: ' + dsString);
-        // res.end();
+        let token = this.token
 
+        let mess = JSON.stringify({
+            "message": "\r\n# SSH Stream closed\r\n",
+            "status": "down"
+        })
+        ws.send(mess)
+
+
+        connections.every((element, index, array) => {
+            if (element.token === token) {
+                delete connections[index]
+                return false;
+            }
+            return true;
+        });
+
+        // connections.forEach(function (value, index, array) {
+        //     if (value.token === token) {
+        //         delete connections[index]
+        //     }
+        // })
     });
 
     stream.stderr.on('data', function (data) {
         console.log('STDERR: ' + data);
-        // res.end('STDERR: ' + data);
+        let token = this.token
+
+        let mess = JSON.stringify({
+            "message": "# SSH Stream Error\r\n" + data,
+            "status": "down"
+        })
+        ws.send(mess)
+        connections.every((element, index, array) => {
+            if (element.token === token) {
+                delete connections[index]
+                return false;
+            }
+            return true;
+        });
     });
 }
 
@@ -824,11 +905,6 @@ function saveAllJSON(backup, token) {
             })
         }
     })
-    // if (lookupConn(token)) {
-
-    // }
-
-
 }
 
 //bodyParser must be below proxy
@@ -864,12 +940,14 @@ wsserver.on('connection', function connection(ws) {
         if (!conn.token) {
             mess = JSON.stringify({
                 "token": "",
-                "message": "Connection Failed\r\n"
+                "message": "Connection Failed\r\n",
+                "status": "down"
             })
             ws.send(mess)
         } else {
             mess = JSON.stringify({
-                "token": conn.token
+                "token": conn.token,
+                "status": "up"
             })
             ws.send(mess)
 
@@ -888,8 +966,6 @@ wsserver.on('connection', function connection(ws) {
 
     ws.on('message', function (data, isBinary) {
         var dataObj = JSON.parse(data.toString())
-
-
         conOptions = {
             "host": dataObj.settingsHostName,
             "port": '22',
@@ -899,28 +975,9 @@ wsserver.on('connection', function connection(ws) {
             "ids": dataObj.ids,
             "ws": ws,
             "key": dataObj.key
-            // ,
-            // "saveHost": saveHost,
-            // "savePath": savePath
         }
         getConn(conOptions, processMessage)
 
-
-        // connections.forEach(function (value, index, array) {
-        //     if (value.token === message.token) {
-        //         stream = value.stream
-        //         let key = message.key
-        //         stream.write(key)
-        //         console.log("key: " + message.key)
-        //     }
-        // });
-
-        // if (connections.length > 0) {
-        //     stream = connections[0].stream
-        //     stream.write(message)
-        // }
-        // console.log('received:', message);
     });
 
-    //   ws.send('something');
 });

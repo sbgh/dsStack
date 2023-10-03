@@ -8,7 +8,11 @@ html, body {
   }
 
 div, input, textarea{
-    transition: background 200ms ease 0s, color 200ms ease 0s;
+    /* transition: all 200ms ease 0s, color 200ms ease 0s; */
+    transition-property: color, background-color, border-color, height, max-height, min-height;
+    transition-duration: .2s;
+    transition-timing-function: ease;
+
 }
 
 a {
@@ -182,7 +186,7 @@ div#dashCompDescription {
     max-height: 300px;
     height: auto;
     overflow: auto;
-    margin: 10px 5px;
+    margin: 0 5px;
 }
 
 div#comp-script {
@@ -277,6 +281,7 @@ div#connectPick {
 
 i.fa {
     font-size: 17px;
+    color: #666666;
 }
 
 div#console {
@@ -454,4 +459,14 @@ div#stylePickMenu {
 
 form#settingsModalForm input, form#settingsModalForm textarea {
     width: 100%;
+}
+
+
+label#buildModalTitleName {
+    align-self: end;
+    margin-bottom: 0;
+}
+
+div#compVariablesForm {
+    margin: 10px 5px;
 }

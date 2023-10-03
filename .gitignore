@@ -134,3 +134,4 @@ views/builder.ejs
 
 backup/
 views/builder.js
+compData.json.bak
