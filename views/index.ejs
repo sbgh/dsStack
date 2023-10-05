@@ -1185,16 +1185,18 @@
                         term.write(data.message)
                     }
                     if (data.status) {
-                        if(data.status === "up"){
-                            $("#connectBtn").addClass("up")
-                            $("#connectBtn").removeClass("down")
-                        }else{
-                            $("#connectBtn").addClass("down")
-                            $("#connectBtn").removeClass("up")
+                        if (data.status === "up") {
+                            $("#connectBtn").addClass("up").removeClass("down")
+                        } else {
+                            $("#connectBtn").addClass("down").removeClass("up")
                         }
                     }
                 })
             })
+
+            ws.onclose = function (e) {
+                $("#connectBtn").addClass("up").removeClass("down")
+            };
 
             //function to create a block of var input html for new vars and edits. provide index str eg "0" or "1" ...
             function createVarEditHtml(currentRowCntStr) {
@@ -1269,7 +1271,6 @@
                 });
 
 
-
                 $(".compVarEditValButton").on('click', function () {
                     var idn = $(this).attr('data-idn');
 
@@ -1306,16 +1307,16 @@
                 })
 
                 //Save value of text area back
-                $('#varEditModal').on('hidden.bs.modal', function () {
-                    if ($("#varEditModalCurrentScreen").val() === 'dash') {
-                        var idn = $("#varEditModalCurrentIdn").val();
-                        $("#newCompDashVarValue" + idn).val($('#varValEditor').val())
-                    } else {
-                        var idn = $("#varEditModalCurrentIdn").val();
-                        $("#newCompVarValue" + idn).val($('#varValEditor').val())
-                    }
+                // $('#varEditModal').on('hidden.bs.modal', function () {
+                //     if ($("#varEditModalCurrentScreen").val() === 'dash') {
+                //         var idn = $("#varEditModalCurrentIdn").val();
+                //         $("#newCompDashVarValue" + idn).val($('#varValEditor').val())
+                //     } else {
+                //         var idn = $("#varEditModalCurrentIdn").val();
+                //         $("#newCompVarValue" + idn).val($('#varValEditor').val())
+                //     }
 
-                });
+                // });
 
                 //Save value of tinymce back
                 // $('#varEditWYSIWYGModal').on('hidden.bs.modal', function () {

@@ -206,23 +206,7 @@ router.post("/remove", function (req, res) {
 
     ids.forEach(function (id) { //Loop throu all ids
         if (compData.hasOwnProperty(id)) {
-            delete compData[id]; //delete from main datastore
-            // rmDir(filesPath + id + "/"); //delete all uploaded files
-            // fs.readdir(resultsPath, function(err, files){ // delete results files
-            //     if (err){
-            //         console.log(err);
-            //     }else{
-            //         files.forEach(function(mFile){
-            //             if (mFile.substr(0,36) === id){
-            //                 if (fs.statSync(resultsPath + mFile).isFile()){
-            //                     //console.log("removing: " + resultsFilesPath + mFile);
-            //                     fs.unlinkSync(resultsPath + mFile);
-            //                 }
-            //             }
-            //         })
-            //     }
-
-            // });
+            delete compData[id]; 
         }
     });
     saveAllJSON(true);
@@ -469,7 +453,7 @@ var connections = []
 //Create and register connection or lookup connection
 function getConn(conOptions, callback) {
     let token = conOptions.token
-    let ids = conOptions.ids ? conOptions.ids : []
+    let ids = conOptions.ids
     let ws = conOptions.ws
     let key = conOptions.key
     // let key = conOptions.settingsKey
@@ -483,7 +467,10 @@ function getConn(conOptions, callback) {
 
     if (conn) {
         conn.key = key
-        conn.ids = ids
+        if (ids && conn.ids !== ids) {
+            conn.ids = ids
+            conn.index = 0
+        }
         callback(conn)
     } else {
         let c = new Client();
@@ -565,14 +552,6 @@ function getConn(conOptions, callback) {
     }
 }
 
-// function lookupConn(token) {
-//     connections.forEach(function (value, index, array) {
-//         if (value.token === token) {
-//             return (true)
-//         }
-//     });
-//     return (false)
-// }
 router.post("/run", function (req, res) {
 
     var form = new formidable.IncomingForm();
@@ -678,26 +657,9 @@ router.post("/run", function (req, res) {
 function streamEvents(conn, ws) {
     let stream = conn.stream
 
-    // var respBufferAccu = new Buffer.from([]);
-    // var prompt = "[ceStack]";
-
-    // var script = ''
-    // if (ids.length == 1 && ids[0].trim() == "") {
-    //     stream.write("\n");
-    //     script = "\n"
-    // } else if (ids.length == 0) {
-    //     stream.write("\n");
-    //     script = "\n"
-    // } else {
-    //     let id = ids[0]
-    //     stream.write("#running: " + compData[id].text + '\n');
-    //     script = compData[id].script ? compData[id].script.split("\n") : ""
-    // }
-    // var lineInx = 0
-
-
     stream.on('data', function (data) {
         let token = this.token
+        let prompt = "[ceStack]"
 
         mess = JSON.stringify({
             "message": data.toString(),
@@ -705,86 +667,70 @@ function streamEvents(conn, ws) {
         })
         ws.send(mess)
 
-        connections.forEach(function (value, index, array) {
-            if (value.token === token) {
-                let ids = value.ids
-                let ind = value.index
+        // console.log("data: " + data.toString())
 
-                if (compData[ids[0]] && compData[ids[0]].script) {
-                    let script = compData[ids[0]].script
-                    let lines = script.split('\n')
-                    if (connections[index].index < lines.length) {
-                        let command = replaceVar(lines[ind], compData[ids[0]])
-                        stream.write(command + '\n');
-                        connections[index].index++
-                    }
+        let lines = data.toString().split("\n")
+        let lastLine = lines[lines.length - 1]
+        if (lastLine.substring(0, prompt.length) === prompt) { //if last line of data has prompt at beginning then send next line of script
+            
+            // if (lines.length > 1) { console.log("lines") }
+            // console.log("prompt")
 
-                }
+            connections.forEach(function (value, index, array) {
+                if (value.token === token) {
 
-            }
-
-            function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{p.mVar4}}
-
-                const items = commandStr.split(new RegExp('{{', 'g'));
-                items.forEach(function (item) {
-                    item = item.substr(0, item.indexOf('}}'));
-
-                    if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'c.') {
-                        var targetVarName = item.substr(2);
-                        var pid = job.parent;
-                        var repStr = "{{c." + targetVarName + "}}";
-                        if (job.variables[targetVarName]) {
-                            var val = job.variables[targetVarName].value;
-                            commandStr = commandStr.replace(repStr, val)
+                    let ids = value.ids
+                    let ind = value.index
+                    // console.log("found conn", ids[0], ind)
+                    if (compData[ids[0]] && compData[ids[0]].script) {
+                        let script = compData[ids[0]].script
+                        let lines = script.split('\n')
+                        // console.log("connections[index].index", connections[index].index, "lines.length", lines.length)
+                        if (connections[index].index < lines.length) {
+                            let command = replaceVar(lines[ind], compData[ids[0]])
+                            stream.write(command + '\n');
+                            // console.log("sent: ", command)
+                            connections[index].index++
                         }
                     }
-                });
+                }
+            });
+        }
+        function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{c.mVar4}}
 
-                //If there are any {{ patterns left in the line then raise error and abort
-                const remainingItemsCount = commandStr.split(new RegExp('{{', 'g')).length;
-                const remainingItems = commandStr.split(new RegExp('{{', 'g'));
-                if (remainingItemsCount > 1) {
-                    var item = remainingItems[1]
-                    item = item.substr(0, item.indexOf('}}'));
+            const items = commandStr.split(new RegExp('{{', 'g'));
+            items.forEach(function (item) {
+                item = item.substr(0, item.indexOf('}}'));
 
-                    if (item.length > 2 && item.length < 32) {
-                        //console.log("Error: Component Variable not found: " + item + '\n');
-                        message("Error: Component Variable not found: " + item + '\n');
-                        flushMessQueue();
-                        sshSuccess = false;
-                        // stream.close();
-                        return ('');
+                if (item.length > 2 && item.length < 32 && item.substr(0, 2) === 'c.') {
+                    var targetVarName = item.substr(2);
+                    var pid = job.parent;
+                    var repStr = "{{c." + targetVarName + "}}";
+                    if (job.variables[targetVarName]) {
+                        var val = job.variables[targetVarName].value;
+                        commandStr = commandStr.replace(repStr, val)
                     }
                 }
-                return (commandStr);
+            });
+
+            //If there are any {{ patterns left in the line then raise error and abort
+            const remainingItemsCount = commandStr.split(new RegExp('{{', 'g')).length;
+            const remainingItems = commandStr.split(new RegExp('{{', 'g'));
+            if (remainingItemsCount > 1) {
+                var item = remainingItems[1]
+                item = item.substr(0, item.indexOf('}}'));
+
+                if (item.length > 2 && item.length < 32) {
+                    //console.log("Error: Component Variable not found: " + item + '\n');
+                    message("Error: Component Variable not found: " + item + '\n');
+                    flushMessQueue();
+                    sshSuccess = false;
+                    // stream.close();
+                    return ('');
+                }
             }
-
-
-
-        });
-
-        // console.log("res write not del " + data)
-
-        // respBufferAccu = Buffer.concat([respBufferAccu, data]);
-
-        // if (respBufferAccu.toString().includes(prompt)) {
-        //     respBufferAccu = new Buffer.from([]);
-
-        //     if (lineInx < script.length) {
-        //         var command = ""
-        //         if (compData.hasOwnProperty(ids[0])) {
-        //             command = replaceVar(script[lineInx], compData[ids[0]])
-        //         } else {
-        //             command = ''
-        //         }
-
-        //         stream.write(command + '\n');
-        //     } else if (lineInx === script.length) {
-
-        //     }
-        //     lineInx++
-        // }
-
+            return (commandStr);
+        }
     });
 
     stream.on('close', function (code, signal) {
@@ -806,12 +752,6 @@ function streamEvents(conn, ws) {
             }
             return true;
         });
-
-        // connections.forEach(function (value, index, array) {
-        //     if (value.token === token) {
-        //         delete connections[index]
-        //     }
-        // })
     });
 
     stream.stderr.on('data', function (data) {
