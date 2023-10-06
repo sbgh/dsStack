@@ -80,14 +80,7 @@
             term.loadAddon(fitAddon);
 
             term.open(document.getElementById('console'));
-            // term.terminalOptions = {
-            //     // 'theme': {
-            //     //     background: '#fdf6e3'
-            //     // }
-            //     fontSize: 13,
-            //     cursorBlink: true,
-            //     enableBold: false
-            // };
+            
             fitAddon.fit();
 
             window.addEventListener("resize", handleResize);
@@ -220,9 +213,9 @@
             }
 
             $("#saveBtn").hide();
+            $("#cancelSaveBtn").hide();
             $("#pasteBtn").hide();
             $("#newCompVarBtn").hide();
-
 
             function disableTree() {
                 // disable visible nodes
@@ -255,9 +248,9 @@
                 // set to true OR reset to whatever user defined function you are using
                 $('#jstree_div').jstree().settings.core.check_callback = true;
             }
-
-
+            
             var currentCompVarObj = {};
+            
             function renderComp(data) {
 
                 if (data) {
@@ -327,7 +320,6 @@
                 saveComp()
             });
 
-
             function loadVarTable(variables, showTools) {
                 for (var varName in variables) {
                     //new row
@@ -393,7 +385,6 @@
                     setVarEditBtnEvent()
                 }
             }
-
 
             function setVarEditBtnEvent() {
 
@@ -517,6 +508,7 @@
                 $("#editBtn").show();
                 $("#newChildBtn").show();
                 $("#saveBtn").hide();
+                $("#cancelSaveBtn").hide();
                 $("#deleteBtn").show();
                 $("#copyBtn").show();
                 if (currentCopyObj.id) {
@@ -543,6 +535,7 @@
                 $("#editBtn").hide();
                 $("#newChildBtn").hide();
                 $("#saveBtn").show();
+                $("#cancelSaveBtn").show();
                 $("#deleteBtn").hide();
                 $("#copyBtn").hide();
                 $("#pasteBtn").hide();
@@ -822,6 +815,8 @@
 
                     localStorage['locTreeWidth'] = JSON.stringify({ width: leftWidth });
 
+                    fitAddon.fit();
+
                 }
 
                 if (isResizingCenterWidth) {
@@ -832,6 +827,8 @@
                     centerContainer.css("flex", "0 0 " + centerWidth + "px")
 
                     localStorage['locCenterWidth'] = JSON.stringify({ width: centerWidth });
+
+                    fitAddon.fit();
 
                 }
 
@@ -1040,6 +1037,7 @@
             }
 
             //settings
+            var userID=""
             $("#settingsBtn").on("click", function () {
                 $('#settingsModal').modal('show');
             })
@@ -1050,8 +1048,7 @@
                     "settingsHostName1": $("#settingsHostName1").val(),
                     "settingsLoginName1": $("#settingsLoginName1").val(),
                     "settingsKey1": $("#settingsKey1").val(),
-                    // "saveHost1": $("#saveHost1").val(),
-                    // "savePath1": $("#savePath1").val()
+                    "userID": userID
                 }
                 localStorage['settings'] = JSON.stringify(settings)
             })
@@ -1060,8 +1057,23 @@
                 $("#settingsHostName1").val(settings.settingsHostName1)
                 $("#settingsLoginName1").val(settings.settingsLoginName1)
                 $("#settingsKey1").val(settings.settingsKey1)
-                // $("#saveHost1").val(settings.saveHost1)
-                // $("#savePath1").val(settings.savePath1)
+                $("#userID").text(settings.userID)
+                userID=settings.userID
+
+                // $.get('/newUser', function (dataObj) {
+                //     userID=dataObj.userID
+                //     let settings = JSON.parse(localStorage['settings'])
+                //     settings.userID = userID
+                //     localStorage['settings'] = JSON.stringify(settings)
+                // })
+            }else{
+                $('#newUserModal').modal('show')
+                
+                $.get('/newUser', function (dataObj) {
+                    userID=dataObj.userID
+                    localStorage['settings'] = JSON.stringify({"userID": userID})
+                    setTimeout(function () {  $('#jstree_div').jstree('select_node', 'ul > li:first');     }, 3000);
+                })
             }
 
             //run
@@ -1085,6 +1097,28 @@
                 template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
             });
 
+            $("#wrapBtn").click(function (event) {
+                term.focus()
+                if( ! $("div#console").hasClass("consoleWrap")){
+                    $("div#console").addClass("consoleWrap")
+                    $("#wrapBtn").addClass("consoleWrapBtn")
+                    fitAddon.fit();
+                }else{
+                    $("div#console").removeClass("consoleWrap")
+                    $("#wrapBtn").removeClass("consoleWrapBtn")
+                    fitAddon.fit();
+                }
+            });
+
+            $("#wrapBtn").popover('dispose').popover({
+                animation: true,
+                content: "Wrap text",
+                delay: { "show": 500, "hide": 100 },
+                trigger: 'hover',
+                placement: 'top',
+                template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+            });
+
             $("#runConfirmButton").click(function (event) {
 
                 let rc = true
@@ -1096,6 +1130,7 @@
 
                 runJob([$("#idToBeRun").val()], rc);
                 $('#runModal').modal('toggle');
+                term.focus()
             });
 
             var accessToken = ""
@@ -1510,6 +1545,7 @@
 
                     <div id="console-button-row">
                         <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
+                        <i id="wrapBtn" class="fa fa-align-justify  fa-fw"></i>
 
                         <div id="stylePickMenu">
                             <span class="radio stylePickTop" data-id="default">
@@ -1532,6 +1568,26 @@
     </div>
 </body>
 
+
+<div id="newUserModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-del-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Consol Essence</h4>
+            </div>
+
+            <div id='newUserBody' class="modal-body">
+                <p>Welcome to Consol Essence.<br><br>
+                Before running any scripts, click the settings button to configure hostname, username and private SSH key.<br><br>
+                Please be aware that you should never enter your private SSH key into any web page unless you own the backend server (you have exclusive root access) or the server belongs to someone you know and trust.<br><br>
+                Consol Essence is Open Source so consider hosting your own application server for complete privacy and independence.<p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
+            </div>
+        </nav>
+    </div>
+</div>
 
 <div id="delModal" class="modal fade" role="dialog">
     <div class="modal-dialog modal-del-dialog">
@@ -1597,6 +1653,8 @@
                     <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
                     <div class="label">Private Key</div>
                     <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
+                    <div class="label">User ID</div>
+                    <div class=""><div id="userID"></div></div>
                     <!-- <div class="label">Save Host</div>
                     <div class="settingsInput"><input id="saveHost1"></textarea></div>
                     <div class="label">Save Path</div>

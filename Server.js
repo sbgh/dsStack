@@ -805,6 +805,14 @@ router.get("/getStyle", function (req, res) {
 
 });
 
+router.get("/newUser", function (req, res) {
+    
+    res.writeHead(200, { "Content-Type": "application/json" });
+    const userID = generateUUID() 
+    const respJson = { "userID": userID };
+    res.end(JSON.stringify(respJson));
+
+});
 
 function saveAllJSON(backup, token) {
     //console.log("saving");

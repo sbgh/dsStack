@@ -37,7 +37,7 @@ a {
 
 #navbarNav-outer {
     z-index: 1;
-    width: calc(100% - 17px);
+    width: 100%;
     background-image: url('');
     background-color: #ffffff;
     min-height: 55px;
@@ -268,6 +268,19 @@ textarea#settingsKey1 {
 
 div#console {
     width: 2000px;
+    
+     /* width: 100% */
+}
+
+div#console {
+    background: #ebebeb;
+    padding: 5px;
+    /* overflow-x: auto; */
+    height: calc(100vh - 115px);
+}
+
+div#console.consoleWrap{
+    width: 100%
 }
 
 div#cCol {
@@ -282,13 +295,6 @@ div#connectPick {
 i.fa {
     font-size: 17px;
     color: #666666;
-}
-
-div#console {
-    background: #ebebeb;
-    padding: 5px;
-    overflow-x: auto;
-    height: calc(100vh - 115px);
 }
 
 .jstree-wholerow.jstree-wholerow-clicked {
@@ -469,4 +475,12 @@ label#buildModalTitleName {
 
 div#compVariablesForm {
     margin: 10px 5px;
+}
+
+.modal-dialog.modal-del-dialog {
+    max-width: 800px;
+}
+
+.fa-fw {
+    margin: 0 3px;
 }
