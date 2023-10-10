@@ -133,5 +133,7 @@ access.log
 views/builder.ejs
 
 backup/
+compData/
 views/builder.js
 compData.json.bak
+compData.json.bak2

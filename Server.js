@@ -10,7 +10,6 @@ var http = require('http');
 const https = require('https');
 
 const Client = require('ssh2').Client
-// const formidable = require('formidable');
 
 var app = express();
 
@@ -39,7 +38,10 @@ const viewPath = __dirname + '/views/';
 const stylesPath = __dirname + '/static/theme/';
 app.use(express.static('static'));
 
-global.compData = JSON.parse(fs.readFileSync(__dirname + '/compData.json'));
+global.compDataObj = {}
+global.compDataObj = { "0": JSON.parse(fs.readFileSync(__dirname + '/compData.json')) }
+
+// compDataObj["93dee0ac-da81-4f07-a503-ef7b0b02aa43"] = compDataObj[0]
 
 const config = { "username": "admin" }
 
@@ -75,7 +77,8 @@ router.use(function (req, res, next) {
 
 });
 router.get("/", function (req, res) {
-    var sess = req.session;
+    var sess = req.session
+
     if (typeof sess !== 'undefined') {
         var username = sess.username;
         res.render("index", { username: username });
@@ -87,361 +90,444 @@ router.get("/", function (req, res) {
 router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
-    var rowdata = compData[id];
-
-    var searchSt = ""
-    if (req.query.hasOwnProperty("searchSt")) {
-        if (req.query.searchSt.trim() !== "") {
-            searchSt = req.query.searchSt.toLowerCase()
-        }
+    var userID = req.query.userID;
+    if(userID !== "0"){
+        var b = 0
+    }
+    var compData = {}
+    if(! compDataObj[userID] ){
+// console.log("! compDataObj[userID]")
+        fs.readFile(__dirname + '/compData/compData.'+userID+'.json', (err, data) => {
+            if (!err && data) {
+// console.log("!err && data")
+                compDataObj[userID] = JSON.parse(data)
+                compData = compDataObj[userID] 
+                buildTree(id, compData)
+            }else{
+// console.log("!err && data else")
+                compData = compDataObj["0"]
+                buildTree(id, compData)
+            }
+        })
+    }else if(Object.keys(compDataObj[userID]).length === 0){
+// console.log("compDataObj[userID]).length === 0")
+        compData = compDataObj["0"]
+        buildTree(id, compData)
+    }else{
+// console.log("else", userID)
+        compData = compDataObj[userID] 
+        buildTree(id, compData)
     }
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    var resJSON = [];
-    if (id !== '#') {
-        rowdata.id = id;
+    function buildTree(id, compData){
 
-        resJSON.push(rowdata);
-    } else {
-        var found = false
-        var foundIds = [];
-        for (var key in compData) {
-            if (compData.hasOwnProperty(key)) {
-                var rowdata = compData[key];
+        var searchSt = ""
+        if (req.query.hasOwnProperty("searchSt")) {
+            if (req.query.searchSt.trim() !== "") {
+                searchSt = req.query.searchSt.toLowerCase()
+            }
+        }
 
-                found = false
-                if (searchSt === "" || !rowdata.hasOwnProperty("text") || !rowdata.hasOwnProperty("description") || !rowdata.hasOwnProperty("script")) {
-                    found = true
-                } else
-                    if (rowdata.text.toLowerCase().includes(searchSt)) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        var resJSON = [];
+        if (id !== '#') {
+            let rowdata = compData[id];
+            rowdata.id = id;
+
+            resJSON.push(rowdata);
+        } else {
+            var found = false
+            var foundIds = [];
+            for (var key in compData) {
+                if (compData.hasOwnProperty(key)) {
+                    let rowdata = compData[key];
+
+                    found = false
+                    if (searchSt === "" || !rowdata.hasOwnProperty("text") || !rowdata.hasOwnProperty("description") || !rowdata.hasOwnProperty("script")) {
                         found = true
-                        rowdata.found = true
-                    } else if (compData[key].description.hasOwnProperty("ops")) {
-                        compData[key].description.ops.forEach(function (row) {
-                            if (row.hasOwnProperty("insert")) {
-                                var rTxt = row.insert;
-                                if (rTxt.hasOwnProperty("includes")) { //could be image
-                                    if (rTxt.includes(searchSt)) {
-                                        found = true
+                    } else
+                        if (rowdata.text.toLowerCase().includes(searchSt)) {
+                            found = true
+                            rowdata.found = true
+                        } else if (compData[key].description.hasOwnProperty("ops")) {
+                            compData[key].description.ops.forEach(function (row) {
+                                if (row.hasOwnProperty("insert")) {
+                                    var rTxt = row.insert;
+                                    if (rTxt.hasOwnProperty("includes")) { //could be image
+                                        if (rTxt.includes(searchSt)) {
+                                            found = true
+                                        }
                                     }
                                 }
+                            })
+                        } else if (rowdata.script.toLowerCase().includes(searchSt)) {
+                            found = true
+                            rowdata.found = true
+                        }
+
+                    if (found === true) {
+
+                        var a = compData[key].parent
+                        var x = 0
+                        while (a && a !== '#') {
+                            if (!foundIds.includes(compData[a].id)) {
+                                resJSON.unshift(compData[a])
+                                foundIds.push(a)
                             }
-                        })
-                    } else if (rowdata.script.toLowerCase().includes(searchSt)) {
-                        found = true
-                        rowdata.found = true
-                    }
-
-                if (found === true) {
-
-                    var a = compData[key].parent
-                    var x = 0
-                    while (a && a !== '#') {
-                        if (!foundIds.includes(compData[a].id)) {
-                            resJSON.unshift(compData[a])
-                            foundIds.push(a)
+                            a = compData[a].parent
+                            x++
+                            if (x > 100) {
+                                console.log("Error: too many grand parents found during search [" + key + "]")
+                                res.end("500")
+                                return ("Error: too many grand parents found during search [" + key + "]")
+                            }
                         }
-                        a = compData[a].parent
-                        x++
-                        if (x > 100) {
-                            console.log("Error: too many grand parents found during search [" + key + "]")
-                            res.end("500")
-                            return ("Error: too many grand parents found during search [" + key + "]")
-                        }
+
+                        rowdata.id = key
+                        rowdata.type = "code"
+                        resJSON.push(rowdata)
+                        foundIds.push(key)
+                    } else {
+
                     }
-
-                    rowdata.id = key
-                    rowdata.type = "code"
-                    resJSON.push(rowdata)
-                    foundIds.push(key)
-                } else {
-
                 }
             }
         }
+        res.end(JSON.stringify(resJSON));
     }
-    res.end(JSON.stringify(resJSON));
 });
 
 router.post("/saveComp", function (req, res) {
 
     var reqJSON = req.body;
+    let userID = reqJSON.userID
     var retId = ""
 
     let newFlag = true
-    if (reqJSON.hasOwnProperty("id")) {
+    var compData
+    if (!reqJSON.hasOwnProperty("userID")) {
+        console.log("saveComp error: reqJSON does not have property userID")
+        res.end("saveComp error: reqJSON does not have property userID");
+    } else if (!reqJSON.hasOwnProperty("id")) {
+        console.log("saveComp error: reqJSON does not have property id")
+        res.end("saveComp error: reqJSON does not have property id")
+    } else if (userID == "0") {
+        console.log("saveComp error: Cannot save to default ID 0")
+        res.end("saveComp error: Cannot save to default ID 0")
+    } else if (!compDataObj[userID]) {
+        console.log("saveComp error: compDataObj does not have property userID")
+        res.end("saveComp error: compDataObj does not have property userID")
+    }else {
+        if (Object.keys(compDataObj[userID]).length === 0) {
+            compDataObj[userID] = compDataObj["0"] 
+        } 
+        
+        compData = compDataObj[userID]
         newFlag = reqJSON.id.trim() !== "" ? false : true
+
+        if (!newFlag) {
+            let id = reqJSON.id;
+            retId = id
+            compData[id].text = reqJSON.text
+            compData[id].script = reqJSON.script
+            compData[id].description = reqJSON.description
+            compData[id].variables = reqJSON.compVariables
+        } else {
+            let id = generateUUID();
+            retId = id
+            compData[id] = {}
+            compData[id].text = reqJSON.text
+            compData[id].parent = reqJSON.parent
+            compData[id].script = reqJSON.script
+            compData[id].description = reqJSON.description
+        }
+
+        saveAllJSON(true, userID)
+
+        res.end(retId);
     }
-
-    if (!newFlag) {
-        let id = reqJSON.id;
-        retId = id
-        compData[id].text = reqJSON.text
-        compData[id].script = reqJSON.script
-        compData[id].description = reqJSON.description
-        compData[id].variables = reqJSON.compVariables
-    } else {
-        let id = generateUUID();
-        retId = id
-        compData[id] = {}
-        compData[id].text = reqJSON.text
-        compData[id].parent = reqJSON.parent
-        compData[id].script = reqJSON.script
-        compData[id].description = reqJSON.description
-    }
-
-    saveAllJSON(true)
-
-    res.end(retId);
 });
 
 router.post("/remove", function (req, res) {
-    //remove id from systems json and remove /uploads/ dir
+
     var reqJSON = req.body;
-    var ids = reqJSON.ids.split(';');
-    // var tree =reqJSON.tree;
+    var userID = reqJSON.userID
+    if (!compDataObj[userID]) {
+        console.log("remove error: compDataObj does not have property userID")
+        res.end("remove error: compDataObj does not have property userID")
+    } else {
+        var compData = compDataObj[userID]
+        var ids = reqJSON.ids.split(';');
 
-    ids.forEach(function (id) { //Loop throu all ids
-        if (compData.hasOwnProperty(id)) {
-            delete compData[id];
-        }
-    });
-    saveAllJSON(true);
+        ids.forEach(function (id) { //Loop throu all ids
+            if (compData.hasOwnProperty(id)) {
+                delete compData[id];
+            }
+        });
+        saveAllJSON(true, userID);
 
-    res.end('');
+        res.end('');
+    }
+
 });
 
 router.post("/copy", function (req, res) {
     var reqJSON = req.body;
 
-    var fromIds = reqJSON.ids.split(';');
-    var targetId = reqJSON.parent;
-    var position = reqJSON.pos;
-    // var lib = reqJSON.lib;
+    var userID = reqJSON.userID
+    if (!compDataObj[userID]) {
+        console.log("copy error: compDataObj does not have property userID")
+        res.end("copy error: compDataObj does not have property userID")
+    } else {
+        var compData = compDataObj[userID]
 
-    var error = false;
-    var errorID = '';
+        var fromIds = reqJSON.ids.split(';');
+        var targetId = reqJSON.parent;
+        var position = reqJSON.pos;
+        // var lib = reqJSON.lib;
 
-    //Set error flag if target not exist
-    if ((!compData.hasOwnProperty(targetId)) && (targetId !== '#')) {
-        error = true;
-        errorID = targetId;
-    }
+        var error = false;
+        var errorID = '';
 
-    //set error flag if from ID not exist
-    fromIds.forEach(function (id) {
-        if (!compData.hasOwnProperty(id) && error === false) {
+        //Set error flag if target not exist
+        if ((!compData.hasOwnProperty(targetId)) && (targetId !== '#')) {
             error = true;
-            errorID = id;
+            errorID = targetId;
         }
-    });
 
-    //If no error
-    if (error === false) {
+        //set error flag if from ID not exist
+        fromIds.forEach(function (id) {
+            if (!compData.hasOwnProperty(id) && error === false) {
+                error = true;
+                errorID = id;
+            }
+        });
 
-        //build id map of old parents and new parents
-        var idMap = {};
+        //If no error
+        if (error === false) {
 
-        //add from parent and new parent to id map
-        idMap[compData[fromIds[0]].parent] = targetId;
+            //build id map of old parents and new parents
+            var idMap = {};
 
-        //loop through all fromIds and copy
-        fromIds.forEach(function (fromId) {
-            var fromNode = compData[fromId];
-            var id = generateUUID();
+            //add from parent and new parent to id map
+            idMap[compData[fromIds[0]].parent] = targetId;
 
-            //update parent id map
-            idMap[fromId] = id;
-            var newParentId = idMap[compData[fromId].parent];
-            //console.log('move to:'+compData[newParentId].name);
+            //loop through all fromIds and copy
+            fromIds.forEach(function (fromId) {
+                var fromNode = compData[fromId];
+                var id = generateUUID();
 
-            //initial history json
-            var ds = new Date().toISOString();
-            var hist = [{ username: config.username, ds: ds, fromId: fromId }];
+                //update parent id map
+                idMap[fromId] = id;
+                var newParentId = idMap[compData[fromId].parent];
+                //console.log('move to:'+compData[newParentId].name);
 
-            //Build new component obj. Version 1
-            var NewRow = {
-                parent: newParentId,
-                text: fromNode.text,
-                description: fromNode.description,
-                // ver: 1,
-                // comType: fromNode.comType,
-                // sort: fromNode.sort,
-                // text: fromNode.name,
-                hist: hist
-            };
+                //initial history json
+                var ds = new Date().toISOString();
+                var hist = [{ username: config.username, ds: ds, fromId: fromId }];
 
-            //Add new family tree
-            // if (newParentId === "#") {
-            //     NewRow.ft = "#"
-            // } else {
-            //     NewRow.ft = compData[newParentId].ft + '/' + newParentId;
-            // }
+                //Build new component obj. Version 1
+                var NewRow = {
+                    parent: newParentId,
+                    text: fromNode.text,
+                    description: fromNode.description,
+                    // ver: 1,
+                    // comType: fromNode.comType,
+                    // sort: fromNode.sort,
+                    // text: fromNode.name,
+                    hist: hist
+                };
 
-            //Add more properties to the new component obj if type = 'job' (ie component)
-            // if (fromNode.comType === 'job') {
-            // NewRow.enabled = fromNode.enabled;
-            // NewRow.promoted = fromNode.promoted;
+                //Add new family tree
+                // if (newParentId === "#") {
+                //     NewRow.ft = "#"
+                // } else {
+                //     NewRow.ft = compData[newParentId].ft + '/' + newParentId;
+                // }
 
-            NewRow.variables = {};
-            //copy vars that are not private
-            for (var ind in compData[fromId].variables) {
-                if (compData[fromId].variables.hasOwnProperty(ind)) {
-                    if (!fromNode.variables[ind].private) {
-                        NewRow.variables[ind] = fromNode.variables[ind]
-                    } else {
-                        NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
-                        NewRow.variables[ind].value = "";
+                //Add more properties to the new component obj if type = 'job' (ie component)
+                // if (fromNode.comType === 'job') {
+                // NewRow.enabled = fromNode.enabled;
+                // NewRow.promoted = fromNode.promoted;
+
+                NewRow.variables = {};
+                //copy vars that are not private
+                for (var ind in compData[fromId].variables) {
+                    if (compData[fromId].variables.hasOwnProperty(ind)) {
+                        if (!fromNode.variables[ind].private) {
+                            NewRow.variables[ind] = fromNode.variables[ind]
+                        } else {
+                            NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
+                            NewRow.variables[ind].value = "";
+                        }
+                    }
+                }
+
+                // NewRow.icon = fromNode.icon;
+
+                NewRow.script = fromNode.script;
+
+                // if (fromNode.hasOwnProperty('thumbnail')) {
+                //     NewRow.thumbnail = fromNode.thumbnail;
+                // }
+                // }
+
+                compData[id] = NewRow;
+
+                //Copy file resources
+                // if (fs.existsSync(filesPath + fromId)) { //copy file resources if they exist
+                //     fs.mkdirSync(filesPath + id);
+                //     const files = fs.readdirSync(filesPath + fromId);
+                //     files.forEach(function (file) {
+                //         if (!fs.lstatSync(filesPath + fromId + '/' + file).isDirectory()) {
+                //             const targetFile = filesPath + id + '/' + file;
+                //             const source = filesPath + fromId + '/' + file;
+                //             fs.writeFileSync(targetFile, fs.readFileSync(source))
+                //         }
+                //     })
+                // }
+            });
+
+            //add new sort order value to the 1st id
+            var posInt = parseInt(position, 10);
+            for (var key in compData) {
+                if (compData[key].parent === targetId) {
+                    if (compData[key].sort >= posInt) {
+                        compData[key].sort = compData[key].sort + 1;
                     }
                 }
             }
+            compData[idMap[fromIds[0]]].sort = posInt;
+            fixChildsSort(targetId, userID);
 
-            // NewRow.icon = fromNode.icon;
+            //Save compData and backup
+            saveAllJSON(true, userID);
 
-            NewRow.script = fromNode.script;
+            //Return OK status
+            res.sendStatus(200);
+            res.end('');
+            //console.log("saving script"+ JSON.stringify(foundRow));
 
-            // if (fromNode.hasOwnProperty('thumbnail')) {
-            //     NewRow.thumbnail = fromNode.thumbnail;
-            // }
-            // }
-
-            compData[id] = NewRow;
-
-            //Copy file resources
-            // if (fs.existsSync(filesPath + fromId)) { //copy file resources if they exist
-            //     fs.mkdirSync(filesPath + id);
-            //     const files = fs.readdirSync(filesPath + fromId);
-            //     files.forEach(function (file) {
-            //         if (!fs.lstatSync(filesPath + fromId + '/' + file).isDirectory()) {
-            //             const targetFile = filesPath + id + '/' + file;
-            //             const source = filesPath + fromId + '/' + file;
-            //             fs.writeFileSync(targetFile, fs.readFileSync(source))
-            //         }
-            //     })
-            // }
-        });
-
-        //add new sort order value to the 1st id
-        var posInt = parseInt(position, 10);
-        for (var key in compData) {
-            if (compData[key].parent === targetId) {
-                if (compData[key].sort >= posInt) {
-                    compData[key].sort = compData[key].sort + 1;
-                }
-            }
+        } else {
+            //error detected. Return error message
+            res.sendStatus(500);
+            res.end("Error:System ID not found - " + errorID)
         }
-        compData[idMap[fromIds[0]]].sort = posInt;
-        fixChildsSort(targetId);
-
-        //Save compData and backup
-        saveAllJSON(true);
-
-        //Return OK status
-        res.sendStatus(200);
-        res.end('');
-        //console.log("saving script"+ JSON.stringify(foundRow));
-
-    } else {
-        //error detected. Return error message
-        res.sendStatus(500);
-        res.end("Error:System ID not found - " + errorID)
     }
 
 });
 
 router.get("/move", function (req, res) {
     //console.log("move...");
-    var id = req.query.id;
-    var direction = req.query.direction[0]; //either u or d
-    var oldPos = compData[id].sort;
-    var otherId = "";
 
-    if (!id || !direction) {
-        res.end('');
-    }
+    var userID = req.query.userID
+    if (!compDataObj[userID]) {
+        console.log("move error: compDataObj does not have property userID")
+        res.end("move error: compDataObj does not have property userID")
+    } else {
+        var compData = compDataObj[userID]
 
-    var parent = compData[id].parent;
+        var id = req.query.id
+        var direction = req.query.direction[0]; //either u or d
+        var oldPos = compData[id].sort;
+        var otherId = "";
 
-    fixChildsSort(parent);
+        if (!id || !direction) {
+            res.end('');
+        }
 
-    var beforeId = '';
-    var afterId = '';
+        var parent = compData[id].parent;
 
-    //get all siblings
-    var siblings = [];
-    for (var key in compData) {
-        if (compData.hasOwnProperty(key)) {
-            if (parent === compData[key].parent) {
-                //console.log("found: " , compData[key].name,  compData[key].sort, parent , compData[key].parent);
-                siblings.push(key);
+        fixChildsSort(parent, userID);
+
+        var beforeId = '';
+        var afterId = '';
+
+        //get all siblings
+        var siblings = [];
+        for (var key in compData) {
+            if (compData.hasOwnProperty(key)) {
+                if (parent === compData[key].parent) {
+                    //console.log("found: " , compData[key].name,  compData[key].sort, parent , compData[key].parent);
+                    siblings.push(key);
+                }
             }
         }
-    }
 
-    //sort
-    siblings.sort((a, b) => (compData[a].sort > compData[b].sort) ? 1 : -1);
+        //sort
+        siblings.sort((a, b) => (compData[a].sort > compData[b].sort) ? 1 : -1);
 
-    //re-apply sort # because there could be dups or gaps
-    var x = 0;
-    for (var key in siblings) {
-        compData[siblings[key]].sort = x;
-        x++
-    }
-
-    //find the before and after ids
-    for (var key in siblings) {
-        if (compData[id].sort + 1 === compData[siblings[key]].sort) {
-            afterId = siblings[key]
+        //re-apply sort # because there could be dups or gaps
+        var x = 0;
+        for (var key in siblings) {
+            compData[siblings[key]].sort = x;
+            x++
         }
-        if (compData[id].sort - 1 === compData[siblings[key]].sort) {
-            beforeId = siblings[key]
+
+        //find the before and after ids
+        for (var key in siblings) {
+            if (compData[id].sort + 1 === compData[siblings[key]].sort) {
+                afterId = siblings[key]
+            }
+            if (compData[id].sort - 1 === compData[siblings[key]].sort) {
+                beforeId = siblings[key]
+            }
         }
+
+        if (direction === 'u' && beforeId !== '') {
+            var tmp = compData[beforeId].sort;
+            compData[beforeId].sort = compData[id].sort;
+            compData[id].sort = tmp;
+            otherId = beforeId;
+        }
+
+        //set new sort para for current and after if down
+        if (direction === 'd' && afterId !== '') {
+            var tmp = compData[afterId].sort;
+            compData[afterId].sort = compData[id].sort;
+            compData[id].sort = tmp;
+            otherId = afterId;
+        }
+
+        //Save the resorted SystemJSON
+        saveAllJSON(true, userID);
+
+        var newPos = compData[id].sort;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ "newPos": newPos, "oldPos": oldPos, "otherId": otherId }));
+
     }
-
-    if (direction === 'u' && beforeId !== '') {
-        var tmp = compData[beforeId].sort;
-        compData[beforeId].sort = compData[id].sort;
-        compData[id].sort = tmp;
-        otherId = beforeId;
-    }
-
-    //set new sort para for current and after if down
-    if (direction === 'd' && afterId !== '') {
-        var tmp = compData[afterId].sort;
-        compData[afterId].sort = compData[id].sort;
-        compData[id].sort = tmp;
-        otherId = afterId;
-    }
-
-    //Save the resorted SystemJSON
-    saveAllJSON(true);
-
-    var newPos = compData[id].sort;
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ "newPos": newPos, "oldPos": oldPos, "otherId": otherId }));
 
 });
 
 
-function fixChildsSort(parentId) {
-    //get all siblings
-    var siblings = [];
-    for (var key in compData) {
-        if (compData.hasOwnProperty(key)) {
-            if (parentId === compData[key].parent) {
-                siblings.push(key);
+function fixChildsSort(parentId, userID) {
+    if (!compDataObj[userID]) {
+        console.log("fixChildsSort error: compDataObj does not have property userID")
+        res.end("fixChildsSort error: compDataObj does not have property userID")
+    } else {
+
+        var compData = compDataObj[userID]
+
+        //get all siblings
+        var siblings = [];
+        for (var key in compData) {
+            if (compData.hasOwnProperty(key)) {
+                if (parentId === compData[key].parent) {
+                    siblings.push(key);
+                }
             }
         }
-    }
 
-    //sort
-    siblings.sort((a, b) => (compData[a].sort > compData[b].sort) ? 1 : -1);
+        //sort
+        siblings.sort((a, b) => (compData[a].sort > compData[b].sort) ? 1 : -1);
 
-    //re-apply sort # because there could be dups or gaps
-    var x = 0;
-    for (var key in siblings) {
-        compData[siblings[key]].sort = x;
-        x++
+        //re-apply sort # because there could be dups or gaps
+        var x = 0;
+        for (var key in siblings) {
+            compData[siblings[key]].sort = x;
+            x++
+        }
     }
 }
 
@@ -450,6 +536,7 @@ var connections = []
 //Create and register connection or lookup connection
 function getConn(conOptions, callback) {
     let token = conOptions.token
+    let userID = conOptions.userID
     let ids = conOptions.ids
     let ws = conOptions.ws
     let key = conOptions.key
@@ -519,7 +606,7 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "ids": ids, "key": key }
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "ids": ids, "key": key }
 
                         connections.push(conObj)
 
@@ -552,46 +639,59 @@ function streamEvents(conn, ws) {
 
     stream.on('data', function (data) {
         let token = this.token
-        let prompt = "[ceStack]"
+        var userID = conn.userID
 
-        mess = JSON.stringify({
-            "message": data.toString(),
-            "status": "up"
-        })
-        ws.send(mess)
+        var compData
+        if (!compDataObj[userID]) {
+            console.log("stream.on('data') error: compDataObj does not have property userID")
+        } else {
+            var compData = compDataObj[userID]
 
-        // console.log("data: " + data.toString())
+            let prompt = "[ceStack]"
 
-        let lines = data.toString().split("\n")
-        let lastLine = lines[lines.length - 1]
-        // console.log("prompt? " + lastLine)        
-        if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line of script
-            // if (lines.length > 1) { console.log("lines") }
-            // console.log("prompt")
+            mess = JSON.stringify({
+                "message": data.toString(),
+                "status": "up"
+            })
+            ws.send(mess)
 
-            conn.atPrompt = true
-            connections.forEach(function (value, index, array) {
-                if (value.token === token) {
+            // console.log("data: " + data.toString())
 
-                    let ids = value.ids
-                    let ind = value.index
-                    // console.log("found conn", ids[0], ind)
-                    if (compData[ids[0]] && compData[ids[0]].script) {
-                        let script = compData[ids[0]].script
-                        let lines = script.split('\n')
-                        // console.log("connections[index].index", connections[index].index, "lines.length", lines.length)
-                        if (connections[index].index < lines.length) {
-                            let command = replaceVar(lines[ind], compData[ids[0]])
-                            stream.write(command + '\n');
-                            // console.log("sent: ", command)
-                            connections[index].index++
+            let lines = data.toString().split("\n")
+            let lastLine = lines[lines.length - 1]
+            // console.log("prompt? " + lastLine)        
+            if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line of script
+                // if (lines.length > 1) { console.log("lines") }
+                // console.log("prompt")
+
+                conn.atPrompt = true
+                connections.forEach(function (value, index, array) {
+                    if (value.token === token) {
+
+                        let ids = value.ids
+                        let ind = value.index
+                        // console.log("found conn", ids[0], ind)
+                        if (compData[ids[0]] && compData[ids[0]].script) {
+                            let script = compData[ids[0]].script
+                            let lines = script.split('\n')
+                            // console.log("connections[index].index", connections[index].index, "lines.length", lines.length)
+                            if (connections[index].index < lines.length) {
+                                let command = replaceVar(lines[ind], compData[ids[0]])
+                                stream.write(command + '\n');
+                                // console.log("sent: ", command)
+                                connections[index].index++
+                            }
                         }
                     }
-                }
-            });
-        } else {
-            conn.atPrompt = false
+                });
+            } else {
+                conn.atPrompt = false
+            }
+
         }
+
+
+
     });
 
     stream.on('close', function (code, signal) {
@@ -633,7 +733,6 @@ function streamEvents(conn, ws) {
         });
     });
 }
-
 
 function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{c.mVar4}}
 
@@ -705,52 +804,65 @@ router.get("/getStyle", function (req, res) {
 
 router.get("/newUser", function (req, res) {
 
-    res.writeHead(200, { "Content-Type": "application/json" });
     const userID = generateUUID()
-    const respJson = { "userID": userID };
-    res.end(JSON.stringify(respJson));
+    compDataObj[userID] = {}
+    res.setHeader('userID', userID)
+    res.writeHead(200, { "Content-Type": "application/json" })
+    const respJson = { "userID": userID }
+    res.end(JSON.stringify(respJson))
 
 });
 
-function saveAllJSON(backup, token) {
+function saveAllJSON(backup, userID) {
     //console.log("saving");
 
-    fs.writeFile(__dirname + '/compData.json', JSON.stringify(compData), function (err) {
-        if (err) {
-            console.log('There has been an error saving your component data json.');
-            console.log(err.message);
-            return;
-        } else if (backup) {
-            console.log("backup");
-            var dsString = new Date().toISOString();
-            var fds = dsString.replace(/_/g, '-').replace(/T/, '-').replace(/:/g, '-').replace(/\..+/, '');
-            const fname = 'compData' + fds + '.json';
-            fs.writeFile(__dirname + "/backup/" + fname, JSON.stringify(compData), function (err) {
-                if (err) {
-                    console.log('There has been an error saving your json: /backup/' + fname);
-                    console.log(err.message);
-                    return;
-                } else {
-                    var x = 1;
-                    fs.readdir(__dirname + "/backup/", function (err, files) { // delete older backups files
-                        if (err) {
-                            console.log("Error reading " + __dirname + "/backup/ dir\n" + err);
-                        } else {
-                            files.forEach(function (mFile) {
-                                if (fs.statSync(__dirname + "/backup/" + mFile).isFile()) {
-                                    if ((x + 20) < files.length) {
-                                        //console.log("removing"  + __dirname + "/backup/" + mFile );
-                                        fs.unlinkSync(__dirname + "/backup/" + mFile)
+    var compData
+    if (!compDataObj[userID]) {
+        console.log("saveAllJSON error: compDataObj does not have property userID")
+        res.end("saveAllJSON error: compDataObj does not have property userID")
+
+        // compDataObj[userID] = compDataObj["0"]
+
+    } else {
+        compData = compDataObj[userID]
+
+        fs.writeFile(__dirname + '/compData/compData.' + userID + '.json', JSON.stringify(compData), function (err) {
+            if (err) {
+                console.log('There has been an error saving your component data json.');
+                console.log(err.message)
+                return;
+            } else if (backup) {
+                console.log("backup");
+                var dsString = new Date().toISOString()
+                var fds = dsString.replace(/_/g, '-').replace(/T/, '-').replace(/:/g, '-').replace(/\..+/, '')
+                const fname = 'compData' + fds + '.' + userID + '.json'
+                fs.writeFile(__dirname + "/backup/" + fname, JSON.stringify(compData), function (err) {
+                    if (err) {
+                        console.log('There has been an error saving your json: /backup/' + fname);
+                        console.log(err.message);
+                        return;
+                    } else {
+                        var x = 1;
+                        fs.readdir(__dirname + "/backup/", function (err, files) { // delete older backups files
+                            if (err) {
+                                console.log("Error reading " + __dirname + "/backup/ dir\n" + err)
+                            } else {
+                                files.forEach(function (mFile) {
+                                    if (fs.statSync(__dirname + "/backup/" + mFile).isFile()) {
+                                        if ((x + 20) < files.length) {
+                                            //console.log("removing"  + __dirname + "/backup/" + mFile )
+                                            fs.unlinkSync(__dirname + "/backup/" + mFile)
+                                        }
+                                        x++
                                     }
-                                    x++
-                                }
-                            })
-                        }
-                    })
-                }
-            })
-        }
-    })
+                                })
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
 }
 
 //bodyParser must be below proxy
@@ -783,6 +895,8 @@ wsserver.on('connection', function connection(ws) {
 
         let mess = ""
 
+        var compData = compDataObj[conn.userID]
+
         if (!conn.token) {
             mess = JSON.stringify({
                 "token": "",
@@ -807,6 +921,7 @@ wsserver.on('connection', function connection(ws) {
                 let command = replaceVar(lines[0], compData[ids[0]])
                 conn.stream.write(command + '\n');
                 conn.index = 1
+
             } else if (conn.ids[0]) {
                 conn.index = 0
             }
@@ -821,6 +936,7 @@ wsserver.on('connection', function connection(ws) {
             "username": dataObj.settingsLoginName,
             "privateKey": dataObj.settingsKey,
             "token": dataObj.token,
+            "userID": dataObj.userID,
             "ids": dataObj.ids,
             "ws": ws,
             "key": dataObj.key
