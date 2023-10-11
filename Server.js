@@ -76,6 +76,17 @@ router.use(function (req, res, next) {
     next();
 
 });
+
+router.use(function (req, res, next) {
+
+    if(req.get('host') !== "dsstack.cybera.ca:8443"){
+        res.redirect(301, 'https://dsstack.cybera.ca:8443');
+    }else{
+        next();
+    }
+
+});
+
 router.get("/", function (req, res) {
     var sess = req.session
 
