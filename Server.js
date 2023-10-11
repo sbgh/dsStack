@@ -268,7 +268,6 @@ router.post("/remove", function (req, res) {
 
         res.end('');
     }
-
 });
 
 router.post("/copy", function (req, res) {
@@ -642,10 +641,15 @@ function streamEvents(conn, ws) {
         var userID = conn.userID
 
         var compData
-        if (!compDataObj[userID]) {
-            console.log("stream.on('data') error: compDataObj does not have property userID")
-        } else {
-            var compData = compDataObj[userID]
+        // if (!compDataObj[userID]) {
+        //     console.log("stream.on('data') error: compDataObj does not have property userID")
+        // } else {
+
+            if (!compDataObj[userID]) {
+                compData = compDataObj["0"]
+            } else{
+                compData = compDataObj[userID]
+            }
 
             let prompt = "[ceStack]"
 
@@ -688,7 +692,7 @@ function streamEvents(conn, ws) {
                 conn.atPrompt = false
             }
 
-        }
+        // }
 
 
 
@@ -888,14 +892,19 @@ var secureServer = https.createServer({
 
 var wsserver = new WebSocket.Server({ server: secureServer });
 
-
 wsserver.on('connection', function connection(ws) {
 
     function processMessage(conn) {
 
         let mess = ""
 
-        var compData = compDataObj[conn.userID]
+        var compData
+        if(compDataObj[conn.userID]){
+            compData = compDataObj[conn.userID]
+        }else{
+            compData = compDataObj["0"]
+        }
+        
 
         if (!conn.token) {
             mess = JSON.stringify({
@@ -915,7 +924,7 @@ wsserver.on('connection', function connection(ws) {
                 let key = conn.key
                 conn.stream.write(key)
             } else if (conn.ids[0] && compData[ids[0]].script && conn.atPrompt) {
-                //We are sitting at prompt so lets send first scriot line
+                //We are sitting at prompt so lets send first script line
                 let script = compData[ids[0]].script
                 let lines = script.split('\n')
                 let command = replaceVar(lines[0], compData[ids[0]])
