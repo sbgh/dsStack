@@ -43,7 +43,7 @@ global.compDataObj = { "0": JSON.parse(fs.readFileSync(__dirname + '/compData.js
 
 // compDataObj["93dee0ac-da81-4f07-a503-ef7b0b02aa43"] = compDataObj[0]
 
-const config = { "username": "admin" }
+// const config = { "username": "admin" }
 
 function generateUUID() {
     var d = new Date().getTime();
@@ -77,60 +77,59 @@ router.use(function (req, res, next) {
 
 });
 
+//redirect to proper host name 
 router.use(function (req, res, next) {
 
-    if(req.get('host') !== "dsstack.cybera.ca:8443"){
+    if (req.get('host') === "consol.cybera.ca:8443") {
         res.redirect(301, 'https://dsstack.cybera.ca:8443');
-    }else{
+    } else {
         next();
     }
 
 });
 
 router.get("/", function (req, res) {
-    var sess = req.session
-
-    if (typeof sess !== 'undefined') {
-        var username = sess.username;
-        res.render("index", { username: username });
-    } else {
-        res.render("index", {});
-    }
+    res.render("index", { manager: false });
 });
+router.get("/dsman", function (req, res) {
+    res.render("dsman", { manager: true })
+});
+
 
 router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
     var userID = req.query.userID;
-    if(userID !== "0"){
+    if (userID !== "0") {
         var b = 0
     }
     var compData = {}
-    if(! compDataObj[userID] ){
-// console.log("! compDataObj[userID]")
-        fs.readFile(__dirname + '/compData/compData.'+userID+'.json', (err, data) => {
+    if (!compDataObj[userID]) {
+        // console.log("! compDataObj[userID]")
+        fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
             if (!err && data) {
-// console.log("!err && data")
+                // console.log("!err && data")
                 compDataObj[userID] = JSON.parse(data)
-                compData = compDataObj[userID] 
+                compData = compDataObj[userID]
                 buildTree(id, compData)
-            }else{
-// console.log("!err && data else")
+            } else {
+                // console.log("!err && data else")
                 compData = compDataObj["0"]
                 buildTree(id, compData)
             }
         })
-    }else if(Object.keys(compDataObj[userID]).length === 0){
-// console.log("compDataObj[userID]).length === 0")
+    } else if (Object.keys(compDataObj[userID]).length === 0) {
+        // console.log("compDataObj[userID]).length === 0")
         compData = compDataObj["0"]
         buildTree(id, compData)
-    }else{
-// console.log("else", userID)
-        compData = compDataObj[userID] 
+    } else {
+        // console.log("else", userID)
+        compData = compDataObj[userID]
         buildTree(id, compData)
     }
 
-    function buildTree(id, compData){
+    //builds the return json for node(s) and responds to req 
+    function buildTree(id, compData) {
 
         var searchSt = ""
         if (req.query.hasOwnProperty("searchSt")) {
@@ -228,11 +227,11 @@ router.post("/saveComp", function (req, res) {
     } else if (!compDataObj[userID]) {
         console.log("saveComp error: compDataObj does not have property userID")
         res.end("saveComp error: compDataObj does not have property userID")
-    }else {
+    } else {
         if (Object.keys(compDataObj[userID]).length === 0) {
-            compDataObj[userID] = compDataObj["0"] 
-        } 
-        
+            compDataObj[userID] = compDataObj["0"]
+        }
+
         compData = compDataObj[userID]
         newFlag = reqJSON.id.trim() !== "" ? false : true
 
@@ -251,6 +250,7 @@ router.post("/saveComp", function (req, res) {
             compData[id].parent = reqJSON.parent
             compData[id].script = reqJSON.script
             compData[id].description = reqJSON.description
+            compData[id].sort = 9000
         }
 
         saveAllJSON(true, userID)
@@ -616,7 +616,7 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "ids": ids, "key": key }
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "ids": ids, "key": key, "varName": "", varVal: "" }
 
                         connections.push(conObj)
 
@@ -626,8 +626,22 @@ function getConn(conOptions, callback) {
                             "status": "up"
                         })
                         stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
+                        
+                        if (!compDataObj[userID]) {
+                            fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
+                                if (!err && data) {
+                                    compDataObj[userID] = JSON.parse(data)
+                                    callback(conObj)
+                                }else{
+                                    callback(conObj)
+                                }
 
-                        callback(conObj)
+                            })
+                        }else{
+                            callback(conObj)
+                        }
+
+                        
                     })
                 });
             } catch (error) {
@@ -650,63 +664,94 @@ function streamEvents(conn, ws) {
     stream.on('data', function (data) {
         let token = this.token
         var userID = conn.userID
+        var data=data.toString()
 
         var compData
-        // if (!compDataObj[userID]) {
-        //     console.log("stream.on('data') error: compDataObj does not have property userID")
-        // } else {
 
-            if (!compDataObj[userID]) {
-                compData = compDataObj["0"]
-            } else{
-                compData = compDataObj[userID]
-            }
 
-            let prompt = "[ceStack]"
+        
+        if (!compDataObj[userID]) {
+            compData = compDataObj["0"]
+        } else {
+            compData = compDataObj[userID]
+        }
+        // console.log(stream._exit)
+        let prompt = "[ceStack]"
 
-            mess = JSON.stringify({
-                "message": data.toString(),
-                "status": "up"
-            })
-            ws.send(mess)
+        let mess = JSON.stringify({
+            "message": data,
+            "status": "up"
+        })
+        ws.send(mess)
 
-            // console.log("data: " + data.toString())
+        // console.log("data: " + data.toString())
 
-            let lines = data.toString().split("\n")
-            let lastLine = lines[lines.length - 1]
-            // console.log("prompt? " + lastLine)        
-            if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line of script
-                // if (lines.length > 1) { console.log("lines") }
-                // console.log("prompt")
+        let lines = data.split("\n")
+        let lastLine = lines[lines.length - 1]
+              
+    
+        connections.forEach(function (value, index, array) {
+            if (value.token === token) {
 
-                conn.atPrompt = true
-                connections.forEach(function (value, index, array) {
-                    if (value.token === token) {
+                if (data.substr(0, 4) === 'var:') {
 
-                        let ids = value.ids
-                        let ind = value.index
-                        // console.log("found conn", ids[0], ind)
-                        if (compData[ids[0]] && compData[ids[0]].script) {
-                            let script = compData[ids[0]].script
-                            let lines = script.split('\n')
-                            // console.log("connections[index].index", connections[index].index, "lines.length", lines.length)
-                            if (connections[index].index < lines.length) {
-                                let command = replaceVar(lines[ind], compData[ids[0]])
+                    let dataParts = data.split(":")
+                    if (dataParts.length > 2){
+                        let varName = dataParts[1] ? dataParts[1] : ""
+                        connections[index].varName = varName
+                        dataParts.shift(); dataParts.shift()
+                        let remainder = dataParts.join(":")
+                        connections[index].varVal = connections[index].varVal + remainder
+                    }
+                }else if(connections[index].varName !== ""){
+                    connections[index].varVal = (connections[index].varVal + data.toString()).substring(0,500000)
+                }
+
+                
+                if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line(s) of script
+ // console.log("prompt? " + lastLine) 
+                    connections[index].atPrompt = true
+
+                    if (connections[index].varName !== "") {
+                        mess = JSON.stringify({
+                            "varName": connections[index].varName,
+                            "varVal": connections[index].varVal.split(prompt)[0]
+                        })
+// console.log(mess)
+                        ws.send(mess)
+                        connections[index].varName = ""
+                        connections[index].varVal = ""
+                        
+                    }
+                    let ids = value.ids
+                    let ind = value.index
+// console.log("found conn", ids[0], ind)
+                    if (compData[ids[0]] && compData[ids[0]].script) {
+                        let script = compData[ids[0]].script
+                        let lines = script.split('\n')
+// console.log("connections[index].index", connections[index].index, "lines.length", lines.length)
+                        if (connections[index].index < lines.length) {
+                            let command = replaceVar(lines[ind], compData[ids[0]])
+                            
+                            stream.write(command + '\n');
+// console.log("sent: ", command)
+                            connections[index].index++
+                            ind = connections[index].index
+                            while (lines[ind] && lines[ind].substring(0, 1) === '-') {
+                                command = replaceVar(lines[ind].substring(1), compData[ids[0]])
                                 stream.write(command + '\n');
-                                // console.log("sent: ", command)
+
                                 connections[index].index++
+                                ind = connections[index].index
                             }
                         }
                     }
-                });
-            } else {
-                conn.atPrompt = false
+
+                } else {
+                    conn.atPrompt = false
+                }
             }
-
-        // }
-
-
-
+        });
     });
 
     stream.on('close', function (code, signal) {
@@ -820,12 +865,13 @@ router.get("/getStyle", function (req, res) {
 router.get("/newUser", function (req, res) {
 
     const userID = generateUUID()
-    compDataObj[userID] = {}
+    compDataObj[userID] = compDataObj["0"]
+    compDataObj[userID].created = new Date().toISOString()
     res.setHeader('userID', userID)
     res.writeHead(200, { "Content-Type": "application/json" })
     const respJson = { "userID": userID }
+    saveAllJSON(false, userID)
     res.end(JSON.stringify(respJson))
-
 });
 
 function saveAllJSON(backup, userID) {
@@ -835,8 +881,6 @@ function saveAllJSON(backup, userID) {
     if (!compDataObj[userID]) {
         console.log("saveAllJSON error: compDataObj does not have property userID")
         res.end("saveAllJSON error: compDataObj does not have property userID")
-
-        // compDataObj[userID] = compDataObj["0"]
 
     } else {
         compData = compDataObj[userID]
@@ -910,12 +954,12 @@ wsserver.on('connection', function connection(ws) {
         let mess = ""
 
         var compData
-        if(compDataObj[conn.userID]){
+        if (compDataObj[conn.userID]) {
             compData = compDataObj[conn.userID]
-        }else{
+        } else {
             compData = compDataObj["0"]
         }
-        
+
 
         if (!conn.token) {
             mess = JSON.stringify({
@@ -941,6 +985,14 @@ wsserver.on('connection', function connection(ws) {
                 let command = replaceVar(lines[0], compData[ids[0]])
                 conn.stream.write(command + '\n');
                 conn.index = 1
+                ind = 1
+                while (lines[ind] && lines[ind].substring(0, 1) === '-') {
+                    command = replaceVar(lines[ind].substring(1), compData[ids[0]])
+                    conn.stream.write(command + '\n');
+
+                    conn.index++
+                    ind = conn.index
+                }
 
             } else if (conn.ids[0]) {
                 conn.index = 0

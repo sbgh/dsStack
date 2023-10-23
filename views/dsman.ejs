@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="images/cybera_icon.png">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+    <title>dsManager</title>
+
+    <meta name="description" content="Home page for Data Science Manager">
+
+    <!--     Fonts and icons     -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" as="font"
+        onload="this.onload=null;this.rel='stylesheet'">
+
+    <!-- CSS Files -->
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css"
+        integrity="sha512-oc9+XSs1H243/FRN9Rw62Fn8EtxjEYWHXRvjS43YtueEewbS6ObfXcJNyohjHqVKFPoXXUxwc+q1K7Dee6vv9g=="
+        crossorigin="anonymous" />
+
+    <script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-awesome-cursor/0.3.1/jquery.awesome-cursor.min.js"
+        integrity="sha512-mR4OOU/ky22CpIhlxfBwQ2ckKWapf+g2+1sbUCkVtFaaRcVLpytf0ERgrXXUUYgFOdbehWOJJdW7QzYJ7XlLiA=="
+        crossorigin="anonymous" defer></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"
+        integrity="sha512-8qmis31OQi6hIRgvkht0s6mCOittjMa9GMqtK9hes5iEQBQE/Ca6yGE5FsW36vyipGoWQswBj/QBm2JR086Rkw=="
+        crossorigin="anonymous"></script>
+
+    <!-- <script src="/jstree-3.3.15/dist/jstree.js"></script>
+    <link rel="stylesheet" href="/jstree-3.3.15/dist/themes/default/style.min.css">
+
+    <script src="https://www.unpkg.com/ace-builds@latest/src-noconflict/ace.js"></script>
+
+    <script src="//cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <link href="//cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="/xterm/xterm.css" />
+    <script src="/xterm/xterm.js"></script>
+    <script src="/xterm/xterm-addon-fit.js"></script> -->
+
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+
+    <!-- <link rel="stylesheet" type="text/css"
+        href="https://cdn.jsdelivr.net/npm/handsontable-pro@latest/dist/handsontable.full.min.css">
+    <link rel="stylesheet" type="text/css" href="https://handsontable.com/static/css/main.css"> -->
+
+    <link rel="stylesheet" href="/clientCSS/dsman.css">
+
+
+    <noscript>
+        <link rel="stylesheet" href="/clientCSS/index.css">
+    </noscript>
+
+    <script type="text/javascript" language="javascript">
+
+        $(document).ready(function () {
+            var userID = "0"
+
+            //settings
+            if (localStorage['settings']) {
+                let settings = JSON.parse(localStorage['settings'])
+                $("#settingsHostName1").val(settings.settingsHostName1)
+                $("#settingsLoginName1").val(settings.settingsLoginName1)
+                $("#settingsKey1").val(settings.settingsKey1)
+                $("#userID").text(settings.userID)
+                userID = settings.userID
+
+            } else {
+                $('#newUserModal').modal('show')
+                $('#newUserModal').on('hidden.bs.modal', function () {
+                    if (!localStorage['settings']) {
+                        $.get('/newUser', function (dataObj) {
+                            userID = dataObj.userID
+                            localStorage['settings'] = JSON.stringify({ "userID": userID })
+                            $('#jstree_div').jstree('select_node', 'ul > li:first')
+                        })
+                    }
+                })
+            }
+            $("#settingsBtn").on("click", function () {
+                $('#settingsModal').modal('show');
+            })
+            $("#settingsSaveButton").on("click", function () {
+
+                let settings =
+                {
+                    "settingsHostName1": $("#settingsHostName1").val(),
+                    "settingsLoginName1": $("#settingsLoginName1").val(),
+                    "settingsKey1": $("#settingsKey1").val(),
+                    "userID": userID
+                }
+                localStorage['settings'] = JSON.stringify(settings)
+            })
+
+            const container = document.querySelector('#grid');
+
+            const hot = new Handsontable(container, {
+                // stretchH: 'all',
+                width: 350,
+                // autoWrapRow: true,
+                // height: 487,
+                maxRows: 22000,
+                colWidths: [300, 300],
+                manualColumnResize: true,
+                // hiddenColumns: true,
+                data: [],
+                rowHeaders: true,
+                colHeaders: true,
+                filters: true,
+                // enable the column menu
+                // dropdownMenu: true,
+                licenseKey: 'non-commercial-and-evaluation', // for non-commercial use only
+                cells: function (row, col) {
+                    var cellPrp = {};
+                    if (col === 0) {
+                        cellPrp.renderer = myBtns;
+                        cellPrp.readOnly = true;
+                    }
+                    return cellPrp
+                },
+                afterOnCellMouseDown: function (event, cords, TD) {
+                    if (event.srcElement.className.indexOf('myBt') < 0) {
+                        return;
+                    }
+
+                    userListClick(event.target.attributes["data-id"].value);
+                    // console.log(event, cords, TD)
+                }
+            });
+
+            function userListClick(id) {
+                console.log(id)
+            }
+
+            function myBtns(instance, td, row, col, prop, value, cellProperties) {
+                Handsontable.renderers.TextRenderer.apply(this, arguments);
+                const rowObj = JSON.parse(value)
+                td.innerHTML = '<div class="myBt bt-' + row + '" data-id="' + rowObj[0] + '"">' + rowObj[1] + '</div>';
+                // console.log(value);
+            }
+
+            // const hiddenColumnsPlugin = hot.getPlugin('hiddenColumns');
+
+            var ws = new WebSocket('wss://dsstack.cybera.ca:8443');
+
+            ws.addEventListener('open', function (e) {
+                ws.addEventListener('message', function (e) {
+                    // console.log('received:', e.data);
+                    const data = JSON.parse(e.data)
+                    accessToken = data.token ? data.token : accessToken
+
+                    if (data.message) {
+                        // term.write(data.message)
+                    }
+                    if (data.status) {
+                        if (data.status === "up") {
+                            // $("#connectBtn").addClass("up").removeClass("down")
+                        } else {
+                            // $("#connectBtn").addClass("down").removeClass("up")
+                        }
+                    }
+                    if (data.varName) {
+                        const varName = data.varName
+                        if (varName == "userList") {
+                            try {
+                                const varVal = JSON.parse(data.varVal)
+
+                                var varValPlus = []
+                                varVal.forEach(element => {
+                                    varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name]) })
+                                });
+
+                                hot.loadData(varValPlus)
+
+                                hot.updateSettings({
+                                    colHeaders: ['User Name']
+                                });
+
+                                // hiddenColumnsPlugin.hideColumn(0);
+
+                                hot.render();
+
+                                for (var v in varVal) {
+                                    console.log(v)
+                                }
+
+                            } catch (e) {
+                                console.log("Error: " + e)
+                            }
+                        }
+
+                    }
+                })
+            })
+
+            ws.onclose = function (e) {
+                $("#connectBtn").addClass("up").removeClass("down")
+            };
+
+            var accessToken = ""
+            function runJob(ids, runChildren) {
+
+                var settings
+                if (localStorage['settings']) {
+                    settings = JSON.parse(localStorage['settings'])
+                } else {
+                    console.log("ERROR: Local storage 'Settings' not found")
+                    return (1)
+                }
+                var runData = {}
+
+                runData["runChildren"] = runChildren
+                runData["ids"] = ids
+                settingsHostName = settings.settingsHostName1 ? settings.settingsHostName1 : ""
+                settingsLoginName = settings.settingsLoginName1 ? settings.settingsLoginName1 : ""
+                settingsKey = settings.settingsKey1 ? settings.settingsKey1 : ""
+                runData["settingsHostName"] = settingsHostName
+                runData["settingsLoginName"] = settingsLoginName
+                runData["settingsKey"] = settingsKey
+                runData["token"] = accessToken
+                runData["userID"] = userID
+
+                ws.send(JSON.stringify(runData))
+            }
+
+            // runJob("c8ffa51c-74e4-4dec-8878-6fd352952816", false)
+
+            $('#userList i').on('click', function () {
+                // console.log("user list clicked")
+                runJob(["c8ffa51c-74e4-4dec-8878-6fd352952816"], false)
+            })
+
+            $("#buildCodeSearchInput").on("keyup", function (key) {
+
+                var searchString = $("#buildCodeSearchInput").val();
+
+                const filtersPlugin = hot.getPlugin('filters');
+                filtersPlugin.removeConditions(0)
+                filtersPlugin.addCondition(0, 'contains', [searchString]);
+                filtersPlugin.filter();
+
+                hot.render();
+            });
+
+
+        });
+
+        var cssTxt = "";
+        var cssUnsortTxt = "";
+        var currentStyleName = ""
+        var lastStyleSheet
+
+        function loadCssParts(part, sheet) {
+
+            var cssTxtPart = cssTxt.split("}")[part]
+            var totRows = cssTxt.split("}").length
+            if (totRows > part) {
+                sheet.innerHTML += cssTxtPart + "}"
+                setTimeout('loadCssParts(' + (part + 1).toString() + ', lastStyleSheet)', 500 / totRows);
+            } else {
+                sheet.innerHTML = "";
+                sheet.innerHTML = cssUnsortTxt
+            }
+        }
+
+    </script>
+</head>
+
+
+<body class="index-page">
+    <div id="navbarNav-outer">
+
+        <nav id="navbarNav" class="navbar navbar-light pop-bar">
+            <span><a class="navbar-brand" href="/"><b><span id="navTitle">dsManager</span></b></a></span>
+
+            <!-- <div id="stylePickMenu">
+                <span class="radio stylePickTop" data-id="default">
+                    <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
+                            class='fa fa-sun-o fa-fw '></i></label>
+                </span>
+                <span class="radio stylePickTop" data-id="dark">
+                    <label><input type="radio" id="darkStyleRadioTop" name="setupRadio"> <i
+                            class='fa  fa-moon-o fa-fw '></i></label>
+                </span>
+            </div> -->
+            <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
+        </nav>
+    </div>
+
+    <div id="MainRaisedCol" class="wrapper scroller">
+
+        <div class="main">
+            <div id="Manager" class="manager">
+                <div id="userList">
+                    User List <i class="fa fa-play fa-fw"></i>
+                    <div id="buildCodeSearchRow">
+                        <input class="form-control searchInput buildCodeSearchInput" id="buildCodeSearchInput"
+                            type="text">
+                        <i id="buildCodeSearchIcon" class="search-icon fa fa-search  fa-fw"></i>
+                    </div>
+                    <div id="grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<div id="settingsModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-run-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-gear fa-fw"></i>Settings</h4>
+            </div>
+            <div id='settingsConfirmationBody' class="modal-body">
+                <div id="settingsInfoText" class="text-info"></div>
+                <form class="form" id="settingsModalForm">
+                    <div class="label">Login Name</div>
+                    <div class="settingsInput"><input id="settingsLoginName1" type="text"></div>
+                    <div class="label">Host Name</div>
+                    <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
+                    <div class="label">Private Key</div>
+                    <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
+                    <div class="label">User ID</div>
+                    <div class="">
+                        <div id="userID"></div>
+                    </div>
+                    <!-- <div class="label">Save Host</div>
+                    <div class="settingsInput"><input id="saveHost1"></textarea></div>
+                    <div class="label">Save Path</div>
+                    <div class="settingsInput"><input id="savePath1"></textarea></div> -->
+
+                </form>
+                <br />
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="settingsSaveButton" data-dismiss="modal"
+                    class="btn btn-default jobFormbtn">Save</button>
+                <button type="button" id="settingsCloseButton" data-dismiss="modal"
+                    class="btn btn-default jobFormbtn">Close</button>
+            </div>
+        </nav>
+    </div>
+</div>
+
+</html>

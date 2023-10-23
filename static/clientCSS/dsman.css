@@ -1,0 +1,42 @@
+body{
+    font-family: "Open Sans",Arial,sans-serif;
+}
+
+html, body {
+    overscroll-behavior-x: contain;
+}
+  
+textarea#settingsKey1 {
+    width: 186px;
+    display: block;
+    font-size: 15px;
+    color: transparent;
+    text-shadow: rgb(0, 0, 0) 0px 0px 8px;
+}
+
+form#settingsModalForm input, form#settingsModalForm textarea {
+    width: 100%;
+}
+
+/* div#Manager {
+    padding-top: 80px;
+}
+
+div#grid {
+    overflow: auto;
+} */
+
+
+div#userList {
+    width: 500px;
+    /* overflow: auto; */
+}
+
+
+
+.searchInput {
+    height: 20px;
+    width: 150px;
+    padding-left: 5px;
+    margin-top: 2px;
+}
