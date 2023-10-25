@@ -28,8 +28,12 @@ div#grid {
 
 
 div#userList {
-    width: 500px;
+    /* width: 500px; */
     /* overflow: auto; */
+}
+
+div#grid {
+    margin: 0 16px;
 }
 
 
@@ -38,5 +42,82 @@ div#userList {
     height: 20px;
     width: 150px;
     padding-left: 5px;
-    margin-top: 2px;
+    margin: 2px 16px;
+}
+
+div#managerPanels {
+    margin-top: 70px;
+}
+
+div#userBtnRow {
+    margin: 15px 16px;
+    cursor: pointer;
+    font-weight: 400;
+    text-decoration: underline;
+    color: #4d4d4d;
+    text-shadow: 0 0 0.3em #d0d0d0, 0 0 0.3em #dadada, 0 0 0.3em #eee;
+}
+
+div#Manager {
+    display: flex;
+}
+
+div#managerPanels {
+    margin-top: 70px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    font-size: 13px;
+}
+
+div.userShow {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 25px;
+    border: 2px solid #c7cac3;
+}
+
+.panelRow {
+    text-wrap: nowrap;
+    display: flex;
+    padding: 3px;
+}
+
+div.hidden{
+    display: none;
+}
+.infoPanelLable {
+    min-width: 75px;
+}
+
+.panelTop {
+    display: flex;
+}
+
+.infoPanelLabel {
+    padding-right: 5px;
+    font-weight: 800;
+}
+
+.infoPanel.projectListLabel {
+    font-weight: 800;
+    padding: 5px 5px 0 5px;
+}
+
+.infoPanel.projectListPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
+}
+
+div#userProjRow {
+    display: flex;
+    justify-content: space-between;
+}
+
+div#userListSection {
+    opacity: 0;
 }

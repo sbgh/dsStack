@@ -133,7 +133,6 @@
                     if (event.srcElement.className.indexOf('myBt') < 0) {
                         return;
                     }
-
                     userListClick(event.target.attributes["data-id"].value);
                     // console.log(event, cords, TD)
                 }
@@ -141,6 +140,7 @@
 
             function userListClick(id) {
                 console.log(id)
+                runJob(["c8ffa51c-74e4-4dec-8878-6fd352952816"], false, { "user": id })
             }
 
             function myBtns(instance, td, row, col, prop, value, cellProperties) {
@@ -191,9 +191,64 @@
 
                                 hot.render();
 
-                                for (var v in varVal) {
-                                    console.log(v)
+                                $("#userListSection").css({
+                                    "transition": "opacity .5s",
+                                    "opacity": "1"
+                                })
+    
+
+                            } catch (e) {
+                                console.log("Error: " + e)
+                            }
+                        }
+                        if (varName == "userShow") {
+                            try {
+                                const varVal = JSON.parse(data.varVal)
+                                if (varVal.id) {
+                                    let ele = $('#userShow-' + varVal.id)
+                                    if (ele.length < 1) {
+                                        ele = $("#userShowTemplateOuter").clone(false)
+                                        ele.appendTo("#managerPanels");
+                                        ele.find(".userShow").removeClass("hidden")
+                                        ele.attr('id', 'userShow-' + varVal.id)
+                                    }
+
+                                    ele.find(".userShowName").text(varVal.name)
+                                    ele.find(".userShowEmail").text(varVal.email)
+                                    ele.find(".userShowEnabled").text(varVal.enabled)
+                                    ele.find(".userShowId").text(varVal.id)
+
+                                } else {
+                                    ele.find(".userShowName").text("Error returned")
                                 }
+
+                            } catch (e) {
+                                console.log("Error: " + e)
+                            }
+                        }
+                        if (varName == "userProjectList") {
+                            try {
+                                const varVal = JSON.parse(data.varVal)
+                                const props = data.props
+                                const userid = props.user
+                                let userEle = $("#userShow-" + userid)
+
+                                userEle.find(".projectListLabel").text("Project List:")
+                                userEle.find(".projectListPanel").html()
+                                varVal.every((element, index, array) => {
+
+                                    userEle.find(".projectListPanel").append(
+                                        '<div id="userProjRow">' +
+                                        '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
+                                        '<div id="userProjId-' + userid + '-' + element.ID + '" class="userProj userProjId"></div>' +
+                                        '</div>'
+                                    )
+                                    $('#userProj-' + userid + '-' + element.ID).text(element.Name)
+                                    $('#userProjId-' + userid + '-' + element.ID).text(element.ID)
+                                    return true
+                                });
+                                // userEle.find(".projectListLabel").text("Project List:")
+                                // userEle.find(".projectListPanel").text(varVal)
 
                             } catch (e) {
                                 console.log("Error: " + e)
@@ -209,7 +264,7 @@
             };
 
             var accessToken = ""
-            function runJob(ids, runChildren) {
+            function runJob(ids, runChildren, props) {
 
                 var settings
                 if (localStorage['settings']) {
@@ -230,15 +285,31 @@
                 runData["settingsKey"] = settingsKey
                 runData["token"] = accessToken
                 runData["userID"] = userID
+                runData["props"] = props ? props : {}
 
                 ws.send(JSON.stringify(runData))
             }
 
             // runJob("c8ffa51c-74e4-4dec-8878-6fd352952816", false)
 
-            $('#userList i').on('click', function () {
-                // console.log("user list clicked")
-                runJob(["c8ffa51c-74e4-4dec-8878-6fd352952816"], false)
+            $('#userListBtn').on('click', function () {
+                console.log("user list clicked")
+                $("#userListBtn").css({
+                    "color": "#4d4d4d",
+                    "text-shadow": "rgb(15 0 173) 0px 0px 0.6em, rgb(2 0 106) 0px 0px 0.6em, rgb(0 2 46) 0px 0px 0.6em",
+                    "transition": "text-shadow .3s, color .3s"
+                })
+
+                setTimeout(function () {
+                    $("#userListBtn").css({
+                        "color": "#4d4d4d",
+                        "text-shadow": "0 0 0.3em #d0d0d0, 0 0 0.3em #dadada, 0 0 0.3em #eee",
+                        "transition": "text-shadow 3s ease, color 3s ease"
+                    })
+                }, 100)
+
+
+                runJob(["14b69c72-028e-4b4b-988e-d512e1e89856"], false)
             })
 
             $("#buildCodeSearchInput").on("keyup", function (key) {
@@ -303,14 +374,19 @@
         <div class="main">
             <div id="Manager" class="manager">
                 <div id="userList">
-                    User List <i class="fa fa-play fa-fw"></i>
-                    <div id="buildCodeSearchRow">
-                        <input class="form-control searchInput buildCodeSearchInput" id="buildCodeSearchInput"
-                            type="text">
-                        <i id="buildCodeSearchIcon" class="search-icon fa fa-search  fa-fw"></i>
+                    <div id="userBtnRow">
+                        <div id="userListBtn" class="usertBtn">User List</div>
                     </div>
-                    <div id="grid"></div>
+                    <div id="userListSection">
+                        <div id="buildCodeSearchRow">
+                            <input class="form-control searchInput buildCodeSearchInput" id="buildCodeSearchInput"
+                                type="text">
+                        </div>
+                        <div id="grid"></div>
+                    </div>
+
                 </div>
+                <div id="managerPanels"></div>
             </div>
         </div>
     </div>
@@ -352,5 +428,34 @@
         </nav>
     </div>
 </div>
+
+<div id="userShowTemplateOuter"><div class="userShow hidden">
+    <div class="panelTop">
+        <div class="panelLCol">
+            <div class="panelRow">
+                <div class="infoPanelLabel">Name: </div>
+                <div class="infoPanel userShowName"></div>
+            </div>
+            <div class="panelRow">
+                <div class="infoPanelLabel">Email: </div>
+                <div class="infoPanel userShowEmail"></div>
+            </div>
+        </div>
+        <div class="panelRCol">
+            <div class="panelRow">
+                <div class="infoPanelLabel">Enabled: </div>
+                <div class="infoPanel userShowEnabled"></div>
+            </div>
+            <div class="panelRow">
+                <div class="infoPanelLabel">ID: </div>
+                <div class="infoPanel userShowId"></div>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="panelRow"><div class="infoPanelLabel">Project ID: </div><div class="infoPanel userShowProjId"></div></div> -->
+    <!-- <div class="panelRow"><div class="infoPanelLabel">Dommain ID: </div><div class="infoPanel userShowdomainId"></div></div> -->
+    <div class="infoPanel projectListLabel"></div>
+    <div class="infoPanel projectListPanel"></div>
+</div></div>
 
 </html>

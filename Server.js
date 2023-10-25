@@ -334,7 +334,8 @@ router.post("/copy", function (req, res) {
 
                 //initial history json
                 var ds = new Date().toISOString();
-                var hist = [{ username: config.username, ds: ds, fromId: fromId }];
+                // var hist = [{ username: config.username, ds: ds, fromId: fromId }];
+                var hist = [{ ds: ds, fromId: fromId }];
 
                 //Build new component obj. Version 1
                 var NewRow = {
@@ -550,6 +551,7 @@ function getConn(conOptions, callback) {
     let ids = conOptions.ids
     let ws = conOptions.ws
     let key = conOptions.key
+    let props = conOptions.props
     let conn = false
     connections.forEach(function (value, index, array) {
         if (value.token === token) {
@@ -561,6 +563,7 @@ function getConn(conOptions, callback) {
         conn.key = key
         if (ids) {
             conn.ids = ids
+            conn.props = props
             // conn.index = 0
         }
         callback(conn)
@@ -616,7 +619,7 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "ids": ids, "key": key, "varName": "", varVal: "" }
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "ids": ids, "key": key, "varName": "", "varVal": "", "props": props }
 
                         connections.push(conObj)
 
@@ -626,22 +629,22 @@ function getConn(conOptions, callback) {
                             "status": "up"
                         })
                         stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
-                        
+
                         if (!compDataObj[userID]) {
                             fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
                                 if (!err && data) {
                                     compDataObj[userID] = JSON.parse(data)
                                     callback(conObj)
-                                }else{
+                                } else {
                                     callback(conObj)
                                 }
 
                             })
-                        }else{
+                        } else {
                             callback(conObj)
                         }
 
-                        
+
                     })
                 });
             } catch (error) {
@@ -662,14 +665,12 @@ function streamEvents(conn, ws) {
     let stream = conn.stream
 
     stream.on('data', function (data) {
-        let token = this.token
+        // let token = this.token
         var userID = conn.userID
-        var data=data.toString()
+        var data = data.toString()
 
         var compData
 
-
-        
         if (!compDataObj[userID]) {
             compData = compDataObj["0"]
         } else {
@@ -688,70 +689,76 @@ function streamEvents(conn, ws) {
 
         let lines = data.split("\n")
         let lastLine = lines[lines.length - 1]
-              
-    
-        connections.forEach(function (value, index, array) {
-            if (value.token === token) {
 
-                if (data.substr(0, 4) === 'var:') {
+        if (data.substr(0, 4) === 'var:') {
 
-                    let dataParts = data.split(":")
-                    if (dataParts.length > 2){
-                        let varName = dataParts[1] ? dataParts[1] : ""
-                        connections[index].varName = varName
-                        dataParts.shift(); dataParts.shift()
-                        let remainder = dataParts.join(":")
-                        connections[index].varVal = connections[index].varVal + remainder
+            let dataParts = data.split(":")
+            console.log("detected var: " + dataParts[1]) 
+            if (dataParts.length > 2) {
+                let varName = dataParts[1] ? dataParts[1] : ""
+                conn.varName = varName
+                dataParts.shift(); dataParts.shift()
+                let remainder = dataParts.join(":")
+                conn.varVal = conn.varVal + remainder
+            }
+        } else if (conn.varName !== "") {
+            conn.varVal = (conn.varVal + data.toString()).substring(0, 500000)
+        }
+
+
+        if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line(s) of script
+            // console.log("prompt? " + lastLine) 
+            conn.atPrompt = true
+
+            let props = conn.props ? conn.props : ""
+
+            if (conn.varName !== "") {
+                mess = JSON.stringify(
+                    {
+                        "varName": conn.varName,
+                        "varVal": conn.varVal.split(prompt)[0],
+                        // "varVal": conn.varVal.split('\n').filter(function (s) { return ! s.includes(prompt) }).join('\n'),
+                        "props":props
                     }
-                }else if(connections[index].varName !== ""){
-                    connections[index].varVal = (connections[index].varVal + data.toString()).substring(0,500000)
-                }
+                )
+                // console.log(mess)
+                ws.send(mess)
+                conn.varName = ""
+                conn.varVal = ""
+            }
+            let ids = conn.ids
+            let ind = conn.index
+            // console.log("found conn", ids[0], ind)
+            if (compData[ids[0]] && compData[ids[0]].script) {
+                let script = compData[ids[0]].script
+                let lines = script.split('\n')
+                // console.log("conn.index", conn.index, "lines.length", lines.length)
+                if (conn.index < lines.length) {
+                    let command = replaceVar(lines[ind], compData[ids[0]], props)
 
-                
-                if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line(s) of script
- // console.log("prompt? " + lastLine) 
-                    connections[index].atPrompt = true
+                    stream.write(command + '\n');
+                    // console.log("sent: ", command)
+                    conn.index++
+                    ind = conn.index
+                    while (lines[ind] && lines[ind].substring(0, 1) === '-') {
+                        command = replaceVar(lines[ind].substring(1), compData[ids[0]], props)
+                        stream.write(command + '\n');
 
-                    if (connections[index].varName !== "") {
-                        mess = JSON.stringify({
-                            "varName": connections[index].varName,
-                            "varVal": connections[index].varVal.split(prompt)[0]
-                        })
-// console.log(mess)
-                        ws.send(mess)
-                        connections[index].varName = ""
-                        connections[index].varVal = ""
-                        
+                        conn.index++
+                        ind = conn.index
                     }
-                    let ids = value.ids
-                    let ind = value.index
-// console.log("found conn", ids[0], ind)
-                    if (compData[ids[0]] && compData[ids[0]].script) {
-                        let script = compData[ids[0]].script
-                        let lines = script.split('\n')
-// console.log("connections[index].index", connections[index].index, "lines.length", lines.length)
-                        if (connections[index].index < lines.length) {
-                            let command = replaceVar(lines[ind], compData[ids[0]])
-                            
-                            stream.write(command + '\n');
-// console.log("sent: ", command)
-                            connections[index].index++
-                            ind = connections[index].index
-                            while (lines[ind] && lines[ind].substring(0, 1) === '-') {
-                                command = replaceVar(lines[ind].substring(1), compData[ids[0]])
-                                stream.write(command + '\n');
-
-                                connections[index].index++
-                                ind = connections[index].index
-                            }
-                        }
-                    }
-
-                } else {
-                    conn.atPrompt = false
                 }
             }
-        });
+
+        } else {
+            conn.atPrompt = false
+        }
+        // connections.forEach(function (value, index, array) {
+        //     if (value.token === token) {
+
+
+        //     }
+        // });
     });
 
     stream.on('close', function (code, signal) {
@@ -794,7 +801,7 @@ function streamEvents(conn, ws) {
     });
 }
 
-function replaceVar(commandStr, job) {// find and replace inserted command vars eg. {{c.mVar4}}
+function replaceVar(commandStr, job, props) {// find and replace inserted command vars eg. {{c.mVar4}}
 
     const items = commandStr.split(new RegExp('{{', 'g'));
     items.forEach(function (item) {
@@ -805,7 +812,13 @@ function replaceVar(commandStr, job) {// find and replace inserted command vars 
             var pid = job.parent;
             var repStr = "{{c." + targetVarName + "}}";
             if (job.variables[targetVarName]) {
-                var val = job.variables[targetVarName].value;
+                var val = ""
+                if (props && props[targetVarName]) {
+                    val = props[targetVarName];
+                } else {
+                    val = job.variables[targetVarName].value;
+                }
+
                 commandStr = commandStr.replace(repStr, val)
             }
         }
@@ -979,15 +992,17 @@ wsserver.on('connection', function connection(ws) {
                 let key = conn.key
                 conn.stream.write(key)
             } else if (conn.ids[0] && compData[ids[0]].script && conn.atPrompt) {
+
                 //We are sitting at prompt so lets send first script line
                 let script = compData[ids[0]].script
                 let lines = script.split('\n')
-                let command = replaceVar(lines[0], compData[ids[0]])
+                let props = conn.props
+                let command = replaceVar(lines[0], compData[ids[0]], props)
                 conn.stream.write(command + '\n');
                 conn.index = 1
                 ind = 1
                 while (lines[ind] && lines[ind].substring(0, 1) === '-') {
-                    command = replaceVar(lines[ind].substring(1), compData[ids[0]])
+                    command = replaceVar(lines[ind].substring(1), compData[ids[0]], props)
                     conn.stream.write(command + '\n');
 
                     conn.index++
@@ -1011,7 +1026,8 @@ wsserver.on('connection', function connection(ws) {
             "userID": dataObj.userID,
             "ids": dataObj.ids,
             "ws": ws,
-            "key": dataObj.key
+            "key": dataObj.key,
+            "props": dataObj.props
         }
         getConn(conOptions, processMessage)
 
