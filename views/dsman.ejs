@@ -263,13 +263,13 @@
                                         userEle.find(".projectListPanel").append(
                                             '<div id="userProjRow">' +
                                             '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
-                                            '<div id="userProjId-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjId" data-runJob="'+ projshowid +'"></div>' +
+                                            '<div id="userProjId-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjId" data-runJob="' + projshowid + '"></div>' +
                                             '</div>'
                                         )
                                         $('#userProj-' + userid + '-' + element.ID).text(element.Name)
                                         $('#userProjId-' + userid + '-' + element.ID).text(element.ID)
 
-                                        $('#userProjId-' + userid + '-' + element.ID).on("click",function(event){
+                                        $('#userProjId-' + userid + '-' + element.ID).on("click", function (event) {
                                             let jobID = $(this).attr('data-runJob');
                                             let projID = $(this).attr('data-projID');
                                             runJob([jobID], false, { "id": projID })
@@ -329,7 +329,7 @@
                                             ele.insertBefore("#spinner")
                                             ele.find(".projectShow").removeClass("hidden")
                                             ele.attr('id', 'projectShow-' + varVal.id)
-                                        } 
+                                        }
                                         $('#managerPanels').stop().animate({
                                             'scrollTop': $("#managerPanels").height()
                                         }, 200, 'swing', function () {
@@ -538,229 +538,263 @@
             term.options.theme = termLightTheme
 
             var consoleState = "down"
-            $("#console").on("dblclick", function (event) {
-                if (consoleState === 'down') {
-                    $("#console").css({
-                        "height": 'calc(400px)',
-                        "transition": "height 1s swing"
-                    })
-                    consoleState = 'up'
-                }else{
-                    $("#console").css({
-                        "height": 'calc(40px)',
-                        "transition": "height 1s swing"
-                    })
-                    consoleState = 'down'
-                }
-                fitAddon.fit();
+            // $("#console").on("dblclick", function (event) {
+            //     if (consoleState === 'down') {
+            //         $("#console").css({
+            //             "height": 'calc(400px)',
+            //             "transition": "height 1s swing"
+            //         })
+            //         consoleState = 'up'
+            //     } else {
+            //         $("#console").css({
+            //             "height": 'calc(40px)',
+            //             "transition": "height 1s swing"
+            //         })
+            //         consoleState = 'down'
+            //     }
+            // setTimeout(function () {
 
+            //     fitAddon.fit();
+
+            // $('#consoleScroll').stop().animate({
+            //     'scrollTop': $("#consoleScroll").height()
+            // }, 100, 'swing', function () {
+
+            // });
+
+            // }, 1000)
+
+            var timeoutId = 0;
+
+            $('#console').on('mousedown', function () {
+                timeoutId = setTimeout(
+
+                    function () {
+                        if (consoleState === 'down') {
+                            $("#console").css({
+                                "height": 'calc(400px)',
+                                "transition": "height 1s swing"
+                            })
+                            consoleState = 'up'
+                        } else {
+                            $("#console").css({
+                                "height": 'calc(40px)',
+                                "transition": "height 1s swing"
+                            })
+                            consoleState = 'down'
+                        }
+
+                    }, 400)
+            }).on('mouseup mouseleave', function () {
+                clearTimeout(timeoutId)
+                fitAddon.fit()
+            });
+
+        $("#wrapBtn").click(function (event) {
+            term.focus()
+            if (!$("div#console").hasClass("consoleWrap")) {
+                $("div#console").addClass("consoleWrap")
+                $("#wrapBtn").addClass("consoleWrapBtn")
+                fitAddon.fit();
+            } else {
+                $("div#console").removeClass("consoleWrap")
+                $("#wrapBtn").removeClass("consoleWrapBtn")
+                fitAddon.fit();
+            }
+        });
+
+        term.attachCustomKeyEventHandler((key) => {
+            if (key.code === 'KeyV') {
+                if (key.metaKey) {
+                    $("#console").focus()
+
+                    navigator.clipboard
+                        .readText()
+                        .then(
+                            (clipText) => {
+                                let sendObj = { "token": accessToken, "key": clipText }
+                                wsSend(sendObj, ws)
+                            }
+
+                        )
+                }
+            }
+            return true;
+        });
+
+        term.onKey((key, ev) => {
+
+            if (ws) {
+
+                let sendObj = { "token": accessToken, "key": key.key }
+                wsSend(sendObj, ws)
+            }
+            // console.log("keypress " + key)
+
+        });
+        function isWsOpen(ws) { return ws.readyState === ws.OPEN }
+        function wsSend(sendObj, ws) {
+            if (isWsOpen(ws)) {
+                ws.send(JSON.stringify(sendObj))
+            } else {
+                console.log("ws is not open")
+                term.write("Not connected\r\n")
+                $("#connectBtn").addClass("down").removeClass("up")
+            }
+        }
+
+        currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
+
+        if (currentStyleName === "dark") {
+            $("#darkStyleRadioTop").prop('checked', true)
+            setStyle(currentStyleName)
+            hot.updateSettings({
+                className: 'htDark',
+                // rowHeights: 22,
+                afterGetColHeader: function (col, TH) {
+                    TH.className = 'darkTH'
+                }
+            })
+        } else {
+            $("#defaultStyleRadioTop").prop('checked', true)
+            setStyle(currentStyleName)
+            hot.updateSettings({
+                className: 'htLight',
+                // rowHeights: 22,
+                afterGetColHeader: function (col, TH) {
+                    TH.className = 'lightTH'
+                }
+            })
+        }
+
+        $('.stylePickTop').on('click', function (evt) {
+            //evt.preventDefault();
+            var pickedStyle = $(this).attr('data-ID')
+            setStyle(pickedStyle);
+
+            if (pickedStyle === "dark") {
+                hot.updateSettings({
+                    className: 'htDark',
+                    // rowHeights: 22,
+                    afterGetColHeader: function (col, TH) {
+                        TH.className = 'darkTH'
+                    }
+                })
+            } else {
+                hot.updateSettings({
+                    className: 'htLight',
+                    // rowHeights: 22,
+                    afterGetColHeader: function (col, TH) {
+                        TH.className = 'lightTH'
+                    }
+                })
+            }
+
+
+            localStorage['theme'] = pickedStyle
+        });
+
+        //Apply Style
+        function setStyle(name) {
+            const styleName = name;
+
+            currentStyleName = styleName;
+            setEditorsStyle(styleName);
+
+            var mydata = { styleName: styleName };
+
+            $.ajax({
+                type: 'get',
+                data: mydata,
+                dataType: "text",
+                headers: {
+                    "content-type": "application/json"
+                },
+                url: '/getStyle',
+                success: function (data) {
+                    var sheet;
+                    if (lastStyleSheet) {
+                        sheet = lastStyleSheet;
+                    } else {
+                        sheet = document.createElement('style');
+                        document.body.appendChild(sheet);
+                    }
+                    lastStyleSheet = sheet;
+
+                    const respJson = JSON.parse(data);
+                    cssUnsortTxt = respJson.css;
+                    var cssArr = cssUnsortTxt.split("}")
+                    shuffleArray(cssArr);
+                    cssTxt = cssArr.join("}");
+
+                    loadCssParts(0, lastStyleSheet);
+                },
+                error: function (error) {
+                    console.log(error)
+                }
             })
 
-            $("#wrapBtn").click(function (event) {
-                term.focus()
-                if (!$("div#console").hasClass("consoleWrap")) {
-                    $("div#console").addClass("consoleWrap")
-                    $("#wrapBtn").addClass("consoleWrapBtn")
-                    fitAddon.fit();
-                } else {
-                    $("div#console").removeClass("consoleWrap")
-                    $("#wrapBtn").removeClass("consoleWrapBtn")
-                    fitAddon.fit();
-                }
-            });
+        }
 
-            term.attachCustomKeyEventHandler((key) => {
-                if (key.code === 'KeyV') {
-                    if (key.metaKey) {
-                        $("#console").focus()
-
-                        navigator.clipboard
-                            .readText()
-                            .then(
-                                (clipText) => {
-                                    let sendObj = { "token": accessToken, "key": clipText }
-                                    wsSend(sendObj, ws)
-                                }
-
-                            )
-                    }
-                }
-                return true;
-            });
-
-            term.onKey((key, ev) => {
-
-                if (ws) {
-
-                    let sendObj = { "token": accessToken, "key": key.key }
-                    wsSend(sendObj, ws)
-                }
-                // console.log("keypress " + key)
-
-            });
-            function isWsOpen(ws) { return ws.readyState === ws.OPEN }
-            function wsSend(sendObj, ws) {
-                if (isWsOpen(ws)) {
-                    ws.send(JSON.stringify(sendObj))
-                } else {
-                    console.log("ws is not open")
-                    term.write("Not connected\r\n")
-                    $("#connectBtn").addClass("down").removeClass("up")
-                }
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
+        }
 
-            currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
-
-            if (currentStyleName === "dark") {
-                $("#darkStyleRadioTop").prop('checked', true)
-                setStyle(currentStyleName)
-                hot.updateSettings({
-                    className: 'htDark',
-                    // rowHeights: 22,
-                    afterGetColHeader: function (col, TH) {
-                        TH.className = 'darkTH'
-                    }
-                })
+        function setEditorsStyle(styleName) {
+            if (styleName === "dark") {
+                term.options.theme = termDarkTheme
             } else {
-                $("#defaultStyleRadioTop").prop('checked', true)
-                setStyle(currentStyleName)
-                hot.updateSettings({
-                    className: 'htLight',
-                    // rowHeights: 22,
-                    afterGetColHeader: function (col, TH) {
-                        TH.className = 'lightTH'
-                    }
-                })
+                term.options.theme = termLightTheme
             }
-
-            $('.stylePickTop').on('click', function (evt) {
-                //evt.preventDefault();
-                var pickedStyle = $(this).attr('data-ID')
-                setStyle(pickedStyle);
-
-                if (pickedStyle === "dark") {
-                hot.updateSettings({
-                    className: 'htDark',
-                    // rowHeights: 22,
-                    afterGetColHeader: function (col, TH) {
-                        TH.className = 'darkTH'
-                    }
-                })
-            } else {
-                hot.updateSettings({
-                    className: 'htLight',
-                    // rowHeights: 22,
-                    afterGetColHeader: function (col, TH) {
-                        TH.className = 'lightTH'
-                    }
-                })
-            }
+        }
 
 
-                localStorage['theme'] = pickedStyle
-            });
+        var onclickJob = ""
+        $.get('/getPromoted', { "userID": userID }, function (data) {
+            if (data.length > 0) {
+                data.every((element, index, array) => {
 
-            //Apply Style
-            function setStyle(name) {
-                const styleName = name;
+                    let text = element.text && element.text !== "" ? element.text : "click"
+                    let icon = element.icon && element.icon !== "" ? element.icon : "users"
+                    let ocj = element.onclickJob && element.onclickJob !== "" ? element.onclickJob : ""
 
-                currentStyleName = styleName;
-                setEditorsStyle(styleName);
+                    btnHtml = '<div id="btn-' + element.id + '" class="btnHolder" data-target="' + element.id + '" data-listClickJob="' + element.onclickJob + '" title="">'
+                    btnHtml += '<i class="fa fa-' + icon + ' fa-fw leftBtns"></i>'
+                    btnHtml += '</div>'
 
-                var mydata = { styleName: styleName };
+                    $("#btnCol").append(btnHtml)
 
-                $.ajax({
-                    type: 'get',
-                    data: mydata,
-                    dataType: "text",
-                    headers: {
-                        "content-type": "application/json"
-                    },
-                    url: '/getStyle',
-                    success: function (data) {
-                        var sheet;
-                        if (lastStyleSheet) {
-                            sheet = lastStyleSheet;
-                        } else {
-                            sheet = document.createElement('style');
-                            document.body.appendChild(sheet);
-                        }
-                        lastStyleSheet = sheet;
+                    $('#btn-' + element.id).on('click', function () {
+                        console.log("user list clicked")
+                        onclickJob = ocj
 
-                        const respJson = JSON.parse(data);
-                        cssUnsortTxt = respJson.css;
-                        var cssArr = cssUnsortTxt.split("}")
-                        shuffleArray(cssArr);
-                        cssTxt = cssArr.join("}");
-
-                        loadCssParts(0, lastStyleSheet);
-                    },
-                    error: function (error) {
-                        console.log(error)
-                    }
-                })
-
-            }
-
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-            }
-
-            function setEditorsStyle(styleName) {
-                if (styleName === "dark") {
-                    term.options.theme = termDarkTheme
-                } else {
-                    term.options.theme = termLightTheme
-                }
-            }
-
-
-            var onclickJob = ""
-            $.get('/getPromoted', { "userID": userID }, function (data) {
-                if (data.length > 0) {
-                    data.every((element, index, array) => {
-
-                        let text = element.text && element.text !== "" ? element.text : "click"
-                        let icon = element.icon && element.icon !== "" ? element.icon : "users"
-                        let ocj = element.onclickJob && element.onclickJob !== "" ? element.onclickJob : ""
-
-                        btnHtml = '<div id="btn-' + element.id + '" class="btnHolder" data-target="' + element.id + '" data-listClickJob="' + element.onclickJob + '" title="">'
-                        btnHtml += '<i class="fa fa-' + icon + ' fa-fw leftBtns"></i>'
-                        btnHtml += '</div>'
-
-                        $("#btnCol").append(btnHtml)
-
-                        $('#btn-' + element.id).on('click', function () {
-                            console.log("user list clicked")
-                            onclickJob = ocj
-
-                            $("#spinner").css({
-                                "transition": "opacity .1s",
-                                "opacity": "1"
-                            })
-
-                            runJob([element.id], false)
+                        $("#spinner").css({
+                            "transition": "opacity .1s",
+                            "opacity": "1"
                         })
 
-                        $('#btn-' + element.id).popover('dispose').popover({
-                            animation: true,
-                            content: text,
-                            delay: { "show": 500, "hide": 100 },
-                            trigger: 'hover',
-                            placement: 'right',
-                            template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
-                        });
-
-                        return true
+                        runJob([element.id], false)
                     })
 
+                    $('#btn-' + element.id).popover('dispose').popover({
+                        animation: true,
+                        content: text,
+                        delay: { "show": 500, "hide": 100 },
+                        trigger: 'hover',
+                        placement: 'right',
+                        template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                    });
+
+                    return true
+                })
 
 
-                }
-            })
+
+            }
+        })
 
         });
 
