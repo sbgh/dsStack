@@ -1,11 +1,22 @@
-body{
-    font-family: "Open Sans",Arial,sans-serif;
+body {
+    font-family: "Open Sans", Arial, sans-serif;
 }
 
-html, body {
+html,
+body {
     overscroll-behavior-x: contain;
 }
-  
+
+.main {
+    display: flex;
+    height: calc(100vh - 56px);
+}
+
+div#mainCol {
+    width: calc(100vw - 50px);
+}
+
+
 textarea#settingsKey1 {
     width: 186px;
     display: block;
@@ -14,7 +25,14 @@ textarea#settingsKey1 {
     text-shadow: rgb(0, 0, 0) 0px 0px 8px;
 }
 
-form#settingsModalForm input, form#settingsModalForm textarea {
+#settingsConfirmationBody #userID {
+    font-size: 15px;
+    color: transparent;
+    text-shadow: rgb(0, 0, 0) 0px 0px 8px;
+}
+
+form#settingsModalForm input,
+form#settingsModalForm textarea {
     width: 100%;
 }
 
@@ -33,7 +51,7 @@ div#userList {
 }
 
 div#grid {
-    margin: 0 16px;
+    /* margin: 0 16px; */
 }
 
 
@@ -42,11 +60,7 @@ div#grid {
     height: 20px;
     width: 150px;
     padding-left: 5px;
-    margin: 2px 16px;
-}
-
-div#managerPanels {
-    margin-top: 70px;
+    margin: 0 0;
 }
 
 div#userBtnRow {
@@ -60,14 +74,14 @@ div#userBtnRow {
 
 div#Manager {
     display: flex;
+    height: 100%;
 }
 
 div#managerPanels {
-    margin-top: 70px;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
     font-size: 13px;
+    height: calc(75vh - 95px);
+    overflow-y: auto;
+    flex: 1;
 }
 
 div.userShow {
@@ -75,8 +89,46 @@ div.userShow {
     flex-direction: column;
     padding: 10px;
     margin: 5px;
-    border-radius: 25px;
-    border: 2px solid #c7cac3;
+    /* border-radius: 25px;
+    border: 2px solid #c7cac3; */
+}
+div.projectShow {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    margin: 5px;
+    /* border-radius: 25px;
+    border: 2px solid #c7cac3; */
+}
+
+.panelLCol {
+    min-width: 330px;
+}
+
+.userShowInfo {
+    display: flex;
+}
+
+.userShowName {
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.userProj {
+    min-width: 150px;
+}
+.projectServ {
+    min-width: 150px;
+    text-wrap: nowrap;
+}
+
+.projectShowInfo {
+    display: flex;
+}
+
+.projectShowName {
+    font-size: 14px;
+    font-weight: 800;
 }
 
 .panelRow {
@@ -85,9 +137,10 @@ div.userShow {
     padding: 3px;
 }
 
-div.hidden{
+div.hidden {
     display: none;
 }
+
 .infoPanelLable {
     min-width: 75px;
 }
@@ -113,11 +166,108 @@ div.hidden{
     padding: 5px;
 }
 
-div#userProjRow {
+.infoPanel.serverListLabel {
+    font-weight: 800;
+    padding: 5px 5px 0 5px;
+}
+
+.infoPanel.serverListPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
+}
+
+div#userProjRow, div#projectServRow {
     display: flex;
     justify-content: space-between;
 }
 
 div#userListSection {
     opacity: 0;
+    height: calc(100vh - 95px);
+}
+
+i.fa.up {
+    color: #0075ff
+}
+
+i.fa.down {
+    color: #666666
+}
+
+#navbarNavBtnRow {
+    /* float: right; */
+}
+
+div#console {
+    background: #ebebeb;
+    padding: 5px;
+    height: calc(40px);
+    width: 2000px;
+}
+
+div#workingSection {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+div#consoleScroll {
+    overflow-x: auto;
+}
+
+div#btnCol {
+    width: 50px;
+    display: flex;
+    flex-direction: column;
+}
+
+.btnHolder {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    margin-top: 30px;
+}
+
+div#btnCol i {
+    font-size: 24px;
+}
+
+body .handsontable TD {
+    background: #d4d4d4;
+    color: white;
+}
+
+.modal {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    transition: backdrop-filter .3s;
+    backdrop-filter: blur(3px);
+}
+
+i#spinner {
+    font-size: 25px;
+    opacity: 0;
+}
+
+.userProjId {
+    margin-left: 10px;
+    text-wrap: nowrap;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.projectServId {
+    margin-left: 10px;
+    text-wrap: nowrap;
+}
+
+.nameRow {
+    display: flex;
+    border-top: solid 1px #494949;
+}
+
+.projectShowLabel, .userShowLabel {
+    margin-right: 5px;
+    font-weight: 800;
 }

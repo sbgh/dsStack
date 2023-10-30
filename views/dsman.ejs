@@ -41,11 +41,14 @@
     <script src="https://www.unpkg.com/ace-builds@latest/src-noconflict/ace.js"></script>
 
     <script src="//cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    <link href="//cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="//cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">-->
 
     <link rel="stylesheet" href="/xterm/xterm.css" />
     <script src="/xterm/xterm.js"></script>
-    <script src="/xterm/xterm-addon-fit.js"></script> -->
+    <script src="/xterm/xterm-addon-fit.js"></script>
+
+
+
 
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
@@ -107,16 +110,17 @@
 
             const hot = new Handsontable(container, {
                 // stretchH: 'all',
-                width: 350,
+                width: 250,
+                height: '103%',
                 // autoWrapRow: true,
                 // height: 487,
                 maxRows: 22000,
-                colWidths: [300, 300],
+                colWidths: [240, 240],
                 manualColumnResize: true,
                 // hiddenColumns: true,
                 data: [],
-                rowHeaders: true,
-                colHeaders: true,
+                rowHeaders: false,
+                colHeaders: false,
                 filters: true,
                 // enable the column menu
                 // dropdownMenu: true,
@@ -133,135 +137,263 @@
                     if (event.srcElement.className.indexOf('myBt') < 0) {
                         return;
                     }
-                    userListClick(event.target.attributes["data-id"].value);
+                    listClick(event.target.attributes["data-id"].value);
                     // console.log(event, cords, TD)
                 }
             });
 
-            function userListClick(id) {
-                console.log(id)
-                runJob(["c8ffa51c-74e4-4dec-8878-6fd352952816"], false, { "user": id })
+            function listClick(id, jobID) {
+
+                runJob([onclickJob], false, { "id": id })
             }
 
             function myBtns(instance, td, row, col, prop, value, cellProperties) {
                 Handsontable.renderers.TextRenderer.apply(this, arguments);
                 const rowObj = JSON.parse(value)
-                td.innerHTML = '<div class="myBt bt-' + row + '" data-id="' + rowObj[0] + '"">' + rowObj[1] + '</div>';
+                td.innerHTML = '<div class="myBt bt-' + row + '" data-id="' + rowObj[0] + '"   data-jobID="' + '' + '">' + rowObj[1] + '</div>';
                 // console.log(value);
             }
 
             // const hiddenColumnsPlugin = hot.getPlugin('hiddenColumns');
 
-            var ws = new WebSocket('wss://dsstack.cybera.ca:8443');
+            var ws = new WebSocket('wss://dsstack.cybera.ca:8443')
 
-            ws.addEventListener('open', function (e) {
-                ws.addEventListener('message', function (e) {
-                    // console.log('received:', e.data);
-                    const data = JSON.parse(e.data)
-                    accessToken = data.token ? data.token : accessToken
+            function wsEvents(ws) {
 
-                    if (data.message) {
-                        // term.write(data.message)
-                    }
-                    if (data.status) {
-                        if (data.status === "up") {
-                            // $("#connectBtn").addClass("up").removeClass("down")
-                        } else {
-                            // $("#connectBtn").addClass("down").removeClass("up")
+                ws.addEventListener('open', function (e) {
+                    ws.addEventListener('message', function (e) {
+
+                        // console.log('received:', e.data);
+                        const data = JSON.parse(e.data)
+                        accessToken = data.token ? data.token : accessToken
+
+                        if (data.message) {
+                            term.write(data.message)
                         }
-                    }
-                    if (data.varName) {
-                        const varName = data.varName
-                        if (varName == "userList") {
-                            try {
-                                const varVal = JSON.parse(data.varVal)
-
-                                var varValPlus = []
-                                varVal.forEach(element => {
-                                    varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name]) })
-                                });
-
-                                hot.loadData(varValPlus)
-
-                                hot.updateSettings({
-                                    colHeaders: ['User Name']
-                                });
-
-                                // hiddenColumnsPlugin.hideColumn(0);
-
-                                hot.render();
-
-                                $("#userListSection").css({
-                                    "transition": "opacity .5s",
-                                    "opacity": "1"
-                                })
-    
-
-                            } catch (e) {
-                                console.log("Error: " + e)
+                        if (data.status) {
+                            if (data.status === "up") {
+                                $("#connectBtn").addClass("up").removeClass("down")
+                            } else {
+                                $("#connectBtn").addClass("down").removeClass("up")
                             }
                         }
-                        if (varName == "userShow") {
-                            try {
-                                const varVal = JSON.parse(data.varVal)
-                                if (varVal.id) {
-                                    let ele = $('#userShow-' + varVal.id)
-                                    if (ele.length < 1) {
-                                        ele = $("#userShowTemplateOuter").clone(false)
-                                        ele.appendTo("#managerPanels");
-                                        ele.find(".userShow").removeClass("hidden")
-                                        ele.attr('id', 'userShow-' + varVal.id)
+                        if (data.varName) {
+                            const varName = data.varName
+                            if (varName == "userList") {
+                                try {
+                                    $("#spinner").css({
+                                        "transition": "opacity .5s",
+                                        "opacity": "0"
+                                    })
+
+                                    const varVal = JSON.parse(data.varVal)
+
+                                    var varValPlus = []
+                                    varVal.forEach(element => {
+                                        varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name]) })
+                                    });
+
+                                    hot.loadData(varValPlus)
+
+                                    // hot.updateSettings({
+                                    //     colHeaders: ['User Name'],
+                                    // });
+                                    // hiddenColumnsPlugin.hideColumn(0);
+
+                                    hot.render();
+                                    $("#buildCodeSearchInput").focus()
+
+                                    $("#userListSection").css({
+                                        "transition": "opacity .5s",
+                                        "opacity": "1"
+                                    })
+
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
+                            if (varName == "userShow") {
+                                try {
+                                    const varVal = JSON.parse(data.varVal)
+                                    if (varVal.id) {
+                                        let ele = $('#userShow-' + varVal.id)
+                                        // scrollTarget = '#userShow-' + varVal.id
+                                        if (ele.length < 1) {
+                                            ele = $("#userShowTemplateOuter").clone(false)
+                                            ele.insertBefore("#spinner")
+                                            ele.find(".userShow").removeClass("hidden")
+                                            ele.attr('id', 'userShow-' + varVal.id)
+                                        } else {
+
+                                        }
+                                        $('#managerPanels').stop().animate({
+                                            'scrollTop': $("#managerPanels").height()
+                                        }, 200, 'swing', function () {
+
+                                        });
+
+                                        ele.find(".userShowName").text(varVal.name)
+                                        ele.find(".userShowEmail").text(varVal.email)
+                                        ele.find(".userShowEnabled").text(varVal.enabled)
+                                        ele.find(".userShowId").text(varVal.id)
+
+                                    } else {
+                                        ele.find(".userShowName").text("Error returned")
                                     }
 
-                                    ele.find(".userShowName").text(varVal.name)
-                                    ele.find(".userShowEmail").text(varVal.email)
-                                    ele.find(".userShowEnabled").text(varVal.enabled)
-                                    ele.find(".userShowId").text(varVal.id)
-
-                                } else {
-                                    ele.find(".userShowName").text("Error returned")
+                                } catch (e) {
+                                    console.log("Error: " + e)
                                 }
-
-                            } catch (e) {
-                                console.log("Error: " + e)
                             }
-                        }
-                        if (varName == "userProjectList") {
-                            try {
-                                const varVal = JSON.parse(data.varVal)
-                                const props = data.props
-                                const userid = props.user
-                                let userEle = $("#userShow-" + userid)
+                            if (varName == "userProjectList") {
+                                try {
+                                    const varVal = JSON.parse(data.varVal)
+                                    const props = data.props
+                                    const compVars = data.compVars
+                                    const userid = props.id
+                                    let userEle = $("#userShow-" + userid)
+                                    // scrollTarget = '#userShow-' + userid
 
-                                userEle.find(".projectListLabel").text("Project List:")
-                                userEle.find(".projectListPanel").html()
-                                varVal.every((element, index, array) => {
+                                    userEle.find(".projectListLabel").text("Project List:")
+                                    userEle.find(".projectListPanel").html()
+                                    varVal.every((element, index, array) => {
 
-                                    userEle.find(".projectListPanel").append(
-                                        '<div id="userProjRow">' +
-                                        '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
-                                        '<div id="userProjId-' + userid + '-' + element.ID + '" class="userProj userProjId"></div>' +
-                                        '</div>'
-                                    )
-                                    $('#userProj-' + userid + '-' + element.ID).text(element.Name)
-                                    $('#userProjId-' + userid + '-' + element.ID).text(element.ID)
-                                    return true
-                                });
-                                // userEle.find(".projectListLabel").text("Project List:")
-                                // userEle.find(".projectListPanel").text(varVal)
+                                        projshowid = compVars["projShowID"] ? compVars["projShowID"].value : ""
+                                        userEle.find(".projectListPanel").append(
+                                            '<div id="userProjRow">' +
+                                            '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
+                                            '<div id="userProjId-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjId" data-runJob="'+ projshowid +'"></div>' +
+                                            '</div>'
+                                        )
+                                        $('#userProj-' + userid + '-' + element.ID).text(element.Name)
+                                        $('#userProjId-' + userid + '-' + element.ID).text(element.ID)
 
-                            } catch (e) {
-                                console.log("Error: " + e)
+                                        $('#userProjId-' + userid + '-' + element.ID).on("click",function(event){
+                                            let jobID = $(this).attr('data-runJob');
+                                            let projID = $(this).attr('data-projID');
+                                            runJob([jobID], false, { "id": projID })
+                                        })
+
+                                        return true
+                                    });
+
+                                    // userEle.find(".projectListLabel").text("Project List:")
+                                    // userEle.find(".projectListPanel").text(varVal)
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
                             }
-                        }
+                            if (varName == "projectList") {
+                                try {
+                                    $("#spinner").css({
+                                        "transition": "opacity .5s",
+                                        "opacity": "0"
+                                    })
 
-                    }
+                                    const varVal = JSON.parse(data.varVal)
+
+                                    var varValPlus = []
+                                    varVal.forEach(element => {
+                                        varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name]) })
+                                    });
+
+                                    hot.loadData(varValPlus)
+
+                                    // hot.updateSettings({
+                                    //     colHeaders: ['User Name'],
+                                    // });
+                                    // hiddenColumnsPlugin.hideColumn(0);
+
+                                    hot.render();
+                                    $("#buildCodeSearchInput").focus()
+
+                                    $("#userListSection").css({
+                                        "transition": "opacity .5s",
+                                        "opacity": "1"
+                                    })
+
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
+                            if (varName == "projectShow") {
+                                try {
+                                    const varVal = JSON.parse(data.varVal)
+                                    if (varVal.id) {
+                                        let ele = $('#projectShow-' + varVal.id)
+                                        if (ele.length < 1) {
+                                            ele = $("#projectShowTemplateOuter").clone(false)
+                                            ele.insertBefore("#spinner")
+                                            ele.find(".projectShow").removeClass("hidden")
+                                            ele.attr('id', 'projectShow-' + varVal.id)
+                                        } 
+                                        $('#managerPanels').stop().animate({
+                                            'scrollTop': $("#managerPanels").height()
+                                        }, 200, 'swing', function () {
+
+                                        });
+
+                                        ele.find(".projectShowName").text(varVal.name)
+                                        ele.find(".projectShowDescription").text(varVal.description)
+                                        ele.find(".projectShowEmail").text(varVal.email)
+                                        ele.find(".projectShowEnabled").text(varVal.enabled)
+                                        ele.find(".projectShowId").text(varVal.id)
+
+                                    } else {
+                                        ele.find(".projectShowName").text("Error returned")
+                                    }
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
+                            if (varName == "projectServerList") {
+                                try {
+                                    const serverLists = JSON.parse(data.varVal)
+                                    const varVal = serverLists[0]
+                                    const varVal2 = serverLists[1]
+                                    const props = data.props
+                                    const serverid = props.id
+                                    let userEle = $("#projectShow-" + serverid)
+
+                                    userEle.find(".serverListLabel").text("Server List:")
+                                    userEle.find(".serverListPanel").html()
+
+                                    function render(varVal, cloud) {
+                                        varVal.every((element, index, array) => {
+
+                                            userEle.find(".serverListPanel").append(
+                                                '<div id="projectServRow">' +
+                                                '<div id="projectServ-' + serverid + '-' + element.ID + '" class="projectServ"></div>' +
+                                                '<div id="projectServId-' + serverid + '-' + element.ID + '" class="projectServ projectServId"></div>' +
+                                                '</div>'
+                                            )
+                                            $('#projectServ-' + serverid + '-' + element.ID).text(cloud + " - " + element.Name)
+                                            $('#projectServId-' + serverid + '-' + element.ID).text(element.ID)
+                                            return true
+                                        });
+                                    }
+                                    render(varVal, "yyc")
+                                    render(varVal2, "yeg")
+
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
+
+                        }
+                    })
                 })
-            })
 
-            ws.onclose = function (e) {
-                $("#connectBtn").addClass("up").removeClass("down")
-            };
+                ws.onclose = function (e) {
+                    $("#connectBtn").addClass("up").removeClass("down")
+                };
+            }
+            wsEvents(ws)
 
             var accessToken = ""
             function runJob(ids, runChildren, props) {
@@ -287,30 +419,8 @@
                 runData["userID"] = userID
                 runData["props"] = props ? props : {}
 
-                ws.send(JSON.stringify(runData))
+                wsSend(runData, ws)
             }
-
-            // runJob("c8ffa51c-74e4-4dec-8878-6fd352952816", false)
-
-            $('#userListBtn').on('click', function () {
-                console.log("user list clicked")
-                $("#userListBtn").css({
-                    "color": "#4d4d4d",
-                    "text-shadow": "rgb(15 0 173) 0px 0px 0.6em, rgb(2 0 106) 0px 0px 0.6em, rgb(0 2 46) 0px 0px 0.6em",
-                    "transition": "text-shadow .3s, color .3s"
-                })
-
-                setTimeout(function () {
-                    $("#userListBtn").css({
-                        "color": "#4d4d4d",
-                        "text-shadow": "0 0 0.3em #d0d0d0, 0 0 0.3em #dadada, 0 0 0.3em #eee",
-                        "transition": "text-shadow 3s ease, color 3s ease"
-                    })
-                }, 100)
-
-
-                runJob(["14b69c72-028e-4b4b-988e-d512e1e89856"], false)
-            })
 
             $("#buildCodeSearchInput").on("keyup", function (key) {
 
@@ -324,6 +434,333 @@
                 hot.render();
             });
 
+            $("#connectBtn").click(function (event) {
+                //     term.focus()
+                if (isWsOpen(ws)) {
+                    term.write("connecting....\r\n")
+                    runJob([], false)
+                } else {
+                    accessToken = ""
+                    ws = new WebSocket('wss://dsstack.cybera.ca:8443')
+                    wsEvents(ws)
+                    setTimeout(function () {
+                        runJob([], false)
+                    }, 2000)
+                }
+
+
+            });
+            $("#connectBtn").popover('dispose').popover({
+                animation: true,
+                content: "Connect to host",
+                delay: { "show": 500, "hide": 100 },
+                trigger: 'hover',
+                placement: 'top',
+                template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+            });
+
+            // https://stackoverflow.com/questions/31002592/javascript-doesnt-catch-error-in-websocket-instantiation
+            // ws.onclose = function (e) {
+            //     $("#connectBtn").addClass("up").removeClass("down")
+            // };
+
+            var term = new Terminal({
+                fontSize: 14,
+                cols: 200,
+                fontFamily: 'Ubuntu Mono, courier-new, courier, monospace',
+            });
+
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+
+            term.open(document.getElementById('console'));
+
+            fitAddon.fit();
+
+
+            term.write('Welcome to \x1B[1;3;31mdsStack\x1B[0m $ ')
+
+            termLightTheme = {
+                "foreground": "#53676d",
+                "background": "#ebebeb",
+                "cursorColor": "#3a4d53",
+                "selectionBackground": "#cfcebe",
+                "black": "#e9e4d0",
+                "red": "#d2212d",
+                "green": "#489100",
+                "yellow": "#ad8900",
+                "blue": "#0072d4",
+                "purple": "#ca4898",
+                "cyan": "#009c8f",
+                "white": "#909995",
+                "brightBlack": "#cfcebe",
+                "brightRed": "#cc1729",
+                "brightGreen": "#428b00",
+                "brightYellow": "#a78300",
+                "brightBlue": "#006dce",
+                "brightPurple": "#c44392",
+                "brightCyan": "#00978a",
+                "brightWhite": "#3a4d53",
+                "cursor": "#3a4d53"
+            }
+
+            termDarkTheme = {
+                "foreground": "#bbb",
+                "background": "#000",
+                "cursorColor": "#fff",
+                "selectionBackground": "#cfcebe",
+                "black": "#e9e4d0",
+                "red": "#d2212d",
+                "green": "#489100",
+                "yellow": "#ad8900",
+                "blue": "#0072d4",
+                "purple": "#ca4898",
+                "cyan": "#009c8f",
+                "white": "#909995",
+                "brightBlack": "#cfcebe",
+                "brightRed": "#cc1729",
+                "brightGreen": "#428b00",
+                "brightYellow": "#a78300",
+                "brightBlue": "#006dce",
+                "brightPurple": "#c44392",
+                "brightCyan": "#00978a",
+                "brightWhite": "#3a4d53",
+                "cursor": "#3a4d53"
+            }
+
+            term.options = {
+                fontSize: 13,
+                fontWeight: 200,
+                fontFamily: 'Menlo, Consolas, "Liberation Mono", Courier, monospace',
+                cursorBlink: false,
+                enableBold: false
+            }
+            term.options.theme = termLightTheme
+
+            var consoleState = "down"
+            $("#console").on("dblclick", function (event) {
+                if (consoleState === 'down') {
+                    $("#console").css({
+                        "height": 'calc(400px)',
+                        "transition": "height 1s swing"
+                    })
+                    consoleState = 'up'
+                }else{
+                    $("#console").css({
+                        "height": 'calc(40px)',
+                        "transition": "height 1s swing"
+                    })
+                    consoleState = 'down'
+                }
+                fitAddon.fit();
+
+            })
+
+            $("#wrapBtn").click(function (event) {
+                term.focus()
+                if (!$("div#console").hasClass("consoleWrap")) {
+                    $("div#console").addClass("consoleWrap")
+                    $("#wrapBtn").addClass("consoleWrapBtn")
+                    fitAddon.fit();
+                } else {
+                    $("div#console").removeClass("consoleWrap")
+                    $("#wrapBtn").removeClass("consoleWrapBtn")
+                    fitAddon.fit();
+                }
+            });
+
+            term.attachCustomKeyEventHandler((key) => {
+                if (key.code === 'KeyV') {
+                    if (key.metaKey) {
+                        $("#console").focus()
+
+                        navigator.clipboard
+                            .readText()
+                            .then(
+                                (clipText) => {
+                                    let sendObj = { "token": accessToken, "key": clipText }
+                                    wsSend(sendObj, ws)
+                                }
+
+                            )
+                    }
+                }
+                return true;
+            });
+
+            term.onKey((key, ev) => {
+
+                if (ws) {
+
+                    let sendObj = { "token": accessToken, "key": key.key }
+                    wsSend(sendObj, ws)
+                }
+                // console.log("keypress " + key)
+
+            });
+            function isWsOpen(ws) { return ws.readyState === ws.OPEN }
+            function wsSend(sendObj, ws) {
+                if (isWsOpen(ws)) {
+                    ws.send(JSON.stringify(sendObj))
+                } else {
+                    console.log("ws is not open")
+                    term.write("Not connected\r\n")
+                    $("#connectBtn").addClass("down").removeClass("up")
+                }
+            }
+
+            currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
+
+            if (currentStyleName === "dark") {
+                $("#darkStyleRadioTop").prop('checked', true)
+                setStyle(currentStyleName)
+                hot.updateSettings({
+                    className: 'htDark',
+                    // rowHeights: 22,
+                    afterGetColHeader: function (col, TH) {
+                        TH.className = 'darkTH'
+                    }
+                })
+            } else {
+                $("#defaultStyleRadioTop").prop('checked', true)
+                setStyle(currentStyleName)
+                hot.updateSettings({
+                    className: 'htLight',
+                    // rowHeights: 22,
+                    afterGetColHeader: function (col, TH) {
+                        TH.className = 'lightTH'
+                    }
+                })
+            }
+
+            $('.stylePickTop').on('click', function (evt) {
+                //evt.preventDefault();
+                var pickedStyle = $(this).attr('data-ID')
+                setStyle(pickedStyle);
+
+                if (pickedStyle === "dark") {
+                hot.updateSettings({
+                    className: 'htDark',
+                    // rowHeights: 22,
+                    afterGetColHeader: function (col, TH) {
+                        TH.className = 'darkTH'
+                    }
+                })
+            } else {
+                hot.updateSettings({
+                    className: 'htLight',
+                    // rowHeights: 22,
+                    afterGetColHeader: function (col, TH) {
+                        TH.className = 'lightTH'
+                    }
+                })
+            }
+
+
+                localStorage['theme'] = pickedStyle
+            });
+
+            //Apply Style
+            function setStyle(name) {
+                const styleName = name;
+
+                currentStyleName = styleName;
+                setEditorsStyle(styleName);
+
+                var mydata = { styleName: styleName };
+
+                $.ajax({
+                    type: 'get',
+                    data: mydata,
+                    dataType: "text",
+                    headers: {
+                        "content-type": "application/json"
+                    },
+                    url: '/getStyle',
+                    success: function (data) {
+                        var sheet;
+                        if (lastStyleSheet) {
+                            sheet = lastStyleSheet;
+                        } else {
+                            sheet = document.createElement('style');
+                            document.body.appendChild(sheet);
+                        }
+                        lastStyleSheet = sheet;
+
+                        const respJson = JSON.parse(data);
+                        cssUnsortTxt = respJson.css;
+                        var cssArr = cssUnsortTxt.split("}")
+                        shuffleArray(cssArr);
+                        cssTxt = cssArr.join("}");
+
+                        loadCssParts(0, lastStyleSheet);
+                    },
+                    error: function (error) {
+                        console.log(error)
+                    }
+                })
+
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            function setEditorsStyle(styleName) {
+                if (styleName === "dark") {
+                    term.options.theme = termDarkTheme
+                } else {
+                    term.options.theme = termLightTheme
+                }
+            }
+
+
+            var onclickJob = ""
+            $.get('/getPromoted', { "userID": userID }, function (data) {
+                if (data.length > 0) {
+                    data.every((element, index, array) => {
+
+                        let text = element.text && element.text !== "" ? element.text : "click"
+                        let icon = element.icon && element.icon !== "" ? element.icon : "users"
+                        let ocj = element.onclickJob && element.onclickJob !== "" ? element.onclickJob : ""
+
+                        btnHtml = '<div id="btn-' + element.id + '" class="btnHolder" data-target="' + element.id + '" data-listClickJob="' + element.onclickJob + '" title="">'
+                        btnHtml += '<i class="fa fa-' + icon + ' fa-fw leftBtns"></i>'
+                        btnHtml += '</div>'
+
+                        $("#btnCol").append(btnHtml)
+
+                        $('#btn-' + element.id).on('click', function () {
+                            console.log("user list clicked")
+                            onclickJob = ocj
+
+                            $("#spinner").css({
+                                "transition": "opacity .1s",
+                                "opacity": "1"
+                            })
+
+                            runJob([element.id], false)
+                        })
+
+                        $('#btn-' + element.id).popover('dispose').popover({
+                            animation: true,
+                            content: text,
+                            delay: { "show": 500, "hide": 100 },
+                            trigger: 'hover',
+                            placement: 'right',
+                            template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                        });
+
+                        return true
+                    })
+
+
+
+                }
+            })
 
         });
 
@@ -353,7 +790,9 @@
     <div id="navbarNav-outer">
 
         <nav id="navbarNav" class="navbar navbar-light pop-bar">
-            <span><a class="navbar-brand" href="/"><b><span id="navTitle">dsManager</span></b></a></span>
+            <span>
+                <a class="navbar-brand" href="/"><b><span id="navTitle">dsManager</span></b></a>
+            </span>
 
             <!-- <div id="stylePickMenu">
                 <span class="radio stylePickTop" data-id="default">
@@ -365,29 +804,51 @@
                             class='fa  fa-moon-o fa-fw '></i></label>
                 </span>
             </div> -->
-            <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
+            <div class="navbarNavBtnRow">
+                <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
+                <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
+            </div>
         </nav>
     </div>
 
     <div id="MainRaisedCol" class="wrapper scroller">
 
         <div class="main">
-            <div id="Manager" class="manager">
-                <div id="userList">
-                    <div id="userBtnRow">
-                        <div id="userListBtn" class="usertBtn">User List</div>
-                    </div>
-                    <div id="userListSection">
-                        <div id="buildCodeSearchRow">
-                            <input class="form-control searchInput buildCodeSearchInput" id="buildCodeSearchInput"
-                                type="text">
+            <div id="btnCol">
+                <!-- <div id="userListBtn" class="btnHolder"><i class="fa fa-users fa-fw leftBtns"></i></div>
+                <div id="projectListBtn" class="btnHolder"><i class="fa fa-briefcase fa-fw leftBtns"></i></div> -->
+            </div>
+
+            <div id="mainCol">
+                <!-- <div id="userBtnRow">
+                    <div id="userListBtn" class="usertBtn">User List</div>
+                </div> -->
+                <div id="Manager" class="manager">
+                    <div id="userList">
+                        <div id="userListSection">
+                            <div id="buildCodeSearchRow">
+                                <input class="form-control searchInput buildCodeSearchInput" id="buildCodeSearchInput"
+                                    type="text">
+                            </div>
+                            <div id="grid"></div>
                         </div>
-                        <div id="grid"></div>
+
+                    </div>
+
+                    <div id="workingSection">
+                        <div id="managerPanels">
+                            <i id='spinner' class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+                        </div>
+                        <div id="consoleScroll">
+                            <div id="console"></div>
+                        </div>
+
                     </div>
 
                 </div>
-                <div id="managerPanels"></div>
             </div>
+
+
         </div>
     </div>
 </body>
@@ -411,13 +872,20 @@
                     <div class="">
                         <div id="userID"></div>
                     </div>
-                    <!-- <div class="label">Save Host</div>
-                    <div class="settingsInput"><input id="saveHost1"></textarea></div>
-                    <div class="label">Save Path</div>
-                    <div class="settingsInput"><input id="savePath1"></textarea></div> -->
 
                 </form>
                 <br />
+                <div class="label">Theme</div>
+                <div id="stylePickMenu">
+                    <span class="radio stylePickTop" data-id="default">
+                        <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
+                                class='fa fa-sun-o fa-fw '></i></label>
+                    </span>
+                    <span class="radio stylePickTop" data-id="dark">
+                        <label><input type="radio" id="darkStyleRadioTop" name="setupRadio"> <i
+                                class='fa  fa-moon-o fa-fw '></i></label>
+                    </span>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" id="settingsSaveButton" data-dismiss="modal"
@@ -429,33 +897,78 @@
     </div>
 </div>
 
-<div id="userShowTemplateOuter"><div class="userShow hidden">
-    <div class="panelTop">
-        <div class="panelLCol">
-            <div class="panelRow">
-                <div class="infoPanelLabel">Name: </div>
-                <div class="infoPanel userShowName"></div>
-            </div>
-            <div class="panelRow">
-                <div class="infoPanelLabel">Email: </div>
-                <div class="infoPanel userShowEmail"></div>
-            </div>
+<div id="userShowTemplateOuter" class="userShowOuter">
+    <div class="userShow hidden">
+        <div class="nameRow">
+            <div class="userShowLabel">User:</div>
+            <div class="userShowName"></div>
         </div>
-        <div class="panelRCol">
-            <div class="panelRow">
-                <div class="infoPanelLabel">Enabled: </div>
-                <div class="infoPanel userShowEnabled"></div>
+        <div class="userShowInfo">
+            <div class="panelTop">
+                <div class="panelLCol">
+                    <!-- <div class="panelRow">
+                </div> -->
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">Enabled: </div>
+                        <div class="infoPanel userShowEnabled"></div>
+                    </div>
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">Email: </div>
+                        <div class="infoPanel userShowEmail"></div>
+                    </div>
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">ID: </div>
+                        <div class="infoPanel userShowId"></div>
+                    </div>
+                </div>
+                <!-- <div class="panelRCol">
+            </div> -->
             </div>
-            <div class="panelRow">
-                <div class="infoPanelLabel">ID: </div>
-                <div class="infoPanel userShowId"></div>
+            <div class="infoPanel projectListHolder">
+                <div class="infoPanel projectListLabel"></div>
+                <div class="infoPanel projectListPanel"></div>
             </div>
         </div>
     </div>
-    <!-- <div class="panelRow"><div class="infoPanelLabel">Project ID: </div><div class="infoPanel userShowProjId"></div></div> -->
-    <!-- <div class="panelRow"><div class="infoPanelLabel">Dommain ID: </div><div class="infoPanel userShowdomainId"></div></div> -->
-    <div class="infoPanel projectListLabel"></div>
-    <div class="infoPanel projectListPanel"></div>
-</div></div>
+</div>
+
+<div id="projectShowTemplateOuter" class="projectShowOuter">
+    <div class="projectShow hidden">
+        <div class="nameRow">
+            <div class="projectShowLabel">Project:</div>
+            <div class="projectShowName"></div>
+        </div>
+        <div class="projectShowInfo">
+            <div class="panelTop">
+                <div class="panelLCol">
+                    <!-- <div class="panelRow">
+                </div> -->
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">Enabled: </div>
+                        <div class="infoPanel projectShowEnabled"></div>
+                    </div>
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">Email: </div>
+                        <div class="infoPanel projectShowEmail"></div>
+                    </div>
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">Description: </div>
+                        <div class="infoPanel projectShowDescription"></div>
+                    </div>
+                    <div class="panelRow">
+                        <div class="infoPanelLabel">ID: </div>
+                        <div class="infoPanel projectShowId"></div>
+                    </div>
+                </div>
+                <!-- <div class="panelRCol">
+            </div> -->
+            </div>
+            <div class="infoPanel serverListHolder">
+                <div class="infoPanel serverListLabel"></div>
+                <div class="infoPanel serverListPanel"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </html>

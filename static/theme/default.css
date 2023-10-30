@@ -14,10 +14,7 @@ a {
     border-bottom: 0px solid rgba(47, 46, 47, 1);
 }
 
-#navbarNav-outer {
-    background-image: url('');
-    background-color: #ffffff;
-}
+
 
 #navbarNav .navbar-brand>B {
     color: #000000;
@@ -42,7 +39,7 @@ a {
 
 input, textarea, .searchInput {
     color: #000;
-    background-color: #e2e2e2;
+    background-color: #fff;
 }
 
 div#tCol-handle {
@@ -58,10 +55,6 @@ div#iCol-handle {
     background-color: #fff;
     border-color: #959595;
     box-shadow: 0 0 0 .2rem rgba(134, 134, 134, 0.25);
-}
-
-i#settingsBtn {
-    float: right;
 }
 
 textarea#settingsKey1 {
@@ -134,4 +127,44 @@ i.fa.down{
 i.fa.consoleWrapBtn{
     color: #0075ff
 }
+
+div#btnCol {
+    background: #e2e2e2;
+}
+
+#navbarNav-outer {
+    background-color: #e2e2e2;
+}
+
+div#userList {
+    background-color: #d4d4d4;
+}
+
+.htDark {
+    width: 100px;
+    padding: 0.2em;
+    background: #d4d4d4;
+    outline: none;
+    color: #000000;
+    border: 0
+  }
+  
+  .handsontable .htDark {
+    background: #d4d4d4;
+    color: #000000;
+  }
+  
+  .handsontable .darkTH {
+    background: #d4d4d4;
+    color: #000000;
+  }
+
+  div#btnCol i {
+    color: #0075ff;
+  }
+
+  #settingsBtn{
+    color: #0075ff
+}
+
 

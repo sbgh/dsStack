@@ -469,6 +469,12 @@ div#stylePickMenu {
     backdrop-filter: blur(3px);
 }
 
+#settingsConfirmationBody #userID {
+    font-size: 15px;
+    color: transparent;
+    text-shadow: rgb(0, 0, 0) 0px 0px 8px;
+}
+
 form#settingsModalForm input, form#settingsModalForm textarea {
     width: 100%;
 }
@@ -502,3 +508,19 @@ textarea#varValEditor {
     padding-left: 5px;
     margin-top: 2px;
 }
+
+#nameHolder{
+    display: flex;
+    flex-direction: row;
+}
+
+div#comp-id {
+    padding: 13px;
+    transition: opacity 0.2s ;
+    opacity: 0;
+    font-size: 13px;
+}
+div#comp-id:hover {
+    opacity: 1;
+}
+

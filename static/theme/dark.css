@@ -1,6 +1,6 @@
 body {
     font-family: "Open Sans", Arial, sans-serif;
-    color: #f7f7f7;
+    color: #b6b6b6;
 }
 
 
@@ -95,10 +95,6 @@ div#iCol-handle {
     background-color: #393939;
     border-color: #959595;
     box-shadow: 0 0 0 0rem rgba(134, 134, 134, 0.25);
-}
-
-i#settingsBtn {
-    float: right;
 }
 
 input, textarea, .searchInput {
@@ -247,3 +243,52 @@ i.fa.down{
 i.fa.consoleWrapBtn{
     color: #79bdf3
 }
+
+div#btnCol {
+    background: #242424;
+}
+
+#navbarNav-outer {
+    background-color: #242424;
+}
+
+div#userList {
+    background-color: #242424;
+}
+
+div#managerPanels {
+    background-color: #191919;
+}
+
+.htDark {
+    width: 100px;
+    padding: 0.2em;
+    background: #242424;
+    outline: none;
+    color: #fff;
+    border: 0
+  }
+  
+  .handsontable .htDark {
+    background: #242424;
+    color: #eee;
+  }
+  
+  .handsontable .darkTH {
+    background: #242424;
+    color: #eee;
+  }
+
+  .handsontable th {
+    background-color: #242424;
+    color: #fff;
+  }
+
+  div#btnCol i {
+    color: #79bdf3;
+  }
+
+  #settingsBtn{
+    color: #79bdf3
+}
+  

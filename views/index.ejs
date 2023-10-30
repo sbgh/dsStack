@@ -1348,6 +1348,16 @@
 
                 });
             }
+        
+            $( "#comp-id" ).on( "click", function () {
+                navigator.clipboard.writeText($("#comp-id").text())
+                $( "#comp-id" ).css({"color":"blue"})
+            } )
+
+            // $("#comp-id").on("hover", function () {
+            //     $("#comp-id").css({"opcity":"100"})
+            // })
+        
         });
 
         var cssTxt = "";
@@ -1433,10 +1443,12 @@
                         <i id="pasteBtn" class="fa fa-paste fa-fw"></i>
                     </div>
 
-                    <div id="comp-id" style="display:none;"></div>
+                    
                     <div id="comp-parent" style="display:none;"></div>
                     <div id="comp-name-container">
-                        <div id="comp-name"></div>
+                        <div id="nameHolder">
+                            <div id="comp-name"></div><div id="comp-id"></div>
+                        </div>        
                         <input type="text" id="comp-name-edit" style="display:none;">
                     </div>
                     <div class="iCol-scroll">

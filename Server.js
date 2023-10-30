@@ -512,6 +512,52 @@ router.get("/move", function (req, res) {
 });
 
 
+router.get("/getPromoted", function (req, res) {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    var userID = req.query.userID
+
+    function findProm(compData, retArr) {
+        for (var key in compData) {
+            if (compData[key].hasOwnProperty("variables")) {
+                if (compData[key].variables["promoted"]) {
+                    if (compData[key].variables["promoted"].value.trim() === "true") {
+
+                        let icon=compData[key].variables["icon"] ? compData[key].variables["icon"].value.trim() : ""
+                        let onclickJob=compData[key].variables["onclickJob"] ? compData[key].variables["onclickJob"].value.trim() : ""
+                        let text=compData[key].text ? compData[key].text : ""
+
+                        retArr.push({ "id": compData[key].id, "icon":icon, "text":text, "onclickJob":onclickJob })
+                    }
+                }
+
+            }
+        }
+    }
+    var retArr = []
+    if (!compDataObj[userID]) {
+        fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
+            if (!err && data) {
+
+                compDataObj[userID] = JSON.parse(data)
+                let compData = compDataObj[userID]
+
+                findProm(compData, retArr)
+
+                res.end(JSON.stringify(retArr));
+
+            } else {
+                console.log("loadSavedComps error: compDataObj does not have property userID")
+            }
+        })
+    } else {
+        let compData = compDataObj[userID]
+        findProm(compData, retArr)
+
+        res.end(JSON.stringify(retArr));
+    }
+
+})
+
 function fixChildsSort(parentId, userID) {
     if (!compDataObj[userID]) {
         console.log("fixChildsSort error: compDataObj does not have property userID")
@@ -562,12 +608,13 @@ function getConn(conOptions, callback) {
     if (conn) {
         conn.key = key
         if (ids) {
-            conn.ids = ids
-            conn.props = props
-            // conn.index = 0
+            const req = { "ids": ids, "varName": "", "varVal": "", "props": props }
+
+            conn.reqs.push(req)
         }
         callback(conn)
     } else {
+        console.log("Add connection to", connections.length)
         let c = new Client();
 
         if (!conOptions.username || !conOptions.privateKey || !conOptions.host) {
@@ -591,6 +638,7 @@ function getConn(conOptions, callback) {
                     ws.send(mess)
                     connections.every((element, index, array) => {
                         if (element.token === token) {
+                            console.log("delete connections", index)
                             delete connections[index]
                             return false;
                         }
@@ -608,6 +656,7 @@ function getConn(conOptions, callback) {
                     ws.send(mess)
                     connections.every((element, index, array) => {
                         if (element.token === token) {
+                            console.log("delete connections", index)
                             delete connections[index]
                             return false;
                         }
@@ -619,7 +668,7 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "ids": ids, "key": key, "varName": "", "varVal": "", "props": props }
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "reqs": [{ "ids": ids, "varName": "", "varVal": "", "props": props }] }
 
                         connections.push(conObj)
 
@@ -684,81 +733,98 @@ function streamEvents(conn, ws) {
             "status": "up"
         })
         ws.send(mess)
-
+        // console.log("-------")
         // console.log("data: " + data.toString())
 
         let lines = data.split("\n")
         let lastLine = lines[lines.length - 1]
 
-        if (data.substr(0, 4) === 'var:') {
+        // console.log("data: " + data)
+        if (lines.some(substr => substr.startsWith('var:'))) {
 
-            let dataParts = data.split(":")
-            console.log("detected var: " + dataParts[1]) 
+            let found = false
+            lines = lines.filter(s => {
+                if (s.startsWith('var:')) {
+                    found = true
+                }
+                return found
+            });
+
+            let dataParts = lines.join("\n").split(":")
+
+            console.log("detected var: " + dataParts[1])
+
             if (dataParts.length > 2) {
                 let varName = dataParts[1] ? dataParts[1] : ""
-                conn.varName = varName
+                conn.reqs[0].varName = varName
                 dataParts.shift(); dataParts.shift()
                 let remainder = dataParts.join(":")
-                conn.varVal = conn.varVal + remainder
+                conn.reqs[0].varVal = remainder
             }
-        } else if (conn.varName !== "") {
-            conn.varVal = (conn.varVal + data.toString()).substring(0, 500000)
+        } else if (conn.reqs.length > 0 && conn.reqs[0].varName !== "") {
+            conn.reqs[0].varVal = (conn.reqs[0].varVal + data.toString()).substring(0, 5000000)
+
+            // console.log("no var: " + data)
         }
 
-
         if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line(s) of script
-            // console.log("prompt? " + lastLine) 
+            // console.log("prompt " + lastLine)
             conn.atPrompt = true
 
-            let props = conn.props ? conn.props : ""
+            if (conn.reqs.length > 0) {
+                let props = conn.reqs[0].props ? conn.reqs[0].props : ""
+                let ids = conn.reqs[0].ids
+                
+                if (conn.reqs[0].varName !== "") {
+                    mess = JSON.stringify(
+                        {
+                            "varName": conn.reqs[0].varName,
+                            "varVal": conn.reqs[0].varVal.split(prompt)[0],
+                            "props": props,
+                            "compVars":compData[ids[0]].variables
+                        }
+                    )
+                    // console.log(mess)
+                    ws.send(mess)
+                    conn.reqs[0].varName = ""
+                    conn.reqs[0].varVal = ""
+                }
+                let ind = conn.index
+                // console.log("found conn", ids[0], ind)
+                if (compData[ids[0]] && compData[ids[0]].script) {
+                    let script = compData[ids[0]].script
+                    let lines = script.split('\n')
+                    // console.log("conn.index", conn.index, "lines.length", lines.length)
+                    if (conn.index < lines.length) {
+                        let command = replaceVar(lines[ind], compData[ids[0]], props)
 
-            if (conn.varName !== "") {
-                mess = JSON.stringify(
-                    {
-                        "varName": conn.varName,
-                        "varVal": conn.varVal.split(prompt)[0],
-                        // "varVal": conn.varVal.split('\n').filter(function (s) { return ! s.includes(prompt) }).join('\n'),
-                        "props":props
-                    }
-                )
-                // console.log(mess)
-                ws.send(mess)
-                conn.varName = ""
-                conn.varVal = ""
-            }
-            let ids = conn.ids
-            let ind = conn.index
-            // console.log("found conn", ids[0], ind)
-            if (compData[ids[0]] && compData[ids[0]].script) {
-                let script = compData[ids[0]].script
-                let lines = script.split('\n')
-                // console.log("conn.index", conn.index, "lines.length", lines.length)
-                if (conn.index < lines.length) {
-                    let command = replaceVar(lines[ind], compData[ids[0]], props)
-
-                    stream.write(command + '\n');
-                    // console.log("sent: ", command)
-                    conn.index++
-                    ind = conn.index
-                    while (lines[ind] && lines[ind].substring(0, 1) === '-') {
-                        command = replaceVar(lines[ind].substring(1), compData[ids[0]], props)
                         stream.write(command + '\n');
-
+                        // console.log("sent: ", command)
                         conn.index++
                         ind = conn.index
+                        while (lines[ind] && lines[ind].substring(0, 1) === '-') {
+                            command = replaceVar(lines[ind].substring(1), compData[ids[0]], props)
+                            stream.write(command + '\n');
+
+                            conn.index++
+                            ind = conn.index
+                        }
+                    } else {
+                        conn.reqs.shift()
+                        conn.index = 0
+                        stream.write('\n');
                     }
+                } else {
+                    conn.reqs.shift()
                 }
             }
 
+
+
         } else {
             conn.atPrompt = false
+            // console.log("no prompt " + lastLine)
         }
-        // connections.forEach(function (value, index, array) {
-        //     if (value.token === token) {
-
-
-        //     }
-        // });
     });
 
     stream.on('close', function (code, signal) {
@@ -775,6 +841,7 @@ function streamEvents(conn, ws) {
 
         connections.every((element, index, array) => {
             if (element.token === token) {
+                console.log("delete connections", index)
                 delete connections[index]
                 return false;
             }
@@ -793,6 +860,7 @@ function streamEvents(conn, ws) {
         ws.send(mess)
         connections.every((element, index, array) => {
             if (element.token === token) {
+                console.log("delete connections", index)
                 delete connections[index]
                 return false;
             }
@@ -832,10 +900,10 @@ function replaceVar(commandStr, job, props) {// find and replace inserted comman
         item = item.substr(0, item.indexOf('}}'));
 
         if (item.length > 2 && item.length < 32) {
-            //console.log("Error: Component Variable not found: " + item + '\n');
-            message("Error: Component Variable not found: " + item + '\n');
-            flushMessQueue();
-            sshSuccess = false;
+            console.log("Error: Component Variable not found: " + item + '\n');
+            // message("Error: Component Variable not found: " + item + '\n');
+            // flushMessQueue();
+            // sshSuccess = false;
             // stream.close();
             return ('');
         }
@@ -987,16 +1055,16 @@ wsserver.on('connection', function connection(ws) {
                 "status": "up"
             })
             ws.send(mess)
-            let ids = conn.ids
+
             if (conn.key) {
                 let key = conn.key
                 conn.stream.write(key)
-            } else if (conn.ids[0] && compData[ids[0]].script && conn.atPrompt) {
-
+            } else if (conn.reqs[0].ids[0] && compData[conn.reqs[0].ids].script && conn.atPrompt) {
+                let ids = conn.reqs[0].ids
                 //We are sitting at prompt so lets send first script line
                 let script = compData[ids[0]].script
                 let lines = script.split('\n')
-                let props = conn.props
+                let props = conn.reqs[0].props
                 let command = replaceVar(lines[0], compData[ids[0]], props)
                 conn.stream.write(command + '\n');
                 conn.index = 1
@@ -1009,9 +1077,13 @@ wsserver.on('connection', function connection(ws) {
                     ind = conn.index
                 }
 
-            } else if (conn.ids[0]) {
+            } else if (conn.reqs[0].ids[0]) {
                 conn.index = 0
+            } else {
+                // console.log("processMessage: Was not a key or a run ids req.")
+                conn.stream.write('\n');
             }
+
         }
     }
 
