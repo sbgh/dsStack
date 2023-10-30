@@ -82,6 +82,7 @@ div#managerPanels {
     height: calc(75vh - 95px);
     overflow-y: auto;
     flex: 1;
+    scroll-behavior: smooth;
 }
 
 div.userShow {
