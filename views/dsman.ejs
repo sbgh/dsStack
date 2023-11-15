@@ -111,7 +111,7 @@
             const hot = new Handsontable(container, {
                 // stretchH: 'all',
                 width: 250,
-                height: '103%',
+                height: '98%',
                 // autoWrapRow: true,
                 // height: 487,
                 maxRows: 22000,
@@ -167,6 +167,17 @@
                         const data = JSON.parse(e.data)
                         accessToken = data.token ? data.token : accessToken
 
+                        if (data.busy) {
+                            if (data.busy === "true") {
+                                $("#spinner").css({
+                                    "opacity": "1"
+                                })
+                            } else {
+                                $("#spinner").css({
+                                    "opacity": "0"
+                                })
+                            }
+                        }
                         if (data.message) {
                             term.write(data.message)
                         }
@@ -187,7 +198,7 @@
                                     })
 
                                     const varVal = JSON.parse(data.varVal)
-
+                                    const compVars = data.compVars
                                     var varValPlus = []
                                     varVal.forEach(element => {
                                         varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name]) })
@@ -208,6 +219,9 @@
                                         "opacity": "1"
                                     })
 
+                                    const title = compVars["listTitle"] ? compVars["listTitle"].value : ""
+                                    $("#gridTitle").text(title)
+                                    $("#gridButtons").html('')
 
                                 } catch (e) {
                                     console.log("Error: " + e)
@@ -218,21 +232,26 @@
                                     const varVal = JSON.parse(data.varVal)
                                     if (varVal.id) {
                                         let ele = $('#userShow-' + varVal.id)
-                                        
+
                                         if (ele.length < 1) {
                                             ele = $("#userShowTemplateOuter").clone(false)
                                             ele.insertBefore("#spinner")
                                             ele.find(".userShow").removeClass("hidden")
                                             ele.attr('id', 'userShow-' + varVal.id)
                                         } else {
-
+                                            ele.insertBefore("#spinner")
                                         }
-                                        // $('#managerPanels').scrollTop($("#managerPanels").height())
-                                        
+
+                                        ele[0].scrollIntoView({
+                                            behavior: 'auto',
+                                            block: 'center',
+                                            inline: 'center'
+                                        });
+
                                         ele.find(".userShowName").text(varVal.name)
                                         ele.find(".userShowEmail").text(varVal.email)
                                         ele.find(".userShowEnabled").text(varVal.enabled)
-                                        ele.find(".userShowId").text(varVal.id)
+                                        ele.find(".userShowID").text(varVal.id)
 
                                     } else {
                                         ele.find(".userShowName").text("Error returned")
@@ -258,13 +277,13 @@
                                         userEle.find(".projectListPanel").append(
                                             '<div id="userProjRow">' +
                                             '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
-                                            '<div id="userProjId-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjId" data-runJob="' + projshowid + '"></div>' +
+                                            '<div id="userProjID-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjID" data-runJob="' + projshowid + '"></div>' +
                                             '</div>'
                                         )
                                         $('#userProj-' + userid + '-' + element.ID).text(element.Name)
-                                        $('#userProjId-' + userid + '-' + element.ID).text(element.ID)
+                                        $('#userProjID-' + userid + '-' + element.ID).text(element.ID)
 
-                                        $('#userProjId-' + userid + '-' + element.ID).on("click", function (event) {
+                                        $('#userProjID-' + userid + '-' + element.ID).on("click", function (event) {
                                             let jobID = $(this).attr('data-runJob');
                                             let projID = $(this).attr('data-projID');
                                             runJob([jobID], false, { "id": projID })
@@ -279,13 +298,10 @@
                             }
                             if (varName == "projectList") {
                                 try {
-                                    $("#spinner").css({
-                                        "transition": "opacity .5s",
-                                        "opacity": "0"
-                                    })
 
                                     const varVal = JSON.parse(data.varVal)
 
+                                    const compVars = data.compVars
                                     var varValPlus = []
                                     varVal.forEach(element => {
                                         varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name]) })
@@ -306,6 +322,54 @@
                                         "opacity": "1"
                                     })
 
+                                    const title = compVars["listTitle"] ? compVars["listTitle"].value : ""
+
+                                    $("#gridTitle").text(title)
+
+                                    if (compVars["buttons"]) {
+                                        bList = compVars["buttons"].value.split("\n")
+                                        $("#gridButtons").html('')
+                                        bList.every((element, index, array) => {
+                                            if (element.split(";").length = 2) {
+                                                const icon = element.split(";")[0]
+                                                const jobId = element.split(";")[1]
+                                                let html = '<i id="listBtn-' + index + '" class="fa fa-' + icon + ' fa-fw listIcon" data-jobId="' + jobId + '">'
+                                                $("#gridButtons").append(html)
+
+                                                $("#listBtn-" + index).click(function () {
+                                                    let ele
+
+                                                    if ($("#projectCreate").length > 0) {
+                                                        ele = $("#projectCreate")
+
+                                                        ele.insertBefore("#spinner")
+                                                    } else {
+                                                        ele = $("#projectCreateTemplateOuter").clone(false)
+                                                        ele.insertBefore("#spinner")
+                                                        ele.find(".projectCreate").removeClass("hidden")
+                                                        ele.attr('id', 'projectCreate')
+
+                                                        ele.find(".projCreate").attr('data-jobId', jobId)
+                                                        ele.find(".projCreate").click(function () {
+                                                            let jobId = this.attributes["data-jobId"].value
+                                                            let name = $(this).parent().find(".projectCreateInputName").val()
+                                                            let email = $(this).parent().find(".projectCreateInputEmail").val()
+                                                            let description = $(this).parent().find(".projectCreateInputDescription").val()
+                                                            runJob([jobId], false, { "name": name, "email": email, "description": description })
+                                                        })
+                                                    }
+                                                    ele[0].scrollIntoView({
+                                                        behavior: 'auto',
+                                                        block: 'center',
+                                                        inline: 'center'
+                                                    });
+
+
+                                                })
+                                            }
+                                            return true
+                                        })
+                                    }
 
                                 } catch (e) {
                                     console.log("Error: " + e)
@@ -314,25 +378,53 @@
                             if (varName == "projectShow") {
                                 try {
                                     const varVal = JSON.parse(data.varVal)
+                                    const compVars = data.compVars
+                                    let ele
                                     if (varVal.id) {
-                                        let ele = $('#projectShow-' + varVal.id)
+                                        ele = $('#projectShow-' + varVal.id)
                                         if (ele.length < 1) {
                                             ele = $("#projectShowTemplateOuter").clone(false)
                                             ele.insertBefore("#spinner")
                                             ele.find(".projectShow").removeClass("hidden")
                                             ele.attr('id', 'projectShow-' + varVal.id)
+                                        } else {
+                                            ele.insertBefore("#spinner")
                                         }
-                                        
-                                        // $('#managerPanels').scrollTop($("#managerPanels").height())
-                                        
+
+                                        ele[0].scrollIntoView({
+                                            behavior: 'auto',
+                                            block: 'center',
+                                            inline: 'center'
+                                        });
+
                                         ele.find(".projectShowName").text(varVal.name)
                                         ele.find(".projectShowDescription").text(varVal.description)
                                         ele.find(".projectShowEmail").text(varVal.email)
                                         ele.find(".projectShowEnabled").text(varVal.enabled)
-                                        ele.find(".projectShowId").text(varVal.id)
+                                        ele.find(".projectShowID").text(varVal.id)
 
                                     } else {
                                         ele.find(".projectShowName").text("Error returned")
+                                    }
+
+                                    if (compVars["buttons"]) {
+                                        bList = compVars["buttons"].value.split("\n")
+                                        ele.find(".projButtons").html('')
+                                        bList.every((element, index, array) => {
+                                            if (element.split(";").length = 2) {
+                                                const label = element.split(";")[0]
+                                                const jobId = element.split(";")[1]
+                                                let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
+                                                ele.find(".projButtons").append(html)
+
+                                                $("#projBtn-" + varVal.id + "-" + index).text(label)
+                                                $("#projBtn-" + varVal.id + "-" + index).click(function () {
+                                                    let jobId = this.attributes["data-jobId"].value
+                                                    runJob([jobId], false, { "id": varVal.id })
+                                                })
+                                            }
+                                            return true
+                                        })
                                     }
 
                                 } catch (e) {
@@ -357,11 +449,11 @@
                                             userEle.find(".serverListPanel").append(
                                                 '<div id="projectServRow">' +
                                                 '<div id="projectServ-' + serverid + '-' + element.ID + '" class="projectServ"></div>' +
-                                                '<div id="projectServId-' + serverid + '-' + element.ID + '" class="projectServ projectServId"></div>' +
+                                                '<div id="projectServID-' + serverid + '-' + element.ID + '" class="projectServ projectServID"></div>' +
                                                 '</div>'
                                             )
                                             $('#projectServ-' + serverid + '-' + element.ID).text(cloud + " - " + element.Name)
-                                            $('#projectServId-' + serverid + '-' + element.ID).text(element.ID)
+                                            $('#projectServID-' + serverid + '-' + element.ID).text(element.ID)
                                             return true
                                         });
                                     }
@@ -373,8 +465,71 @@
                                     console.log("Error: " + e)
                                 }
                             }
-                            $('#managerPanels').scrollTop($("#managerPanels").height())
+                            if (varName == "projectUserList") {
+                                try {
+                                    const varVal = JSON.parse(data.varVal)
+                                    const props = data.props
 
+                                    const compVars = data.compVars
+                                    const projectid = props.id
+                                    let userEle = $("#projectShow-" + projectid)
+
+                                    userEle.find(".userListLabel").text("User List:")
+                                    userEle.find(".userListPanel").html()
+
+                                    function render(varVal) {
+                                        varVal.every((element, index, array) => {
+
+                                            usershowid = compVars["userShowID"] ? compVars["userShowID"].value : ""
+                                            userEle.find(".userListPanel").append(
+                                                '<div class="projectUserRow">' +
+                                                '<div id="projectUser-' + projectid + '-' + element.ID + '" class="projectUser"></div>' +
+                                                '<div id="projectUserID-' + projectid + '-' + element.ID + '" data-userID="' + element.ID + '" class="projectUser projectUserID" data-runJob="' + usershowid + '"></div>' +
+                                                '</div>'
+                                            )
+                                            $('#projectUser-' + projectid + '-' + element.ID).text(element.Name)
+                                            $('#projectUserID-' + projectid + '-' + element.ID).text(element.ID)
+
+                                            $('#projectUserID-' + projectid + '-' + element.ID)[0].scrollIntoView({
+                                                behavior: 'auto',
+                                                block: 'center',
+                                                inline: 'center'
+                                            });
+
+                                            $('#projectUserID-' + projectid + '-' + element.ID).on("click", function (event) {
+                                                let jobID = $(this).attr('data-runJob')
+                                                let userID = $(this).attr('data-userID')
+                                                runJob([jobID], false, { "id": userID })
+                                            })
+                                            return true
+                                        })
+                                    }
+                                    render(varVal)
+
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
+                            if (varName == "createProj") {
+                                try {
+                                    const ret = data.varVal
+
+                                    var myString = '<p class="preformatted"></p>';
+                                    var createProjRet = $($.parseHTML(myString));
+                                    createProjRet.insertBefore("#spinner")
+                                    createProjRet.text(ret)
+
+                                    createProjRet.scrollIntoView({
+                                        behavior: 'auto',
+                                        block: 'center',
+                                        inline: 'center'
+                                    });
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
                         }
                     })
                 })
@@ -554,89 +709,64 @@
                 fitAddon.fit()
             });
 
-        $("#wrapBtn").click(function (event) {
-            term.focus()
-            if (!$("div#console").hasClass("consoleWrap")) {
-                $("div#console").addClass("consoleWrap")
-                $("#wrapBtn").addClass("consoleWrapBtn")
-                fitAddon.fit();
-            } else {
-                $("div#console").removeClass("consoleWrap")
-                $("#wrapBtn").removeClass("consoleWrapBtn")
-                fitAddon.fit();
-            }
-        });
+            $("#wrapBtn").click(function (event) {
+                term.focus()
+                if (!$("div#console").hasClass("consoleWrap")) {
+                    $("div#console").addClass("consoleWrap")
+                    $("#wrapBtn").addClass("consoleWrapBtn")
+                    fitAddon.fit();
+                } else {
+                    $("div#console").removeClass("consoleWrap")
+                    $("#wrapBtn").removeClass("consoleWrapBtn")
+                    fitAddon.fit();
+                }
+            });
 
-        term.attachCustomKeyEventHandler((key) => {
-            if (key.code === 'KeyV') {
-                if (key.metaKey) {
-                    $("#console").focus()
+            term.attachCustomKeyEventHandler((key) => {
+                if (key.code === 'KeyV') {
+                    if (key.metaKey) {
+                        $("#console").focus()
 
-                    navigator.clipboard
-                        .readText()
-                        .then(
-                            (clipText) => {
-                                let sendObj = { "token": accessToken, "key": clipText }
-                                wsSend(sendObj, ws)
-                            }
+                        navigator.clipboard
+                            .readText()
+                            .then(
+                                (clipText) => {
+                                    let sendObj = { "token": accessToken, "key": clipText }
+                                    wsSend(sendObj, ws)
+                                }
 
-                        )
+                            )
+                    }
+                }
+                return true;
+            });
+
+            term.onKey((key, ev) => {
+
+                if (ws) {
+
+                    let sendObj = { "token": accessToken, "key": key.key }
+                    wsSend(sendObj, ws)
+                }
+                // console.log("keypress " + key)
+
+            });
+            function isWsOpen(ws) { return ws.readyState === ws.OPEN }
+            function wsSend(sendObj, ws) {
+                if (isWsOpen(ws)) {
+                    ws.send(JSON.stringify(sendObj))
+                } else {
+                    console.log("ws is not open")
+                    term.write("Not connected\r\n")
+                    $("#connectBtn").addClass("down").removeClass("up")
                 }
             }
-            return true;
-        });
 
-        term.onKey((key, ev) => {
+            currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
 
-            if (ws) {
-
-                let sendObj = { "token": accessToken, "key": key.key }
-                wsSend(sendObj, ws)
-            }
-            // console.log("keypress " + key)
-
-        });
-        function isWsOpen(ws) { return ws.readyState === ws.OPEN }
-        function wsSend(sendObj, ws) {
-            if (isWsOpen(ws)) {
-                ws.send(JSON.stringify(sendObj))
-            } else {
-                console.log("ws is not open")
-                term.write("Not connected\r\n")
-                $("#connectBtn").addClass("down").removeClass("up")
-            }
-        }
-
-        currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
-
-        if (currentStyleName === "dark") {
-            $("#darkStyleRadioTop").prop('checked', true)
-            setStyle(currentStyleName)
-            hot.updateSettings({
-                className: 'htDark',
-                // rowHeights: 22,
-                afterGetColHeader: function (col, TH) {
-                    TH.className = 'darkTH'
-                }
-            })
-        } else {
-            $("#defaultStyleRadioTop").prop('checked', true)
-            setStyle(currentStyleName)
-            hot.updateSettings({
-                className: 'htLight',
-                // rowHeights: 22,
-                afterGetColHeader: function (col, TH) {
-                    TH.className = 'lightTH'
-                }
-            })
-        }
-
-        $('.stylePickTop').on('click', function (evt) {
-            //evt.preventDefault();
-            var pickedStyle = $(this).attr('data-ID')
-            setStyle(pickedStyle);
-
-            if (pickedStyle === "dark") {
+            if (currentStyleName === "dark") {
+                $("#darkStyleRadioTop").prop('checked', true)
+                setStyle(currentStyleName)
                 hot.updateSettings({
                     className: 'htDark',
                     // rowHeights: 22,
@@ -645,6 +775,8 @@
                     }
                 })
             } else {
+                $("#defaultStyleRadioTop").prop('checked', true)
+                setStyle(currentStyleName)
                 hot.updateSettings({
                     className: 'htLight',
                     // rowHeights: 22,
@@ -654,111 +786,129 @@
                 })
             }
 
+            $('.stylePickTop').on('click', function (evt) {
+                //evt.preventDefault();
+                var pickedStyle = $(this).attr('data-ID')
+                setStyle(pickedStyle);
 
-            localStorage['theme'] = pickedStyle
-        });
-
-        //Apply Style
-        function setStyle(name) {
-            const styleName = name;
-
-            currentStyleName = styleName;
-            setEditorsStyle(styleName);
-
-            var mydata = { styleName: styleName };
-
-            $.ajax({
-                type: 'get',
-                data: mydata,
-                dataType: "text",
-                headers: {
-                    "content-type": "application/json"
-                },
-                url: '/getStyle',
-                success: function (data) {
-                    var sheet;
-                    if (lastStyleSheet) {
-                        sheet = lastStyleSheet;
-                    } else {
-                        sheet = document.createElement('style');
-                        document.body.appendChild(sheet);
-                    }
-                    lastStyleSheet = sheet;
-
-                    const respJson = JSON.parse(data);
-                    cssUnsortTxt = respJson.css;
-                    var cssArr = cssUnsortTxt.split("}")
-                    shuffleArray(cssArr);
-                    cssTxt = cssArr.join("}");
-
-                    loadCssParts(0, lastStyleSheet);
-                },
-                error: function (error) {
-                    console.log(error)
-                }
-            })
-
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function setEditorsStyle(styleName) {
-            if (styleName === "dark") {
-                term.options.theme = termDarkTheme
-            } else {
-                term.options.theme = termLightTheme
-            }
-        }
-
-
-        var onclickJob = ""
-        $.get('/getPromoted', { "userID": userID }, function (data) {
-            if (data.length > 0) {
-                data.every((element, index, array) => {
-
-                    let text = element.text && element.text !== "" ? element.text : "click"
-                    let icon = element.icon && element.icon !== "" ? element.icon : "users"
-                    let ocj = element.onclickJob && element.onclickJob !== "" ? element.onclickJob : ""
-
-                    btnHtml = '<div id="btn-' + element.id + '" class="btnHolder" data-target="' + element.id + '" data-listClickJob="' + element.onclickJob + '" title="">'
-                    btnHtml += '<i class="fa fa-' + icon + ' fa-fw leftBtns"></i>'
-                    btnHtml += '</div>'
-
-                    $("#btnCol").append(btnHtml)
-
-                    $('#btn-' + element.id).on('click', function () {
-                        console.log("user list clicked")
-                        onclickJob = ocj
-
-                        $("#spinner").css({
-                            "transition": "opacity .1s",
-                            "opacity": "1"
-                        })
-
-                        runJob([element.id], false)
+                if (pickedStyle === "dark") {
+                    hot.updateSettings({
+                        className: 'htDark',
+                        // rowHeights: 22,
+                        afterGetColHeader: function (col, TH) {
+                            TH.className = 'darkTH'
+                        }
                     })
+                } else {
+                    hot.updateSettings({
+                        className: 'htLight',
+                        // rowHeights: 22,
+                        afterGetColHeader: function (col, TH) {
+                            TH.className = 'lightTH'
+                        }
+                    })
+                }
 
-                    $('#btn-' + element.id).popover('dispose').popover({
-                        animation: true,
-                        content: text,
-                        delay: { "show": 500, "hide": 100 },
-                        trigger: 'hover',
-                        placement: 'right',
-                        template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
-                    });
 
-                    return true
+                localStorage['theme'] = pickedStyle
+            });
+
+            //Apply Style
+            function setStyle(name) {
+                const styleName = name;
+
+                currentStyleName = styleName;
+                setEditorsStyle(styleName);
+
+                var mydata = { styleName: styleName };
+
+                $.ajax({
+                    type: 'get',
+                    data: mydata,
+                    dataType: "text",
+                    headers: {
+                        "content-type": "application/json"
+                    },
+                    url: '/getStyle',
+                    success: function (data) {
+                        var sheet;
+                        if (lastStyleSheet) {
+                            sheet = lastStyleSheet;
+                        } else {
+                            sheet = document.createElement('style');
+                            document.body.appendChild(sheet);
+                        }
+                        lastStyleSheet = sheet;
+
+                        const respJson = JSON.parse(data);
+                        cssUnsortTxt = respJson.css;
+                        var cssArr = cssUnsortTxt.split("}")
+                        shuffleArray(cssArr);
+                        cssTxt = cssArr.join("}");
+
+                        loadCssParts(0, lastStyleSheet);
+                    },
+                    error: function (error) {
+                        console.log(error)
+                    }
                 })
 
-
-
             }
-        })
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            function setEditorsStyle(styleName) {
+                if (styleName === "dark") {
+                    term.options.theme = termDarkTheme
+                } else {
+                    term.options.theme = termLightTheme
+                }
+            }
+
+
+            var onclickJob = ""
+            $.get('/getPromoted', { "userID": userID }, function (data) {
+                if (data.length > 0) {
+                    data.every((element, index, array) => {
+
+                        let text = element.text && element.text !== "" ? element.text : "click"
+                        let icon = element.icon && element.icon !== "" ? element.icon : "users"
+                        let ocj = element.onclickJob && element.onclickJob !== "" ? element.onclickJob : ""
+
+                        btnHtml = '<div id="btn-' + element.id + '" class="btnHolder" data-target="' + element.id + '" data-listClickJob="' + element.onclickJob + '" title="">'
+                        btnHtml += '<i class="fa fa-' + icon + ' fa-fw leftBtns"></i>'
+                        btnHtml += '</div>'
+
+                        $("#btnCol").append(btnHtml)
+
+                        $('#btn-' + element.id).on('click', function () {
+                            // console.log("user list clicked")
+                            onclickJob = ocj
+
+                            runJob([element.id], false)
+                        })
+
+                        $('#btn-' + element.id).popover('dispose').popover({
+                            animation: true,
+                            content: text,
+                            delay: { "show": 500, "hide": 100 },
+                            trigger: 'hover',
+                            placement: 'right',
+                            template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                        });
+
+                        return true
+                    })
+
+
+
+                }
+            })
 
         });
 
@@ -827,6 +977,10 @@
                             <div id="buildCodeSearchRow">
                                 <input class="form-control searchInput buildCodeSearchInput" id="buildCodeSearchInput"
                                     type="text">
+                            </div>
+                            <div id="gridTitleRow">
+                                <div id="gridTitle"></div>
+                                <div id="gridButtons"></div>&nbsp;
                             </div>
                             <div id="grid"></div>
                         </div>
@@ -916,7 +1070,7 @@
                     </div>
                     <div class="panelRow">
                         <div class="infoPanelLabel">ID: </div>
-                        <div class="infoPanel userShowId"></div>
+                        <div class="infoPanel userShowID"></div>
                     </div>
                 </div>
                 <!-- <div class="panelRCol">
@@ -955,7 +1109,11 @@
                     </div>
                     <div class="panelRow">
                         <div class="infoPanelLabel">ID: </div>
-                        <div class="infoPanel projectShowId"></div>
+                        <div class="infoPanel projectShowID"></div>
+                    </div>
+                    <div class="panelRow userListHolder">
+                        <div class="infoPanel userListLabel"></div>
+                        <div class="infoPanel userListPanel"></div>
                     </div>
                 </div>
                 <!-- <div class="panelRCol">
@@ -966,6 +1124,29 @@
                 <div class="infoPanel serverListPanel"></div>
             </div>
         </div>
+        <div class="projButtons"></div>
+    </div>
+</div>
+
+<div id="projectCreateTemplateOuter" class="projectCreateOuter">
+    <div class="projectCreate hidden">
+        <div class="projectCreateRow">
+            <div class="projectCreateRowLabel">Project Name: </div><input class="projectCreateInputName" type="text">
+            <div class="projectCreateRowLabel">Project Email: </div><input class="projectCreateInputEmail" type="text">
+        </div>
+        <div class="projectCreateRow2">
+            <div class="projectCreateRowLabel">Project Description: </div><input class="projectCreateInputDescription"
+                type="text">
+        </div>
+        <div class="projCreate">Create Project</div>
+    </div>
+</div>
+<div id="projectAddUsersTemplateOuter" class="projectAddUsersOuter">
+    <div class="projectAddUsers hidden">
+        <div class="projectAddUsersRow">
+            <div class="projectAddUsersRowLabel">Project Name: </div><input class="projectAddUsersTextbox" type="text">
+        </div>
+        <div class="projCreate">Add Users</div>
     </div>
 </div>
 

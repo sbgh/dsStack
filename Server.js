@@ -796,6 +796,11 @@ function streamEvents(conn, ws) {
                     let lines = script.split('\n')
                     // console.log("conn.index", conn.index, "lines.length", lines.length)
                     if (conn.index < lines.length) {
+                        let mess = JSON.stringify({
+                            "busy": "true"
+                        })
+                        ws.send(mess)
+
                         let command = replaceVar(lines[ind], compData[ids[0]], props)
 
                         stream.write(command + '\n');
@@ -813,6 +818,10 @@ function streamEvents(conn, ws) {
                         conn.reqs.shift()
                         conn.index = 0
                         stream.write('\n');
+                        let mess = JSON.stringify({
+                            "busy": "false"
+                        })
+                        ws.send(mess)
                     }
                 } else {
                     conn.reqs.shift()

@@ -115,10 +115,10 @@ div.projectShow {
     font-weight: 800;
 }
 
-.userProj {
+.userProj, .projectUser {
     min-width: 150px;
 }
-.projectServ {
+.projectServ, .projectUser {
     min-width: 150px;
     text-wrap: nowrap;
 }
@@ -167,12 +167,12 @@ div.hidden {
     padding: 5px;
 }
 
-.infoPanel.serverListLabel {
+.infoPanel.serverListLabel , .infoPanel.userListLabel{
     font-weight: 800;
     padding: 5px 5px 0 5px;
 }
 
-.infoPanel.serverListPanel {
+.infoPanel.serverListPanel, .infoPanel.userListPanel {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -180,6 +180,11 @@ div.hidden {
 }
 
 div#userProjRow, div#projectServRow {
+    display: flex;
+    justify-content: space-between;
+}
+
+.projectUserRow {
     display: flex;
     justify-content: space-between;
 }
@@ -253,13 +258,13 @@ i#spinner {
     opacity: 0;
 }
 
-.userProjId {
+.userProjID, .projectUserID {
     margin-left: 10px;
     text-wrap: nowrap;
     text-decoration: underline;
     cursor: pointer;
 }
-.projectServId {
+.projectServID, .projectUserID {
     margin-left: 10px;
     text-wrap: nowrap;
 }
@@ -273,3 +278,62 @@ i#spinner {
     margin-right: 5px;
     font-weight: 800;
 }
+
+.panelRow.userListHolder {
+    flex-direction: column;
+}
+
+div#gridTitleRow {
+    display: flex;
+}
+
+.preformatted {
+    font-family: monospace;
+    white-space: pre;
+    border-top: solid 1px #494949;
+    padding: 10px;
+    margin: 5px;
+}
+
+.projectCreateRow {
+    border-top: solid 1px #494949;
+    padding: 10px;
+    margin: 5px;
+    display: flex;
+}
+.projectCreateRow2 {
+    padding: 10px;
+    margin: 5px;
+    display: flex;
+}
+
+.projCreate {
+    padding: 0 10px;
+    margin: 0 5px;
+    margin-left: 5px;
+    cursor: pointer;
+    width: 120px;
+    font-weight: 800;
+    text-decoration: underline;
+}
+
+.projButtons {
+    display: flex;
+}
+
+.projButton {
+    margin: 0 5px;
+    text-decoration: underline;
+    font-weight: 800;
+    cursor: pointer;
+    text-wrap: nowrap;
+}
+
+.projectCreateRowLabel {
+    font-weight: 800;
+    margin-left: 10px;
+    text-wrap: nowrap;
+    min-width: 130px;
+    min-width: 130px;
+}
+
