@@ -239,14 +239,18 @@
                                             ele.find(".userShow").removeClass("hidden")
                                             ele.attr('id', 'userShow-' + varVal.id)
                                         } else {
-                                            ele.insertBefore("#spinner")
+                                            // ele.insertBefore("#spinner")
+                                            moveAnimate(ele, "#spinner")
                                         }
 
-                                        ele[0].scrollIntoView({
-                                            behavior: 'auto',
-                                            block: 'center',
-                                            inline: 'center'
-                                        });
+                                        timeoutId = setTimeout(
+                                            function () {
+                                                ele[0].scrollIntoView({
+                                                    behavior: 'auto',
+                                                    block: 'center',
+                                                    inline: 'center'
+                                                });
+                                            }, 800)
 
                                         ele.find(".userShowName").text(varVal.name)
                                         ele.find(".userShowEmail").text(varVal.email)
@@ -388,14 +392,19 @@
                                             ele.find(".projectShow").removeClass("hidden")
                                             ele.attr('id', 'projectShow-' + varVal.id)
                                         } else {
-                                            ele.insertBefore("#spinner")
+                                            // ele.insertBefore("#spinner")
+                                            moveAnimate(ele, "#spinner")
                                         }
 
-                                        ele[0].scrollIntoView({
-                                            behavior: 'auto',
-                                            block: 'center',
-                                            inline: 'center'
-                                        });
+                                        timeoutId = setTimeout(
+                                            function () {
+                                                ele[0].scrollIntoView({
+                                                    behavior: 'auto',
+                                                    block: 'center',
+                                                    inline: 'center'
+                                                });
+                                            }, 800)
+
 
                                         ele.find(".projectShowName").text(varVal.name)
                                         ele.find(".projectShowDescription").text(varVal.description)
@@ -411,7 +420,7 @@
                                         bList = compVars["buttons"].value.split("\n")
                                         ele.find(".projButtons").html('')
                                         bList.every((element, index, array) => {
-                                            if (element.split(";").length = 2) {
+                                            if (element.split(";").length === 2) {
                                                 const label = element.split(";")[0]
                                                 const jobId = element.split(";")[1]
                                                 let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
@@ -421,6 +430,39 @@
                                                 $("#projBtn-" + varVal.id + "-" + index).click(function () {
                                                     let jobId = this.attributes["data-jobId"].value
                                                     runJob([jobId], false, { "id": varVal.id })
+                                                })
+                                            } else if (element.split(";").length === 3) {
+                                                const label = element.split(";")[0]
+                                                const jobId = element.split(";")[1]
+                                                const inputs = element.split(";")[2]
+
+                                                let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
+                                                ele.find(".projButtons").append(html)
+
+                                                $("#projBtn-" + varVal.id + "-" + index).text(label)
+                                                $("#projBtn-" + varVal.id + "-" + index).click(function () {
+                                                    let projEle = $("#projectShow-" + varVal.id)
+                                                    let jobId = this.attributes["data-jobId"].value
+                                                    let html = ''
+                                                    let input
+
+                                                    projEle.find(".projInputs").html('')
+                                                    for (idx in inputs.split(",")) {
+                                                        input = inputs.split(",")[idx]
+                                                        html = '<div class="inputLabel">' + input + ':</div> <textarea id="projInput-' + input + "-" + varVal.id + '" class="projInput" data-jobId="' + jobId + '">'
+                                                        projEle.find(".projInputs").append(html)
+                                                    }
+                                                    html = '<div id="projInputBtn-' + jobId + "-" + varVal.id + '" class="projInputBtn" >do</div>'
+                                                    projEle.find(".projInputs").append(html)
+                                                    $('#projInputBtn-' + jobId + "-" + varVal.id).click(function () {
+                                                        let inputsObj = { "id": varVal.id }
+                                                        for (idx in inputs.split(",")) {
+                                                            inputsObj[inputs.split(",")[idx]] = $('#projInput-' + input + "-" + varVal.id).val()
+                                                        }
+                                                        runJob([jobId], false, inputsObj)
+
+                                                    })
+
                                                 })
                                             }
                                             return true
@@ -438,22 +480,32 @@
                                     const varVal2 = serverLists[1]
                                     const props = data.props
                                     const serverid = props.id
-                                    let userEle = $("#projectShow-" + serverid)
+                                    const compVars = data.compVars
 
-                                    userEle.find(".serverListLabel").text("Server List:")
-                                    userEle.find(".serverListPanel").html()
+                                    let projEle = $("#projectShow-" + serverid)
+
+                                    projEle.find(".serverListLabel").text("Server List:")
+                                    projEle.find(".serverListPanel").html('')
 
                                     function render(varVal, cloud) {
                                         varVal.every((element, index, array) => {
 
-                                            userEle.find(".serverListPanel").append(
+                                            servshowid = compVars["servshowid"] ? compVars["servshowid"].value : ""
+
+                                            projEle.find(".serverListPanel").append(
                                                 '<div id="projectServRow">' +
                                                 '<div id="projectServ-' + serverid + '-' + element.ID + '" class="projectServ"></div>' +
-                                                '<div id="projectServID-' + serverid + '-' + element.ID + '" class="projectServ projectServID"></div>' +
+                                                // '<div id="projectServID-' + serverid + '-' + element.ID + '" class="projectServ projectServID"></div>' +
+                                                '<div id="projectServID-' + serverid + '-' + element.ID + '"  data-servID="' + element.ID + '" class="projectServ projectServID" data-runJob="' + servshowid + '"></div>' +
                                                 '</div>'
                                             )
                                             $('#projectServ-' + serverid + '-' + element.ID).text(cloud + " - " + element.Name)
                                             $('#projectServID-' + serverid + '-' + element.ID).text(element.ID)
+                                            $('#projectServID-' + serverid + '-' + element.ID).on("click", function (event) {
+                                                let jobID = $(this).attr('data-runJob');
+                                                let servID = $(this).attr('data-servID');
+                                                runJob([jobID], false, { "id": servID })
+                                            })
                                             return true
                                         });
                                     }
@@ -530,6 +582,28 @@
                                     console.log("Error: " + e)
                                 }
                             }
+                            if (varName == "preformatted") {
+                                try {
+                                    const ret = data.varVal
+
+                                    var myString = '<p class="preformatted"></p>';
+                                    var preformattedRet = $($.parseHTML(myString));
+                                    preformattedRet.insertBefore("#spinner")
+                                    preformattedRet.text(ret)
+
+                                    timeoutId = setTimeout(
+                                        function () {
+                                            preformattedRet[0].scrollIntoView({
+                                                behavior: 'auto',
+                                                block: 'center',
+                                                inline: 'center'
+                                            });
+                                        }, 800)
+
+                                } catch (e) {
+                                    console.log("Error: " + e)
+                                }
+                            }
                         }
                     })
                 })
@@ -539,6 +613,29 @@
                 };
             }
             wsEvents(ws)
+
+            function moveAnimate(element, newParent) {
+                //Allow passing in either a jQuery object or selector
+                // element = $(element);
+                newParent = $(newParent);
+
+                var oldOffset = element.offset();
+                element.insertBefore(newParent);
+                var newOffset = element.offset();
+
+                var temp = element.clone().appendTo('body');
+                temp.css({
+                    'position': 'absolute',
+                    'left': oldOffset.left,
+                    'top': oldOffset.top,
+                    'z-index': 1000
+                });
+                element.hide();
+                temp.animate({ 'top': newOffset.top, 'left': newOffset.left }, 'slow', function () {
+                    element.show();
+                    temp.remove();
+                });
+            }
 
             var accessToken = ""
             function runJob(ids, runChildren, props) {
@@ -682,32 +779,55 @@
             }
             term.options.theme = termLightTheme
 
-
-            var consoleState = "down"
-            var timeoutId = 0;
-            $('#console').on('mousedown', function () {
+            $('#console').on('mouseenter', function () {
+                $("#console").css({
+                    "height": 'calc(400px)',
+                    "transition": "height .5s swing"
+                })
                 timeoutId = setTimeout(
 
                     function () {
-                        if (consoleState === 'down') {
-                            $("#console").css({
-                                "height": 'calc(400px)',
-                                "transition": "height 1s swing"
-                            })
-                            consoleState = 'up'
-                        } else {
-                            $("#console").css({
-                                "height": 'calc(40px)',
-                                "transition": "height 1s swing"
-                            })
-                            consoleState = 'down'
-                        }
+                        fitAddon.fit()
+                    }, 1100)
+            })
+            $('#console').on('mouseleave', function () {
+                $("#console").css({
+                    "height": 'calc(40px)',
+                    "transition": "height .5s swing"
+                })
+                timeoutId = setTimeout(
 
-                    }, 400)
-            }).on('mouseup mouseleave', function () {
-                clearTimeout(timeoutId)
-                fitAddon.fit()
-            });
+                    function () {
+                        fitAddon.fit()
+                    }, 600)
+            })
+
+            // var consoleState = "down"
+            // var timeoutId = 0;
+
+            // $('#console').on('mousedown', function () {
+            //     timeoutId = setTimeout(
+
+            //         function () {
+            //             if (consoleState === 'down') {
+            //                 $("#console").css({
+            //                     "height": 'calc(400px)',
+            //                     "transition": "height 1s swing"
+            //                 })
+            //                 consoleState = 'up'
+            //             } else {
+            //                 $("#console").css({
+            //                     "height": 'calc(40px)',
+            //                     "transition": "height 1s swing"
+            //                 })
+            //                 consoleState = 'down'
+            //             }
+
+            //         }, 400)
+            // }).on('mouseup mouseleave', function () {
+            //     clearTimeout(timeoutId)
+            //     fitAddon.fit()
+            // });
 
             $("#wrapBtn").click(function (event) {
                 term.focus()
@@ -1125,6 +1245,7 @@
             </div>
         </div>
         <div class="projButtons"></div>
+        <div class="projInputs"></div>
     </div>
 </div>
 

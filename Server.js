@@ -340,7 +340,7 @@ router.post("/copy", function (req, res) {
                 //Build new component obj. Version 1
                 var NewRow = {
                     parent: newParentId,
-                    text: fromNode.text,
+                    text: "new " + fromNode.text,
                     description: fromNode.description,
                     // ver: 1,
                     // comType: fromNode.comType,
@@ -890,7 +890,7 @@ function replaceVar(commandStr, job, props) {// find and replace inserted comman
             var repStr = "{{c." + targetVarName + "}}";
             if (job.variables[targetVarName]) {
                 var val = ""
-                if (props && props[targetVarName]) {
+                if (props && props.hasOwnProperty(targetVarName)) {
                     val = props[targetVarName];
                 } else {
                     val = job.variables[targetVarName].value;

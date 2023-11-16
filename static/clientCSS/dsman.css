@@ -337,3 +337,24 @@ div#gridTitleRow {
     min-width: 130px;
 }
 
+.projInputs {
+    display: flex;
+    margin: 10px 0;
+}
+
+.inputLabel {
+    font-weight: 800;
+    margin: 0 5px;
+}
+
+.projInputBtn {
+    font-weight: 800;
+    text-decoration: underline;
+    margin: 0 5px;
+    cursor: pointer;
+}
+.projectServID {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
