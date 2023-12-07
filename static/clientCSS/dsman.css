@@ -52,9 +52,8 @@ div#userList {
 
 div#grid {
     /* margin: 0 16px; */
+    width: 300px;
 }
-
-
 
 .searchInput {
     height: 20px;
@@ -356,5 +355,28 @@ div#gridTitleRow {
 .projectServID {
     text-decoration: underline;
     cursor: pointer;
+}
+
+.myBt.enabled {
+    color: black;
+}
+
+.gridjs-wrapper {
+    max-height: calc(81vh);
+}
+
+input.gridjs-input.gridjs-search-input {
+    padding: 0;
+}
+
+.json {
+    margin: 15px;
+    border-top: solid 1px #494949;
+}
+
+.jsonItem {
+    display: flex;
+    max-width: 520px;
+    justify-content: space-between;
 }
 

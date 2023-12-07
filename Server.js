@@ -91,10 +91,10 @@ router.use(function (req, res, next) {
 router.get("/", function (req, res) {
     res.render("index", { manager: false });
 });
+
 router.get("/dsman", function (req, res) {
     res.render("dsman", { manager: true })
 });
-
 
 router.get("/getTree", function (req, res) {
     var id = req.query.id;
@@ -141,10 +141,11 @@ router.get("/getTree", function (req, res) {
         res.writeHead(200, { "Content-Type": "application/json" });
         var resJSON = [];
         if (id !== '#') {
+            // if (compData.hasOwnProperty(key)) {
             let rowdata = compData[id];
-            rowdata.id = id;
-
+            // rowdata.id = id;
             resJSON.push(rowdata);
+
         } else {
             var found = false
             var foundIds = [];
@@ -153,27 +154,27 @@ router.get("/getTree", function (req, res) {
                     let rowdata = compData[key];
 
                     found = false
-                    if (searchSt === "" || !rowdata.hasOwnProperty("text") || !rowdata.hasOwnProperty("description") || !rowdata.hasOwnProperty("script")) {
+                    // if (searchSt === "" || !rowdata.hasOwnProperty("text") || !rowdata.hasOwnProperty("description") || !rowdata.hasOwnProperty("script")) {
+                    if (searchSt === "") {
                         found = true
-                    } else
-                        if (rowdata.text.toLowerCase().includes(searchSt)) {
-                            found = true
-                            rowdata.found = true
-                        } else if (compData[key].description.hasOwnProperty("ops")) {
-                            compData[key].description.ops.forEach(function (row) {
-                                if (row.hasOwnProperty("insert")) {
-                                    var rTxt = row.insert;
-                                    if (rTxt.hasOwnProperty("includes")) { //could be image
-                                        if (rTxt.includes(searchSt)) {
-                                            found = true
-                                        }
+                    } else if (rowdata.hasOwnProperty("text") && rowdata.text.toLowerCase().includes(searchSt)) {
+                        found = true
+                        rowdata.found = true
+                    } else if (rowdata.hasOwnProperty("description")  && compData[key].description.hasOwnProperty("ops")) {
+                        compData[key].description.ops.forEach(function (row) {
+                            if (row.hasOwnProperty("insert")) {
+                                var rTxt = row.insert;
+                                if (rTxt.hasOwnProperty("includes")) { //could be image
+                                    if (rTxt.includes(searchSt)) {
+                                        found = true
                                     }
                                 }
-                            })
-                        } else if (rowdata.script.toLowerCase().includes(searchSt)) {
-                            found = true
-                            rowdata.found = true
-                        }
+                            }
+                        })
+                    } else if (rowdata.hasOwnProperty("script") && rowdata.script.toLowerCase().includes(searchSt)) {
+                        found = true
+                        rowdata.found = true
+                    }
 
                     if (found === true) {
 
@@ -233,6 +234,7 @@ router.post("/saveComp", function (req, res) {
         }
 
         compData = compDataObj[userID]
+
         newFlag = reqJSON.id.trim() !== "" ? false : true
 
         if (!newFlag) {
@@ -263,7 +265,7 @@ router.post("/remove", function (req, res) {
 
     var reqJSON = req.body;
     var userID = reqJSON.userID
-    if (!compDataObj[userID]) {
+    if (userID === "0" || !compDataObj[userID]) {
         console.log("remove error: compDataObj does not have property userID")
         res.end("remove error: compDataObj does not have property userID")
     } else {
@@ -285,7 +287,7 @@ router.post("/copy", function (req, res) {
     var reqJSON = req.body;
 
     var userID = reqJSON.userID
-    if (!compDataObj[userID]) {
+    if (userID === "0" || !compDataObj[userID]) {
         console.log("copy error: compDataObj does not have property userID")
         res.end("copy error: compDataObj does not have property userID")
     } else {
@@ -340,7 +342,7 @@ router.post("/copy", function (req, res) {
                 //Build new component obj. Version 1
                 var NewRow = {
                     parent: newParentId,
-                    text: "new " + fromNode.text,
+                    text: fromNode.text,
                     description: fromNode.description,
                     // ver: 1,
                     // comType: fromNode.comType,
@@ -348,6 +350,11 @@ router.post("/copy", function (req, res) {
                     // text: fromNode.name,
                     hist: hist
                 };
+
+                //if 1st component append "new" to name
+                if (fromIds[0] === fromNode.id) {
+                    NewRow.text = "new " + NewRow.text
+                }
 
                 //Add new family tree
                 // if (newParentId === "#") {
@@ -522,11 +529,11 @@ router.get("/getPromoted", function (req, res) {
                 if (compData[key].variables["promoted"]) {
                     if (compData[key].variables["promoted"].value.trim() === "true") {
 
-                        let icon=compData[key].variables["icon"] ? compData[key].variables["icon"].value.trim() : ""
-                        let onclickJob=compData[key].variables["onclickJob"] ? compData[key].variables["onclickJob"].value.trim() : ""
-                        let text=compData[key].text ? compData[key].text : ""
+                        let icon = compData[key].variables["icon"] ? compData[key].variables["icon"].value.trim() : ""
+                        let onclickJob = compData[key].variables["onclickJob"] ? compData[key].variables["onclickJob"].value.trim() : ""
+                        let text = compData[key].text ? compData[key].text : ""
 
-                        retArr.push({ "id": compData[key].id, "icon":icon, "text":text, "onclickJob":onclickJob })
+                        retArr.push({ "id": compData[key].id, "icon": icon, "text": text, "onclickJob": onclickJob })
                     }
                 }
 
@@ -774,14 +781,14 @@ function streamEvents(conn, ws) {
             if (conn.reqs.length > 0) {
                 let props = conn.reqs[0].props ? conn.reqs[0].props : ""
                 let ids = conn.reqs[0].ids
-                
+
                 if (conn.reqs[0].varName !== "") {
                     mess = JSON.stringify(
                         {
                             "varName": conn.reqs[0].varName,
                             "varVal": conn.reqs[0].varVal.split(prompt)[0],
                             "props": props,
-                            "compVars":compData[ids[0]].variables
+                            "compVars": compData[ids[0]].variables
                         }
                     )
                     // console.log(mess)
@@ -953,15 +960,22 @@ router.get("/getStyle", function (req, res) {
 });
 
 router.get("/newUser", function (req, res) {
+    var userID = req.query.userID;
+    if (!compDataObj[userID]) {
+        console.log("newUser error: compDataObj does not have property userID")
+        res.end("newUser error: compDataObj does not have property userID")
 
-    const userID = generateUUID()
-    compDataObj[userID] = compDataObj["0"]
-    compDataObj[userID].created = new Date().toISOString()
-    res.setHeader('userID', userID)
-    res.writeHead(200, { "Content-Type": "application/json" })
-    const respJson = { "userID": userID }
-    saveAllJSON(false, userID)
-    res.end(JSON.stringify(respJson))
+    } else {
+
+        const newID = generateUUID()
+        compDataObj[newID] = compDataObj["0"]
+        compDataObj[newID].created = new Date().toISOString()
+        // res.setHeader('userID', userID)
+        // res.writeHead(200, { "Content-Type": "application/json" })
+        const respJson = { "newID": newID }
+        saveAllJSON(false, newID)
+        res.end(JSON.stringify(respJson))
+    }
 });
 
 function saveAllJSON(backup, userID) {

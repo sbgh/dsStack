@@ -29,8 +29,11 @@
         integrity="sha512-mR4OOU/ky22CpIhlxfBwQ2ckKWapf+g2+1sbUCkVtFaaRcVLpytf0ERgrXXUUYgFOdbehWOJJdW7QzYJ7XlLiA=="
         crossorigin="anonymous" defer></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.8/umd/popper.min.js" integrity="sha512-TPh2Oxlg1zp+kz3nFA0C5vVC6leG/6mm1z9+mA81MI5eaUVqasPLO8Cuk4gMF4gUfP5etR73rgU/8PNMsSesoQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.2/js/bootstrap.min.js" integrity="sha512-WW8/jxkELe2CAiE4LvQfwm1rajOS8PHasCCx+knHG0gBHt8EXxS6T6tJRTGuDQVnluuAvMxWF4j8SNFDKceLFg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"
         integrity="sha512-8qmis31OQi6hIRgvkht0s6mCOittjMa9GMqtK9hes5iEQBQE/Ca6yGE5FsW36vyipGoWQswBj/QBm2JR086Rkw=="
         crossorigin="anonymous"></script>
@@ -40,8 +43,8 @@
 
     <script src="https://www.unpkg.com/ace-builds@latest/src-noconflict/ace.js"></script>
 
-    <script src="//cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    <link href="//cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="//cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <link href="//cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 
     <link rel="stylesheet" href="/xterm/xterm.css" />
     <script src="/xterm/xterm.js"></script>
@@ -70,23 +73,24 @@
             //settings
             if (localStorage['settings']) {
                 let settings = JSON.parse(localStorage['settings'])
+                $("#settingsYourName").val(settings.settingsYourName)
                 $("#settingsHostName1").val(settings.settingsHostName1)
                 $("#settingsLoginName1").val(settings.settingsLoginName1)
                 $("#settingsKey1").val(settings.settingsKey1)
-                $("#userID").text(settings.userID)
+                $("#userID").val(settings.userID)
                 userID = settings.userID
 
             } else {
                 $('#newUserModal').modal('show')
-                $('#newUserModal').on('hidden.bs.modal', function () {
-                    if (!localStorage['settings']) {
-                        $.get('/newUser', function (dataObj) {
-                            userID = dataObj.userID
-                            localStorage['settings'] = JSON.stringify({ "userID": userID })
-                            $('#jstree_div').jstree('select_node', 'ul > li:first')
-                        })
-                    }
-                })
+                // $('#newUserModal').on('hidden.bs.modal', function () {
+                //     if (!localStorage['settings']) {
+                //         $.get('/newUser', function (dataObj) {
+                //             userID = dataObj.userID
+                //             localStorage['settings'] = JSON.stringify({ "userID": userID })
+                //             $('#jstree_div').jstree('select_node', 'ul > li:first')
+                //         })
+                //     }
+                // })
             }
             $("#settingsBtn").on("click", function () {
                 $('#settingsModal').modal('show');
@@ -95,10 +99,11 @@
 
                 let settings =
                 {
+                    "settingsYourName": $("#settingsYourName").val(),
                     "settingsHostName1": $("#settingsHostName1").val(),
                     "settingsLoginName1": $("#settingsLoginName1").val(),
                     "settingsKey1": $("#settingsKey1").val(),
-                    "userID": userID
+                    "userID": $("#userID").val()
                 }
                 localStorage['settings'] = JSON.stringify(settings)
             })
@@ -1660,6 +1665,8 @@
             <div id='settingsConfirmationBody' class="modal-body">
                 <div id="settingsInfoText" class="text-info"></div>
                 <form class="form" id="settingsModalForm">
+                    <div class="label">Your Name</div>
+                    <div class="settingsInput"><input id="settingsYourName" type="text"></div>
                     <div class="label">Login Name</div>
                     <div class="settingsInput"><input id="settingsLoginName1" type="text"></div>
                     <div class="label">Host Name</div>
@@ -1668,7 +1675,7 @@
                     <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
                     <div class="label">User ID</div>
                     <div class="">
-                        <div id="userID"></div>
+                        <div class="settingsInput"><textarea id="userID"></textarea></div>
                     </div>
                     <br />
                 <div class="label">Theme</div>

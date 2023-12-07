@@ -167,4 +167,8 @@ div#userList {
     color: #0075ff
 }
 
+.myBt.enabled {
+    color: black;
+}
+
 

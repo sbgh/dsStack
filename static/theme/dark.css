@@ -97,7 +97,9 @@ div#iCol-handle {
     box-shadow: 0 0 0 0rem rgba(134, 134, 134, 0.25);
 }
 
-input, textarea, .searchInput {
+input,
+textarea,
+.searchInput {
     background-color: #323232;
     accent-color: #79bdf3;
 }
@@ -188,23 +190,26 @@ div#console {
     color: white;
 }
 
-.popover[x-placement^="bottom"]{
+.popover[x-placement^="bottom"] {
     border-top-width: 10px;
- }
- .popover[x-placement^="top"]{
+}
+
+.popover[x-placement^="top"] {
     border-bottom-width: 10px;
- }
- .popover[x-placement^="right"]{
+}
+
+.popover[x-placement^="right"] {
     border-left-width: 10px;
- }
- .popover[x-placement^="left"]{
+}
+
+.popover[x-placement^="left"] {
     border-right-width: 10px;
- }
- 
- .popover .arrow  {
+}
+
+.popover .arrow {
     transition: all 0.5s;
- }
- 
+}
+
 
 .bs-popover-top .arrow::after,
 .bs-popover-auto[x-placement^=\"top\"] .arrow::after {
@@ -233,14 +238,15 @@ div#console {
     color: #4dff4b
 }
 
-i.fa.up{
+i.fa.up {
     color: #79bdf3
 }
-i.fa.down{
+
+i.fa.down {
     color: #666666
 }
 
-i.fa.consoleWrapBtn{
+i.fa.consoleWrapBtn {
     color: #79bdf3
 }
 
@@ -265,30 +271,58 @@ div#managerPanels {
     padding: 0.2em;
     background: #242424;
     outline: none;
-    color: #fff;
+    color: #939393;
     border: 0
-  }
-  
-  .handsontable .htDark {
-    background: #242424;
-    color: #eee;
-  }
-  
-  .handsontable .darkTH {
-    background: #242424;
-    color: #eee;
-  }
+}
 
-  .handsontable th {
+.handsontable .htDark {
+    background: #242424;
+    color: #939393;
+}
+
+.handsontable .darkTH {
+    background: #242424;
+    color: #fff;
+}
+
+.handsontable th {
     background-color: #242424;
     color: #fff;
-  }
+}
 
-  div#btnCol i {
+div#btnCol i {
     color: #79bdf3;
-  }
+}
 
-  #settingsBtn{
+#settingsBtn {
     color: #79bdf3
 }
-  
+
+.myBt.enabled {
+    color: white;
+}
+
+input.gridjs-input.gridjs-search-input {
+    transition: background 0.2s;
+    background: #2f2f2f;
+    color: #d1d1d1;
+}
+
+table.gridjs-table {
+    border: 2px solid rgb(0, 0, 0);
+}
+
+th.gridjs-th {
+    border-bottom: 2px solid rgb(123 123 123);
+}
+
+td.gridjs-td {
+    background-color: rgb(13, 13, 13);
+    color: rgb(213, 213, 213);
+    border: 1px solid #434343;
+}
+
+.gridjs-th-content {
+    background-color: rgb(13, 13, 13);
+    color: rgb(213, 213, 213);
+}

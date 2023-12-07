@@ -121,6 +121,7 @@ div#jstree_div {
     max-height: calc(100vh - 115px);
     overflow-y: auto;
     margin: 0 4px;
+    padding-bottom: 60px;
 }
 
 div#iCol {
@@ -217,6 +218,7 @@ input#comp-name-edit {
 .button-row {
     margin: 10px 5px;
     display: inline-block;
+    text-wrap: nowrap;
 }
 .button-row.button-row-script {
     margin-bottom: 0;
@@ -252,6 +254,7 @@ input#searchInput {
 
 div#comp-name {
     margin: 10px 5px;
+    text-wrap: nowrap;
 }
 
 div#console-button-row {
