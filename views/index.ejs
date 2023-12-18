@@ -50,7 +50,7 @@
     <script src="/xterm/xterm.js"></script>
     <script src="/xterm/xterm-addon-fit.js"></script>
 
-    <link rel="stylesheet"  href="/clientCSS/index.css" >
+    <link rel="stylesheet" href="/clientCSS/index.css">
 
     <!-- <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script> -->
@@ -131,11 +131,11 @@
 
             fitAddon.fit();
 
-            window.addEventListener("resize", handleResize);
+            // window.addEventListener("resize", handleResize);
 
-            function handleResize() {
-                fitAddon.fit();
-            };
+            // function handleResize() {
+            //     fitAddon.fit();
+            // };
 
             term.write('Welcome to \x1B[1;3;31mdsStack\x1B[0m $ ')
 
@@ -581,8 +581,6 @@
                 readComp()
             });
 
-
-
             function editComp() {
                 $("#editBtn").hide();
                 $("#newChildBtn").hide();
@@ -842,21 +840,21 @@
             //Set flag if mouse is down while hovering column resize handles
             $(function () {
                 var widthHandle = $('#tCol-handle');
-                var widthCenterHandle = $('#iCol-handle');
+                // var widthCenterHandle = $('#iCol-handle');
                 widthHandle.on('mousedown', function (e) {
                     isResizingWidth = true;
                 });
-                widthCenterHandle.on('mousedown', function (e) {
-                    isResizingCenterWidth = true;
-                });
+                // widthCenterHandle.on('mousedown', function (e) {
+                //     isResizingCenterWidth = true;
+                // });
             })
 
             var isResizingWidth = false
-            var isResizingCenterWidth = false
+            // var isResizingCenterWidth = false
             $(document).on('mousemove', function (e) {
                 const container = $('#tCol');
-                const centerContainer = $('#iCol');
-                if (!isResizingWidth && !isResizingCenterWidth)
+                // const centerContainer = $('#iCol');
+                if (!isResizingWidth)
                     return;
 
                 if (isResizingWidth) {
@@ -872,36 +870,36 @@
 
                 }
 
-                if (isResizingCenterWidth) {
-                    e.preventDefault();
+                // if (isResizingCenterWidth) {
+                //     e.preventDefault();
 
-                    var centerWidth = e.pageX - $("#tCol").width() - 18
+                //     var centerWidth = e.pageX - $("#tCol").width() - 18
 
-                    centerContainer.css("flex", "0 0 " + centerWidth + "px")
+                //     centerContainer.css("flex", "0 0 " + centerWidth + "px")
 
-                    localStorage['locCenterWidth'] = JSON.stringify({ width: centerWidth });
+                //     localStorage['locCenterWidth'] = JSON.stringify({ width: centerWidth });
 
-                    fitAddon.fit();
+                //     fitAddon.fit();
 
-                }
+                // }
 
             }).on('mouseup', function (e) {
                 isResizingWidth = false;
-                isResizingCenterWidth = false;
+                // isResizingCenterWidth = false;
             });
 
-            if (!localStorage['locTreeWidth']) {
-                $('#tCol').css("flex", "0 0 330px")
-            } else {
-                let w = JSON.parse(localStorage['locTreeWidth']).width
-                $('#tCol').css("flex", "0 0 " + w + "px")
-            }
-            if (!localStorage['locCenterWidth']) {
-                $('#iCol').css("flex", "0 0 330px")
-            } else {
-                let w = JSON.parse(localStorage['locCenterWidth']).width
-                $('#iCol').css("flex", "0 0 " + w + "px")
-            }
+            // if (!localStorage['locTreeWidth']) {
+            //     $('#tCol').css("flex", "0 0 330px")
+            // } else {
+            //     let w = JSON.parse(localStorage['locTreeWidth']).width
+            //     $('#tCol').css("flex", "0 0 " + w + "px")
+            // }
+            // if (!localStorage['locCenterWidth']) {
+            //     $('#iCol').css("flex", "0 0 330px")
+            // } else {
+            //     let w = JSON.parse(localStorage['locCenterWidth']).width
+            //     $('#iCol').css("flex", "0 0 " + w + "px")
+            // }
 
             function hideThings(fields) {
                 fields.split(';').forEach(function (field) {
@@ -1013,6 +1011,34 @@
 
             currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
 
+            $('#consoleScrollx').on('mouseenter', function () {
+                $("#consoleScrollx").css({
+                    "min-height": '400px',
+                    "height": '400px'
+                    // ,
+                    // "transition": "height .5s swing"
+                })
+                timeoutId = setTimeout(
+
+                    function () {
+                        fitAddon.fit()
+                    }, 1100)
+            })
+            $('#consoleScrollx').on('mouseleave', function () {
+                $("#consoleScrollx").css({
+                    "min-height": '70px',
+                    "height": '70px'
+                    // ,
+                    // "transition": "height .5s swing"
+                })
+                timeoutId = setTimeout(
+
+                    function () {
+                        fitAddon.fit()
+                    }, 600)
+            })
+
+
             if (currentStyleName === "dark") {
                 $("#darkStyleRadioTop").prop('checked', true)
                 setStyle(currentStyleName)
@@ -1108,18 +1134,18 @@
                 template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
             });
 
-            $("#wrapBtn").click(function (event) {
-                term.focus()
-                if (!$("div#console").hasClass("consoleWrap")) {
-                    $("div#console").addClass("consoleWrap")
-                    $("#wrapBtn").addClass("consoleWrapBtn")
-                    fitAddon.fit();
-                } else {
-                    $("div#console").removeClass("consoleWrap")
-                    $("#wrapBtn").removeClass("consoleWrapBtn")
-                    fitAddon.fit();
-                }
-            });
+            // $("#wrapBtn").click(function (event) {
+            //     term.focus()
+            //     if (!$("div#console").hasClass("consoleWrap")) {
+            //         $("div#console").addClass("consoleWrap")
+            //         $("#wrapBtn").addClass("consoleWrapBtn")
+            //         fitAddon.fit();
+            //     } else {
+            //         $("div#console").removeClass("consoleWrap")
+            //         $("#wrapBtn").removeClass("consoleWrapBtn")
+            //         fitAddon.fit();
+            //     }
+            // });
 
             $("#wrapBtn").popover('dispose').popover({
                 animation: true,
@@ -1160,7 +1186,10 @@
                 runData["ids"] = ids
                 settingsHostName = settings.settingsHostName1 ? settings.settingsHostName1 : ""
                 settingsLoginName = settings.settingsLoginName1 ? settings.settingsLoginName1 : ""
+                settingsYourName = settings.settingsYourName ? settings.settingsYourName : ""
+
                 settingsKey = settings.settingsKey1 ? settings.settingsKey1 : ""
+                runData["settingsYourName"] = settingsYourName
                 runData["settingsHostName"] = settingsHostName
                 runData["settingsLoginName"] = settingsLoginName
                 runData["settingsKey"] = settingsKey
@@ -1234,7 +1263,7 @@
                     }
                     if (data.varName) {
                         const varName = data.varName
-                        if(varName == "useList"){
+                        if (varName == "useList") {
                             try {
                                 const varVal = JSON.parse(data.varVal)
                                 a = 1
@@ -1353,16 +1382,15 @@
 
                 });
             }
-        
-            $( "#comp-id" ).on( "click", function () {
+
+            $("#comp-id").on("click", function () {
                 navigator.clipboard.writeText($("#comp-id").text())
-                $( "#comp-id" ).css({"color":"blue"})
-            } )
+                $("#comp-id").css({ "color": "blue" })
+            })
 
             // $("#comp-id").on("hover", function () {
             //     $("#comp-id").css({"opcity":"100"})
             // })
-        
         });
 
         var cssTxt = "";
@@ -1395,17 +1423,10 @@
         <nav id="navbarNav" class="navbar navbar-expand-md navbar-light pop-bar">
             <span><a class="navbar-brand" href="/"><b><span id="navTitle">dsStack</span></b></a></span>
 
-            <!-- <div id="stylePickMenu">
-                <span class="radio stylePickTop" data-id="default">
-                    <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
-                            class='fa fa-sun-o fa-fw '></i></label>
-                </span>
-                <span class="radio stylePickTop" data-id="dark">
-                    <label><input type="radio" id="darkStyleRadioTop" name="setupRadio"> <i
-                            class='fa  fa-moon-o fa-fw '></i></label>
-                </span>
-            </div> -->
-            <i id="settingsBtn" class="fa fa-gear fa-fw"></i> 
+            <div id="console-button-row">
+                <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
+            <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
+            </div>
         </nav>
     </div>
 
@@ -1448,12 +1469,13 @@
                         <i id="pasteBtn" class="fa fa-paste fa-fw"></i>
                     </div>
 
-                    
+
                     <div id="comp-parent" style="display:none;"></div>
                     <div id="comp-name-container">
                         <div id="nameHolder">
-                            <div id="comp-name"></div><div id="comp-id"></div>
-                        </div>        
+                            <div id="comp-name"></div>
+                            <div id="comp-id"></div>
+                        </div>
                         <input type="text" id="comp-name-edit" style="display:none;">
                     </div>
                     <div class="iCol-scroll">
@@ -1496,11 +1518,6 @@
                             </table>
                         </div>
 
-
-
-
-
-
                         <div class="button-row button-row-script">
                             <i id="runBtn" class="fa fa-play fa-fw"></i>
                         </div>
@@ -1508,56 +1525,10 @@
 
                     </div>
 
-
-
-                </div>
-                <div id="iCol-handle" class="iCol-handle">
-                </div>
-
-                <div id="cCol" class="cCol">
-                    <div id="connectPick">
-                        <button class="dropdown-toggle templateTypeDropdownButton" type="button"
-                            id="dropdownTemplateTypeButton0" data-toggle="dropdown" aria-haspopup="true"
-                            aria-expanded="false">javascript</button>
-                        <div id="dropdownTemplateTypeMenu0" class="dropdown-menu dropdownTemplateTypeMenu"
-                            aria-labelledby="dropdownTemplateTypeButton0" x-placement="bottom-start"
-                            style="position: absolute; transform: translate3d(76px, 379px, 0px); top: 0px; left: 0px; will-change: transform;">
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="javascript" data-index="0">javascript </a></div>
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="sh" data-index="0">sh </a></div>
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="text" data-index="0">text </a></div>
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="css" data-index="0">css </a></div>
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="ejs" data-index="0">ejs </a></div>
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="html" data-index="0">html </a></div>
-                            <div><a id="templateTypeDropdownItem00" class="dropdown-item templateTypeDropdownItem"
-                                    href="#" data-type="json" data-index="0">json </a></div>
-                        </div>
-                    </div>
-
-                    <div id="console-button-row">
-                        <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
-                        <i id="wrapBtn" class="fa fa-align-justify  fa-fw"></i>
-
-                        <!-- <div id="stylePickMenu">
-                            <span class="radio stylePickTop" data-id="default">
-                                <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
-                                        class='fa fa-sun-o fa-fw '></i></label>
-                            </span>
-                            <span class="radio stylePickTop" data-id="dark">
-                                <label><input type="radio" id="darkStyleRadioTop" name="setupRadio"> <i
-                                        class='fa  fa-moon-o fa-fw '></i></label>
-                            </span>
-                        </div>
-                        <i id="settingsBtn" class="fa fa-gear fa-fw"></i> -->
-                    </div>
-                    <div id="conTxt">
+                    <div id="consoleScrollx">
                         <div id="console"></div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -1678,7 +1649,7 @@
                         <div class="settingsInput"><textarea id="userID"></textarea></div>
                     </div>
                     <br />
-                <div class="label">Theme</div>
+                    <div class="label">Theme</div>
                     <div id="stylePickMenu">
                         <span class="radio stylePickTop" data-id="default">
                             <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i

@@ -90,21 +90,11 @@
 
             } else {
                 $('#newUserModal').modal('show')
-                // $('#newUserModal').on('hidden.bs.modal', function () {
-                //     if (!localStorage['settings']) {
-                //         $.get('/newUser', function (dataObj) {
-                //             userID = dataObj.userID
-                //             localStorage['settings'] = JSON.stringify({ "userID": userID })
-                //             $('#jstree_div').jstree('select_node', 'ul > li:first')
-                //         })
-                //     }
-                // })
             }
             $("#settingsBtn").on("click", function () {
                 $('#settingsModal').modal('show');
             })
             $("#settingsSaveButton").on("click", function () {
-
                 let settings =
                 {
                     "settingsYourName": $("#settingsYourName").val(),
@@ -116,33 +106,44 @@
                 localStorage['settings'] = JSON.stringify(settings)
             })
 
-            // const container = document.querySelector('#grid');
-
-            //  const html = new gridjs.html()
             const { Grid, html } = gridjs;
             const grid = new gridjs.Grid({
                 columns: [
                     {
-                        id: 'Name',
-                        name: 'Name',
-
-                        formatter: (cell, row) =>
-                            html(`<div >${cell}</div>`)
-                    },
-                    {
                         id: 'ID',
                         name: 'ID',
                         hidden: true
+                    },
+                    {
+                        id: 'Name',
+                        name: 'Name',
+                        width: '270px',
+                        formatter: (cell, row) =>
+                            html(`<div class="nameCell">${cell}</div>`)
+                    },
+                    {
+                        id: 'Enabled',
+                        name: 'En',
+                        width: '50px',
+                        formatter: (cell, row) =>
+                            html(`<div class="enabledCell">${cell}</div>`)
+                    },
+                    {
+                        id: 'Created_at',
+                        name: 'Created_at',
+                        width: '110px',
+                        formatter: (cell, row) =>
+                            html(`<div class="created_atCell">${cell}</div>`)
                     }
                 ],
                 data: [{ Name: '', ID: '' }],
                 search: true,
+                sort: true,
                 style: {
                     table: {
                         border: '2px solid #ccc'
                     },
                     th: {
-                        'border-bottom': '2px solid #ccc',
                         'text-align': 'center',
                         'padding': "0px"
                     },
@@ -154,63 +155,14 @@
             }).render(document.getElementById('grid'));
 
             grid.on('rowClick', (...args) => {
-                let id = args[1].cells[1].data
+                let id = args[1].cells[0].data
                 listClick(id)
 
             })
 
-            // grid.on('cellClick', (...args) => 
-            //     console.log('cell: ' + JSON.stringify(args), args)
-            // );
-
-            // const hot = new Handsontable(container, {
-            //     // stretchH: 'all',
-            //     width: 250,
-            //     height: '98%',
-            //     // autoWrapRow: true,
-            //     // height: 487,
-            //     maxRows: 22000,
-            //     colWidths: [240, 240],
-            //     manualColumnResize: true,
-            //     // hiddenColumns: true,
-            //     data: [],
-            //     rowHeaders: false,
-            //     colHeaders: false,
-            //     filters: true,
-            //     // enable the column menu
-            //     // dropdownMenu: true,
-            //     licenseKey: 'non-commercial-and-evaluation', // for non-commercial use only
-            //     cells: function (row, col) {
-            //         var cellPrp = {};
-            //         if (col === 0) {
-            //             cellPrp.renderer = myBtns;
-            //             cellPrp.readOnly = true;
-            //         }
-            //         return cellPrp
-            //     },
-            //     afterOnCellMouseDown: function (event, cords, TD) {
-            //         if (event.srcElement.className.indexOf('myBt') < 0) {
-            //             return;
-            //         }
-            //         listClick(event.target.attributes["data-id"].value);
-            //         // console.log(event, cords, TD)
-            //     }
-            // });
-
             function listClick(id) {
-
                 runJob([onclickJob], false, { "id": id })
             }
-
-            function myBtns(instance, td, row, col, prop, value, cellProperties) {
-                Handsontable.renderers.TextRenderer.apply(this, arguments);
-                const rowObj = JSON.parse(value)
-                const enabled = rowObj[2] ? "enabled" : ""
-                td.innerHTML = '<div class="myBt bt-' + row + ' ' + enabled + '" data-id="' + rowObj[0] + '"   data-jobID="' + '' + '">' + rowObj[1] + '</div>';
-                // console.log(value);
-            }
-
-            // const hiddenColumnsPlugin = hot.getPlugin('hiddenColumns');
 
             var ws = new WebSocket('wss://dsstack.cybera.ca:8443')
 
@@ -255,26 +207,46 @@
 
                                     const varVal = JSON.parse(data.varVal)
                                     const compVars = data.compVars
-                                    // var varValPlus = []
-                                    // varVal.forEach(element => {
-                                    //     // varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name, element.Enabled]) })
-                                    //     varValPlus.unshift([element.ID, element.Name, element.Enabled])
-                                    // });
-
-                                    // hot.loadData(varValPlus)
 
                                     grid.updateConfig({
-                                        data: varVal.reverse()
+                                        columns: [
+                                            {
+                                                id: 'ID',
+                                                name: 'ID',
+                                                hidden: true
+                                            },
+                                            {
+                                                id: 'Name',
+                                                name: 'Name',
+                                                width: '270px',
+                                                formatter: (cell, row) =>
+                                                    html(`<div class="nameCell">${cell}</div>`)
+                                            },
+                                            {
+                                                id: 'Enabled',
+                                                name: 'En',
+                                                width: '50px',
+                                                formatter: (cell, row) =>
+                                                    html(`<div class="enabledCell">${cell}</div>`)
+                                            },
+                                            {
+                                                id: 'Created_at',
+                                                name: 'Created_at',
+                                                width: '110px',
+                                                formatter: (cell, row) =>
+                                                    html(`<div class="created_atCell">${cell}</div>`)
+                                            }
+                                        ],
+                                        data: varVal.sort(function (a, b) {
+                                            if (a.Created_at < b.Created_at) {
+                                                return 1;
+                                            }
+                                            if (a.Created_at > b.Created_at) {
+                                                return -1;
+                                            }
+                                            return 0;
+                                        })
                                     }).forceRender();
-
-                                    // hot.updateSettings({
-                                    //     colHeaders: ['User Name'],
-                                    // });
-                                    // hiddenColumnsPlugin.hideColumn(0);
-
-                                    // hot.render();
-
-                                    // $("#buildCodeSearchInput").focus()
 
                                     $("#userListSection").css({
                                         "transition": "opacity .5s",
@@ -368,24 +340,37 @@
                                     const varVal = JSON.parse(data.varVal)
 
                                     const compVars = data.compVars
-                                    // var varValPlus = []
-                                    // varVal.forEach(element => {
-                                    //     varValPlus.unshift({ data: JSON.stringify([element.ID, element.Name, element.Enabled]) })
-                                    // });
 
                                     grid.updateConfig({
+                                        columns: [
+                                            {
+                                                id: 'ID',
+                                                name: 'ID',
+                                                hidden: true
+                                            },
+                                            {
+                                                id: 'Name',
+                                                name: 'Name',
+                                                width: '270px',
+                                                formatter: (cell, row) =>
+                                                    html(`<div class="nameCell">${cell}</div>`)
+                                            },
+                                            {
+                                                id: 'Enabled',
+                                                name: 'En',
+                                                width: '50px',
+                                                formatter: (cell, row) =>
+                                                    html(`<div class="enabledCell">${cell}</div>`)
+                                            },
+                                            {
+                                                id: 'Created_at',
+                                                name: 'Created_at',
+                                                hidden: true
+                                            }
+                                        ],
+
                                         data: varVal.reverse()
                                     }).forceRender();
-
-                                    // hot.loadData(varValPlus)
-
-                                    // hot.updateSettings({
-                                    //     colHeaders: ['User Name'],
-                                    // });
-                                    // hiddenColumnsPlugin.hideColumn(0);
-
-                                    // hot.render();
-                                    // $("#buildCodeSearchInput").focus()
 
                                     $("#userListSection").css({
                                         "transition": "opacity .5s",
@@ -744,9 +729,12 @@
                 runData["ids"] = ids
                 settingsHostName = settings.settingsHostName1 ? settings.settingsHostName1 : ""
                 settingsLoginName = settings.settingsLoginName1 ? settings.settingsLoginName1 : ""
+                settingsYourName = settings.settingsYourName ? settings.settingsYourName : ""
+
                 settingsKey = settings.settingsKey1 ? settings.settingsKey1 : ""
                 runData["settingsHostName"] = settingsHostName
                 runData["settingsLoginName"] = settingsLoginName
+                runData["settingsYourName"] = settingsYourName
                 runData["settingsKey"] = settingsKey
                 runData["token"] = accessToken
                 runData["userID"] = userID
@@ -754,18 +742,6 @@
 
                 wsSend(runData, ws)
             }
-
-            // $("#buildCodeSearchInput").on("keyup", function (key) {
-
-            //     var searchString = $("#buildCodeSearchInput").val();
-
-            //     // const filtersPlugin = hot.getPlugin('filters');
-            //     // filtersPlugin.removeConditions(0)
-            //     // filtersPlugin.addCondition(0, 'contains', [searchString]);
-            //     // filtersPlugin.filter();
-
-            //     // hot.render();
-            // });
 
             $("#connectBtn").click(function (event) {
                 //     term.focus()
@@ -893,45 +869,18 @@
                     }, 600)
             })
 
-            // var consoleState = "down"
-            // var timeoutId = 0;
-
-            // $('#console').on('mousedown', function () {
-            //     timeoutId = setTimeout(
-
-            //         function () {
-            //             if (consoleState === 'down') {
-            //                 $("#console").css({
-            //                     "height": 'calc(400px)',
-            //                     "transition": "height 1s swing"
-            //                 })
-            //                 consoleState = 'up'
-            //             } else {
-            //                 $("#console").css({
-            //                     "height": 'calc(40px)',
-            //                     "transition": "height 1s swing"
-            //                 })
-            //                 consoleState = 'down'
-            //             }
-
-            //         }, 400)
-            // }).on('mouseup mouseleave', function () {
-            //     clearTimeout(timeoutId)
-            //     fitAddon.fit()
+            // $("#wrapBtn").click(function (event) {
+            //     term.focus()
+            //     if (!$("div#console").hasClass("consoleWrap")) {
+            //         $("div#console").addClass("consoleWrap")
+            //         $("#wrapBtn").addClass("consoleWrapBtn")
+            //         fitAddon.fit();
+            //     } else {
+            //         $("div#console").removeClass("consoleWrap")
+            //         $("#wrapBtn").removeClass("consoleWrapBtn")
+            //         fitAddon.fit();
+            //     }
             // });
-
-            $("#wrapBtn").click(function (event) {
-                term.focus()
-                if (!$("div#console").hasClass("consoleWrap")) {
-                    $("div#console").addClass("consoleWrap")
-                    $("#wrapBtn").addClass("consoleWrapBtn")
-                    fitAddon.fit();
-                } else {
-                    $("div#console").removeClass("consoleWrap")
-                    $("#wrapBtn").removeClass("consoleWrapBtn")
-                    fitAddon.fit();
-                }
-            });
 
             term.attachCustomKeyEventHandler((key) => {
                 if (key.code === 'KeyV') {
@@ -989,21 +938,9 @@
                 setStyle(pickedStyle);
 
                 if (pickedStyle === "dark") {
-                    // hot.updateSettings({
-                    //     className: 'htDark',
-                    //     // rowHeights: 22,
-                    //     afterGetColHeader: function (col, TH) {
-                    //         TH.className = 'darkTH'
-                    //     }
-                    // })
+
                 } else {
-                    // hot.updateSettings({
-                    //     className: 'htLight',
-                    //     // rowHeights: 22,
-                    //     afterGetColHeader: function (col, TH) {
-                    //         TH.className = 'lightTH'
-                    //     }
-                    // })
+
                 }
 
 
@@ -1067,6 +1004,17 @@
                 }
             }
 
+            $('#grid').on('mouseenter', function () {
+                $("#grid").css({
+                    "width": ($("table.gridjs-table").width() + 5) + 'px'
+                })
+
+            })
+            $('#grid').on('mouseleave', function () {
+                $("#grid").css({
+                    "width": 'calc(274px)'
+                })
+            })
 
             var onclickJob = ""
             $.get('/getPromoted', { "userID": userID }, function (data) {
@@ -1188,7 +1136,7 @@
                         <div id="managerPanels">
                             <i id='spinner' class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
                         </div>
-                        <div id="consoleScroll">
+                        <div id="consoleScrollx">
                             <div id="console"></div>
                         </div>
 

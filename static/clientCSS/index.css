@@ -9,9 +9,9 @@ html, body {
 
 div, input, textarea{
     /* transition: all 200ms ease 0s, color 200ms ease 0s; */
-    transition-property: color, background-color, border-color, height, max-height, min-height;
-    transition-duration: .2s;
-    transition-timing-function: ease;
+    /* transition-property: color, background-color, border-color, height, max-height, min-height; */
+    /* transition-duration: .2s; */
+    /* transition-timing-function: ease; */
 
 }
 
@@ -101,6 +101,7 @@ a {
 
 .rrow {
     height: 100vh;
+    width: 100vw;
     flex: 1 1 100%;
     display: flex;
     padding: 5px;
@@ -125,12 +126,12 @@ div#jstree_div {
 }
 
 div#iCol {
-    /* overflow-x: hidden; */
-    flex: 0 0 300px;
+    overflow: hidden;
+    /* flex: 0 0 300px; */
     display: flex;
     flex-direction: column;
-    max-width: 60%;
-    min-width: 20%;
+    /* max-width: 60%; */
+    /* min-width: 20%; */
 }
 
 .iCol-scroll {
@@ -258,9 +259,9 @@ div#comp-name {
 }
 
 div#console-button-row {
-    margin: 10px 5px;
+    /* margin: 10px 5px;
     min-width: 140px;
-    display: flex;
+    display: flex; */
 }
 
 i#settingsBtn {
@@ -275,22 +276,25 @@ textarea#settingsKey1 {
     text-shadow: rgb(0, 0, 0) 0px 0px 8px;
 }
 
-div#console {
-    width: 2000px;
-    
-     /* width: 100% */
+div#consoleScrollx {
+    overflow-x: auto;
+    height: 100%;
+    min-height: 70px;
+    height: 70px;
+    transition: min-height 0.5s;
 }
 
-div#console {
+div#console{
     background: #ebebeb;
     padding: 5px;
-    /* overflow-x: auto; */
-    height: calc(100vh - 115px);
+    height: 100%;
+    width: 2000px;
+    /* transition: height 0.5s; */
 }
 
-div#console.consoleWrap{
+/* div#console.consoleWrap{
     width: 100%
-}
+} */
 
 div#cCol {
     width: 1px;
@@ -526,3 +530,8 @@ div#comp-id:hover {
     opacity: 1;
 }
 
+.xterm .xterm-viewport {
+    /* On OS X this is required in order for the scroll bar to appear fully opaque */
+    background-color: #000;
+    overflow-y: hidden;
+}

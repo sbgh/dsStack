@@ -52,7 +52,8 @@ div#userList {
 
 div#grid {
     /* margin: 0 16px; */
-    width: 300px;
+    width: 274px;
+    transition: width 0.5s;
 }
 
 .searchInput {
@@ -219,8 +220,9 @@ div#workingSection {
     flex-direction: column;
 }
 
-div#consoleScroll {
+div#consoleScrollx {
     overflow-x: auto;
+    height: auto;
 }
 
 div#btnCol {
@@ -255,6 +257,7 @@ body .handsontable TD {
 i#spinner {
     font-size: 25px;
     opacity: 0;
+    margin: 15px;
 }
 
 .userProjID, .projectUserID {
@@ -380,3 +383,19 @@ input.gridjs-input.gridjs-search-input {
     justify-content: space-between;
 }
 
+table.gridjs-table {
+    width: 30vw !important;
+    max-width: 30vw !important;
+}
+
+/* .nameCell{
+    width: 270px;
+}
+.enabledCell{
+    width: 50px;
+} */
+
+th.gridjs-th.gridjs-th-sort {
+    border-bottom: 2px solid rgb(93 93 93);
+    background: #7b7b7b;
+}

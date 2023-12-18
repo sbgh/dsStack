@@ -46,8 +46,8 @@ div#tCol-handle {
     background: #cdcdcd;
 }
 
-div#iCol-handle {
-    background: #cdcdcd;
+div#consoleScroll {
+    height: 40px;
 }
 
 .form-control:focus {
@@ -169,6 +169,11 @@ div#userList {
 
 .myBt.enabled {
     color: black;
+}
+
+th.gridjs-th.gridjs-th-sort {
+    border-bottom: 2px solid rgb(212 212 212);
+    background: #f0f0f0;
 }
 
 

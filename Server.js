@@ -13,6 +13,20 @@ const Client = require('ssh2').Client
 
 var app = express();
 
+(function() {
+    var old = console.log;
+    console.log("> Log Date Format DD/MM/YY HH:MM:SS - UTCString");
+    console.log = function() {
+        var n = new Date();
+        var d = ("0" + (n.getDate().toString())).slice(-2),
+            m = ("0" + ((n.getMonth() + 1).toString())).slice(-2),
+            y = ("0" + (n.getFullYear().toString())).slice(-2),
+            t = n.toUTCString().slice(-13, -4);
+        Array.prototype.unshift.call(arguments, "[" + d + "/" + m + "/" + y + t + "]");
+        old.apply(this, arguments);
+    }
+})();
+
 const corsOptions = {
     // origin: process.env.CORS_ALLOW_ORIGIN || '*',
     origin: 'https://coonsol.cybera.ca/',
@@ -105,25 +119,25 @@ router.get("/getTree", function (req, res) {
     }
     var compData = {}
     if (!compDataObj[userID]) {
-        // console.log("! compDataObj[userID]")
+        // log("! compDataObj[userID]")
         fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
             if (!err && data) {
-                // console.log("!err && data")
+                // log("!err && data")
                 compDataObj[userID] = JSON.parse(data)
                 compData = compDataObj[userID]
                 buildTree(id, compData)
             } else {
-                // console.log("!err && data else")
+                // log("!err && data else")
                 compData = compDataObj["0"]
                 buildTree(id, compData)
             }
         })
     } else if (Object.keys(compDataObj[userID]).length === 0) {
-        // console.log("compDataObj[userID]).length === 0")
+        // log("compDataObj[userID]).length === 0")
         compData = compDataObj["0"]
         buildTree(id, compData)
     } else {
-        // console.log("else", userID)
+        // log("else", userID)
         compData = compDataObj[userID]
         buildTree(id, compData)
     }
@@ -188,7 +202,7 @@ router.get("/getTree", function (req, res) {
                             a = compData[a].parent
                             x++
                             if (x > 100) {
-                                console.log("Error: too many grand parents found during search [" + key + "]")
+                                log("Error: too many grand parents found during search [" + key + "]")
                                 res.end("500")
                                 return ("Error: too many grand parents found during search [" + key + "]")
                             }
@@ -217,16 +231,16 @@ router.post("/saveComp", function (req, res) {
     let newFlag = true
     var compData
     if (!reqJSON.hasOwnProperty("userID")) {
-        console.log("saveComp error: reqJSON does not have property userID")
+        log("saveComp error: reqJSON does not have property userID")
         res.end("saveComp error: reqJSON does not have property userID");
     } else if (!reqJSON.hasOwnProperty("id")) {
-        console.log("saveComp error: reqJSON does not have property id")
+        log("saveComp error: reqJSON does not have property id")
         res.end("saveComp error: reqJSON does not have property id")
     } else if (userID == "0") {
-        console.log("saveComp error: Cannot save to default ID 0")
+        log("saveComp error: Cannot save to default ID 0")
         res.end("saveComp error: Cannot save to default ID 0")
     } else if (!compDataObj[userID]) {
-        console.log("saveComp error: compDataObj does not have property userID")
+        log("saveComp error: compDataObj does not have property userID")
         res.end("saveComp error: compDataObj does not have property userID")
     } else {
         if (Object.keys(compDataObj[userID]).length === 0) {
@@ -266,7 +280,7 @@ router.post("/remove", function (req, res) {
     var reqJSON = req.body;
     var userID = reqJSON.userID
     if (userID === "0" || !compDataObj[userID]) {
-        console.log("remove error: compDataObj does not have property userID")
+        log("remove error: compDataObj does not have property userID")
         res.end("remove error: compDataObj does not have property userID")
     } else {
         var compData = compDataObj[userID]
@@ -274,7 +288,8 @@ router.post("/remove", function (req, res) {
 
         ids.forEach(function (id) { //Loop throu all ids
             if (compData.hasOwnProperty(id)) {
-                delete compData[id];
+                // delete compData[id];
+                compData.splice(index, 1)
             }
         });
         saveAllJSON(true, userID);
@@ -288,7 +303,7 @@ router.post("/copy", function (req, res) {
 
     var userID = reqJSON.userID
     if (userID === "0" || !compDataObj[userID]) {
-        console.log("copy error: compDataObj does not have property userID")
+        log("copy error: compDataObj does not have property userID")
         res.end("copy error: compDataObj does not have property userID")
     } else {
         var compData = compDataObj[userID]
@@ -332,7 +347,7 @@ router.post("/copy", function (req, res) {
                 //update parent id map
                 idMap[fromId] = id;
                 var newParentId = idMap[compData[fromId].parent];
-                //console.log('move to:'+compData[newParentId].name);
+                //log('move to:'+compData[newParentId].name);
 
                 //initial history json
                 var ds = new Date().toISOString();
@@ -424,7 +439,7 @@ router.post("/copy", function (req, res) {
             //Return OK status
             res.sendStatus(200);
             res.end('');
-            //console.log("saving script"+ JSON.stringify(foundRow));
+            //log("saving script"+ JSON.stringify(foundRow));
 
         } else {
             //error detected. Return error message
@@ -436,11 +451,11 @@ router.post("/copy", function (req, res) {
 });
 
 router.get("/move", function (req, res) {
-    //console.log("move...");
+    //log("move...");
 
     var userID = req.query.userID
     if (!compDataObj[userID]) {
-        console.log("move error: compDataObj does not have property userID")
+        log("move error: compDataObj does not have property userID")
         res.end("move error: compDataObj does not have property userID")
     } else {
         var compData = compDataObj[userID]
@@ -466,7 +481,7 @@ router.get("/move", function (req, res) {
         for (var key in compData) {
             if (compData.hasOwnProperty(key)) {
                 if (parent === compData[key].parent) {
-                    //console.log("found: " , compData[key].name,  compData[key].sort, parent , compData[key].parent);
+                    //log("found: " , compData[key].name,  compData[key].sort, parent , compData[key].parent);
                     siblings.push(key);
                 }
             }
@@ -553,7 +568,7 @@ router.get("/getPromoted", function (req, res) {
                 res.end(JSON.stringify(retArr));
 
             } else {
-                console.log("loadSavedComps error: compDataObj does not have property userID")
+                log("loadSavedComps error: compDataObj does not have property userID")
             }
         })
     } else {
@@ -567,7 +582,7 @@ router.get("/getPromoted", function (req, res) {
 
 function fixChildsSort(parentId, userID) {
     if (!compDataObj[userID]) {
-        console.log("fixChildsSort error: compDataObj does not have property userID")
+        log("fixChildsSort error: compDataObj does not have property userID")
         res.end("fixChildsSort error: compDataObj does not have property userID")
     } else {
 
@@ -601,6 +616,7 @@ var connections = []
 function getConn(conOptions, callback) {
     let token = conOptions.token
     let userID = conOptions.userID
+    let name = conOptions.name
     let ids = conOptions.ids
     let ws = conOptions.ws
     let key = conOptions.key
@@ -621,7 +637,7 @@ function getConn(conOptions, callback) {
         }
         callback(conn)
     } else {
-        console.log("Add connection to", connections.length)
+        log("Add connection to " + connections.length + " for " + name)
         let c = new Client();
 
         if (!conOptions.username || !conOptions.privateKey || !conOptions.host) {
@@ -637,7 +653,7 @@ function getConn(conOptions, callback) {
                 c.connect(conOptions);
 
                 c.on('error', function (err) {
-                    console.log('SSH - Connection Error: ' + err);
+                    log('SSH - Connection Error for '+name+': ' + err);
                     let mess = JSON.stringify({
                         "message": "\r\n# Error: Connection error\r\n" + err + "\r\n",
                         "status": "down"
@@ -645,8 +661,9 @@ function getConn(conOptions, callback) {
                     ws.send(mess)
                     connections.every((element, index, array) => {
                         if (element.token === token) {
-                            console.log("delete connections", index)
-                            delete connections[index]
+                            log("connection error - delete connections[" + index + "] for " + element.name)
+                            // delete connections[index]
+                            connections.splice(index, 1)
                             return false;
                         }
                         return true;
@@ -655,7 +672,7 @@ function getConn(conOptions, callback) {
 
                 //connection end event.
                 c.on('end', function () {
-                    console.log('SSH - Connection ended');
+                    log('SSH - Connection ended');
                     let mess = JSON.stringify({
                         "message": "\r\n# SSH connection ended\r\n",
                         "status": "down"
@@ -663,8 +680,9 @@ function getConn(conOptions, callback) {
                     ws.send(mess)
                     connections.every((element, index, array) => {
                         if (element.token === token) {
-                            console.log("delete connections", index)
-                            delete connections[index]
+                            log("connection end - delete connections[" + index + "] for " + element.name)
+                            // delete connections[index]
+                            connections.splice(index, 1)
                             return false;
                         }
                         return true;
@@ -675,7 +693,7 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "reqs": [{ "ids": ids, "varName": "", "varVal": "", "props": props }] }
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "ids": ids, "varName": "", "varVal": "", "props": props }] }
 
                         connections.push(conObj)
 
@@ -704,7 +722,7 @@ function getConn(conOptions, callback) {
                     })
                 });
             } catch (error) {
-                console.log('SSH - Connection Error: ' + error);
+                log('SSH - Connection Error for '+name+': ' + error);
                 let mess = JSON.stringify({
                     "message": "# Error: Connection error\r\n" + error + "\r\n",
                     "status": "down"
@@ -732,7 +750,7 @@ function streamEvents(conn, ws) {
         } else {
             compData = compDataObj[userID]
         }
-        // console.log(stream._exit)
+        // log(stream._exit)
         let prompt = "[ceStack]"
 
         let mess = JSON.stringify({
@@ -740,13 +758,13 @@ function streamEvents(conn, ws) {
             "status": "up"
         })
         ws.send(mess)
-        // console.log("-------")
-        // console.log("data: " + data.toString())
+        // log("-------")
+        // log("data: " + data.toString())
 
         let lines = data.split("\n")
         let lastLine = lines[lines.length - 1]
 
-        // console.log("data: " + data)
+        // log("data: " + data)
         if (lines.some(substr => substr.startsWith('var:'))) {
 
             let found = false
@@ -759,7 +777,7 @@ function streamEvents(conn, ws) {
 
             let dataParts = lines.join("\n").split(":")
 
-            console.log("detected var: " + dataParts[1])
+            log("detected var: " + dataParts[1] + " for " + conn.name)
 
             if (dataParts.length > 2) {
                 let varName = dataParts[1] ? dataParts[1] : ""
@@ -771,11 +789,11 @@ function streamEvents(conn, ws) {
         } else if (conn.reqs.length > 0 && conn.reqs[0].varName !== "") {
             conn.reqs[0].varVal = (conn.reqs[0].varVal + data.toString()).substring(0, 5000000)
 
-            // console.log("no var: " + data)
+            // log("no var: " + data)
         }
 
         if (lastLine.includes(prompt)) { //if last line of data has prompt at beginning then send next line(s) of script
-            // console.log("prompt " + lastLine)
+            // log("prompt " + lastLine)
             conn.atPrompt = true
 
             if (conn.reqs.length > 0) {
@@ -791,17 +809,17 @@ function streamEvents(conn, ws) {
                             "compVars": compData[ids[0]].variables
                         }
                     )
-                    // console.log(mess)
+                    // log(mess)
                     ws.send(mess)
                     conn.reqs[0].varName = ""
                     conn.reqs[0].varVal = ""
                 }
                 let ind = conn.index
-                // console.log("found conn", ids[0], ind)
+                // log("found conn", ids[0], ind)
                 if (compData[ids[0]] && compData[ids[0]].script) {
                     let script = compData[ids[0]].script
                     let lines = script.split('\n')
-                    // console.log("conn.index", conn.index, "lines.length", lines.length)
+                    // log("conn.index", conn.index, "lines.length", lines.length)
                     if (conn.index < lines.length) {
                         let mess = JSON.stringify({
                             "busy": "true"
@@ -811,7 +829,7 @@ function streamEvents(conn, ws) {
                         let command = replaceVar(lines[ind], compData[ids[0]], props)
 
                         stream.write(command + '\n');
-                        // console.log("sent: ", command)
+                        // log("sent: ", command)
                         conn.index++
                         ind = conn.index
                         while (lines[ind] && lines[ind].substring(0, 1) === '-') {
@@ -839,13 +857,13 @@ function streamEvents(conn, ws) {
 
         } else {
             conn.atPrompt = false
-            // console.log("no prompt " + lastLine)
+            // log("no prompt " + lastLine)
         }
     });
 
     stream.on('close', function (code, signal) {
         var dsString = new Date().toISOString(); //date stamp
-        console.log('Stream close: ' + dsString);
+        log('Stream close: ' + dsString);
         let token = this.token
 
         let mess = JSON.stringify({
@@ -857,8 +875,9 @@ function streamEvents(conn, ws) {
 
         connections.every((element, index, array) => {
             if (element.token === token) {
-                console.log("delete connections", index)
-                delete connections[index]
+                log("stream close - delete connections[" + index + "] for " + element.name)
+                // delete connections[index]
+                connections.splice(index, 1)
                 return false;
             }
             return true;
@@ -866,7 +885,7 @@ function streamEvents(conn, ws) {
     });
 
     stream.stderr.on('data', function (data) {
-        console.log('STDERR: ' + data);
+        log('STDERR: ' + data);
         let token = this.token
 
         let mess = JSON.stringify({
@@ -876,8 +895,10 @@ function streamEvents(conn, ws) {
         ws.send(mess)
         connections.every((element, index, array) => {
             if (element.token === token) {
-                console.log("delete connections", index)
-                delete connections[index]
+                log("stream.stderr - delete connections[" + index + "] for " + element.name)
+                // delete connections[index]
+                connections.splice(index, 1)
+                
                 return false;
             }
             return true;
@@ -916,7 +937,7 @@ function replaceVar(commandStr, job, props) {// find and replace inserted comman
         item = item.substr(0, item.indexOf('}}'));
 
         if (item.length > 2 && item.length < 32) {
-            console.log("Error: Component Variable not found: " + item + '\n');
+            log("Error: Component Variable not found: " + item + '\n');
             // message("Error: Component Variable not found: " + item + '\n');
             // flushMessQueue();
             // sshSuccess = false;
@@ -962,7 +983,7 @@ router.get("/getStyle", function (req, res) {
 router.get("/newUser", function (req, res) {
     var userID = req.query.userID;
     if (!compDataObj[userID]) {
-        console.log("newUser error: compDataObj does not have property userID")
+        log("newUser error: compDataObj does not have property userID")
         res.end("newUser error: compDataObj does not have property userID")
 
     } else {
@@ -979,11 +1000,11 @@ router.get("/newUser", function (req, res) {
 });
 
 function saveAllJSON(backup, userID) {
-    //console.log("saving");
+    //log("saving");
 
     var compData
     if (!compDataObj[userID]) {
-        console.log("saveAllJSON error: compDataObj does not have property userID")
+        log("saveAllJSON error: compDataObj does not have property userID")
         res.end("saveAllJSON error: compDataObj does not have property userID")
 
     } else {
@@ -991,29 +1012,29 @@ function saveAllJSON(backup, userID) {
 
         fs.writeFile(__dirname + '/compData/compData.' + userID + '.json', JSON.stringify(compData), function (err) {
             if (err) {
-                console.log('There has been an error saving your component data json.');
-                console.log(err.message)
+                log('There has been an error saving your component data json.');
+                log(err.message)
                 return;
             } else if (backup) {
-                console.log("backup");
+                log("backup");
                 var dsString = new Date().toISOString()
                 var fds = dsString.replace(/_/g, '-').replace(/T/, '-').replace(/:/g, '-').replace(/\..+/, '')
                 const fname = 'compData' + fds + '.' + userID + '.json'
                 fs.writeFile(__dirname + "/backup/" + fname, JSON.stringify(compData), function (err) {
                     if (err) {
-                        console.log('There has been an error saving your json: /backup/' + fname);
-                        console.log(err.message);
+                        log('There has been an error saving your json: /backup/' + fname);
+                        log(err.message);
                         return;
                     } else {
                         var x = 1;
                         fs.readdir(__dirname + "/backup/", function (err, files) { // delete older backups files
                             if (err) {
-                                console.log("Error reading " + __dirname + "/backup/ dir\n" + err)
+                                log("Error reading " + __dirname + "/backup/ dir\n" + err)
                             } else {
                                 files.forEach(function (mFile) {
                                     if (fs.statSync(__dirname + "/backup/" + mFile).isFile()) {
                                         if ((x + 20) < files.length) {
-                                            //console.log("removing"  + __dirname + "/backup/" + mFile )
+                                            //log("removing"  + __dirname + "/backup/" + mFile )
                                             fs.unlinkSync(__dirname + "/backup/" + mFile)
                                         }
                                         x++
@@ -1039,14 +1060,14 @@ app.use("*", function (req, res) {
 });
 
 // http.createServer(app).listen('80');
-// console.log("Express server listening on port 80");
+// log("Express server listening on port 80");
 
 var secureServer = https.createServer({
     key: fs.readFileSync('/home/ubuntu/.ssh/privkey.pem'),
     cert: fs.readFileSync('/home/ubuntu/.ssh/fullchain.pem'),
     rejectUnauthorized: false
 }, app).listen('8443', function () {
-    console.log("Secure Express server listening on port 8443");
+    log("Secure Express server listening on port 8443");
 });
 
 var wsserver = new WebSocket.Server({ server: secureServer });
@@ -1103,7 +1124,7 @@ wsserver.on('connection', function connection(ws) {
             } else if (conn.reqs[0].ids[0]) {
                 conn.index = 0
             } else {
-                // console.log("processMessage: Was not a key or a run ids req.")
+                // log("processMessage: Was not a key or a run ids req.")
                 conn.stream.write('\n');
             }
 
@@ -1111,10 +1132,18 @@ wsserver.on('connection', function connection(ws) {
     }
 
     ws.on('message', function (data, isBinary) {
-        var dataObj = JSON.parse(data.toString())
+        var dataObj
+        try {
+            dataObj = JSON.parse(data.toString())
+        } catch (error) {
+            console.error(error)
+            return;
+        }
+        
         conOptions = {
             "host": dataObj.settingsHostName,
             "port": '22',
+            "name": dataObj.settingsYourName,
             "username": dataObj.settingsLoginName,
             "privateKey": dataObj.settingsKey,
             "token": dataObj.token,
@@ -1128,4 +1157,21 @@ wsserver.on('connection', function connection(ws) {
 
     });
 
+    ws.addEventListener('close', function (event) {
+        log('ws disconnected');
+        connections.every((element, index, array) => {
+            if (element.ws === ws) {
+                log("ws close - delete connections[" + index + "] for " + element.name)
+                // delete connections[index]
+                connections.splice(index, 1)
+                return false;
+            }
+            return true;
+        });
+    });
+
 });
+
+function log(line){
+    console.log( line)
+}
