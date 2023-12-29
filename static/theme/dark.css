@@ -104,7 +104,7 @@ textarea,
     accent-color: #79bdf3;
 }
 
-textarea#settingsKey1 {
+textarea#settingsKey1, #settingsConfirmationBody #userID  {
     color: transparent;
     text-shadow: rgb(206, 206, 206) 0px 0px 8px;
 }
@@ -325,4 +325,8 @@ td.gridjs-td {
 .gridjs-th-content {
     background-color: rgb(13, 13, 13);
     color: rgb(213, 213, 213);
+}
+
+.url a {
+    color: #14539a;
 }

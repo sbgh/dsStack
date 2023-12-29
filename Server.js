@@ -13,10 +13,10 @@ const Client = require('ssh2').Client
 
 var app = express();
 
-(function() {
+(function () {
     var old = console.log;
     console.log("> Log Date Format DD/MM/YY HH:MM:SS - UTCString");
-    console.log = function() {
+    console.log = function () {
         var n = new Date();
         var d = ("0" + (n.getDate().toString())).slice(-2),
             m = ("0" + ((n.getMonth() + 1).toString())).slice(-2),
@@ -174,7 +174,7 @@ router.get("/getTree", function (req, res) {
                     } else if (rowdata.hasOwnProperty("text") && rowdata.text.toLowerCase().includes(searchSt)) {
                         found = true
                         rowdata.found = true
-                    } else if (rowdata.hasOwnProperty("description")  && compData[key].description.hasOwnProperty("ops")) {
+                    } else if (rowdata.hasOwnProperty("description") && compData[key].description.hasOwnProperty("ops")) {
                         compData[key].description.ops.forEach(function (row) {
                             if (row.hasOwnProperty("insert")) {
                                 var rTxt = row.insert;
@@ -222,10 +222,12 @@ router.get("/getTree", function (req, res) {
     }
 });
 
+// Save existing component or create new.
 router.post("/saveComp", function (req, res) {
 
     var reqJSON = req.body;
     let userID = reqJSON.userID
+    let userName = reqJSON.userName
     var retId = ""
 
     let newFlag = true
@@ -258,6 +260,13 @@ router.post("/saveComp", function (req, res) {
             compData[id].script = reqJSON.script
             compData[id].description = reqJSON.description
             compData[id].variables = reqJSON.compVariables
+            var ds = new Date().toISOString();
+            if(compData[id].hist ){
+                compData[id].hist.push({ ds: ds, event: "save", userName: userName })
+            }else{
+                let hist = [{ ds: ds, event: "save", userName: userName }]
+                compData[id].hist = hist
+            }
         } else {
             let id = generateUUID();
             retId = id
@@ -267,41 +276,79 @@ router.post("/saveComp", function (req, res) {
             compData[id].script = reqJSON.script
             compData[id].description = reqJSON.description
             compData[id].sort = 9000
+            var ds = new Date().toISOString();
+            let hist = [{ ds: ds, event: "new", userName: userName }]
+            compData[id].hist = hist
+
         }
 
         saveAllJSON(true, userID)
 
+        log("Saved ")
         res.end(retId);
     }
 });
 
+// Delete components from the users compdata. Req should include ids array attrib and userID attrib. 
+// Include all children IDs 
 router.post("/remove", function (req, res) {
 
     var reqJSON = req.body;
-    var userID = reqJSON.userID
-    if (userID === "0" || !compDataObj[userID]) {
-        log("remove error: compDataObj does not have property userID")
-        res.end("remove error: compDataObj does not have property userID")
-    } else {
-        var compData = compDataObj[userID]
-        var ids = reqJSON.ids.split(';');
+    if (reqJSON.ids && reqJSON.userID) {
+        var userID = reqJSON.userID
+        if (userID === "0" || !compDataObj[userID]) {
+            log("remove error: compDataObj does not have property userID")
+            res.end("remove error: compDataObj does not have property userID")
+        } else {
+            var compData = compDataObj[userID]
+            var ids = reqJSON.ids.split(';');
 
-        ids.forEach(function (id) { //Loop throu all ids
-            if (compData.hasOwnProperty(id)) {
-                // delete compData[id];
-                compData.splice(index, 1)
-            }
-        });
-        saveAllJSON(true, userID);
+            // let index = 0
+            ids.forEach(function (id) { //Loop throu all ids
+                if (compData.hasOwnProperty(id)) {
+                    delete compData[id];
+                    // compData.splice(index, 1)
+                    // index++
+                }
+            });
 
-        res.end('');
+            //Remove children
+            // if (ids.length == 1) {
+
+            //     var results = []
+            //     findAllChildren(userID, ids[0], results, 0)
+
+            //     results.forEach(function (id) { //Loop throu all ids
+            //         if (compData.hasOwnProperty(id)) {
+            //             delete compData[id];
+            //         }
+            //     });
+            // }
+
+
+            saveAllJSON(true, userID);
+        }
     }
+    res.end('');
 });
-
+function findAllChildren(userID, id, results, depth) {
+    if (depth < 100) {
+        compData = compDataObj[userID]
+        for (d in compData) {
+            if (compData[d].parent == id) {
+                results.push(compData[d])
+                findAllChildren(data[d].id, results, depth + 1)
+            }
+        }
+    } else {
+        log("Depth violation 'findAllChildren' 100")
+    }
+}
 router.post("/copy", function (req, res) {
     var reqJSON = req.body;
 
     var userID = reqJSON.userID
+    var userName = reqJSON.userName
     if (userID === "0" || !compDataObj[userID]) {
         log("copy error: compDataObj does not have property userID")
         res.end("copy error: compDataObj does not have property userID")
@@ -352,7 +399,7 @@ router.post("/copy", function (req, res) {
                 //initial history json
                 var ds = new Date().toISOString();
                 // var hist = [{ username: config.username, ds: ds, fromId: fromId }];
-                var hist = [{ ds: ds, fromId: fromId }];
+                var hist = [{ ds: ds, fromId: fromId, userName: userName }];
 
                 //Build new component obj. Version 1
                 var NewRow = {
@@ -653,7 +700,7 @@ function getConn(conOptions, callback) {
                 c.connect(conOptions);
 
                 c.on('error', function (err) {
-                    log('SSH - Connection Error for '+name+': ' + err);
+                    log('SSH - Connection Error for ' + name + ': ' + err);
                     let mess = JSON.stringify({
                         "message": "\r\n# Error: Connection error\r\n" + err + "\r\n",
                         "status": "down"
@@ -722,7 +769,7 @@ function getConn(conOptions, callback) {
                     })
                 });
             } catch (error) {
-                log('SSH - Connection Error for '+name+': ' + error);
+                log('SSH - Connection Error for ' + name + ': ' + error);
                 let mess = JSON.stringify({
                     "message": "# Error: Connection error\r\n" + error + "\r\n",
                     "status": "down"
@@ -733,6 +780,41 @@ function getConn(conOptions, callback) {
 
 
     }
+}
+
+function jump(newHost, conn){
+
+    const jumpConn = new Client()
+
+    // let host=conn.conn._chanMgr._client.config.host
+    let privKey=conn.conn._chanMgr._client.config.privateKey
+    
+    const destinationSSH = {
+       host: newHost,
+       port: 22,
+       username: 'ubuntu',
+       privateKey: privKey
+    }
+    
+    const forwardConfig = {
+       srcHost: 'localhost', // source host
+       srcPort: 8000, // source port
+       dstHost: destinationSSH.host, // destination host
+       dstPort: destinationSSH.port // destination port
+     };
+
+     conn.conn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, stream) => {
+        if (err) {
+            log('FIRST :: forwardOut error: ' + err);
+            // ssh1.end();
+        }
+        jumpConn.connect({
+            sock: stream,
+            username: destinationSSH.username,
+            privateKey: destinationSSH.privateKey,
+        });
+    });
+
 }
 
 function streamEvents(conn, ws) {
@@ -750,7 +832,6 @@ function streamEvents(conn, ws) {
         } else {
             compData = compDataObj[userID]
         }
-        // log(stream._exit)
         let prompt = "[ceStack]"
 
         let mess = JSON.stringify({
@@ -758,13 +839,32 @@ function streamEvents(conn, ws) {
             "status": "up"
         })
         ws.send(mess)
-        // log("-------")
         // log("data: " + data.toString())
 
         let lines = data.split("\n")
         let lastLine = lines[lines.length - 1]
 
-        // log("data: " + data)
+
+        if (lines.some(substr => substr.startsWith('jump:'))) {
+            let remainder = ""
+            let found = false
+
+
+            lines = lines.filter(s => {
+                if (s.startsWith('jump:')) {
+                    let dataParts = lines.join("\n").split(":")
+                    dataParts.shift()
+                    remainder = dataParts.join(":").trim()
+                    found = true
+                }
+                return found
+            });
+            if (found){
+                jump(remainder, conn)
+            }
+            
+        }
+
         if (lines.some(substr => substr.startsWith('var:'))) {
 
             let found = false
@@ -779,7 +879,7 @@ function streamEvents(conn, ws) {
 
             log("detected var: " + dataParts[1] + " for " + conn.name)
 
-            if (dataParts.length > 2) {
+            if (conn.reqs.length > 0 && dataParts.length > 2) {
                 let varName = dataParts[1] ? dataParts[1] : ""
                 conn.reqs[0].varName = varName
                 dataParts.shift(); dataParts.shift()
@@ -804,7 +904,7 @@ function streamEvents(conn, ws) {
                     mess = JSON.stringify(
                         {
                             "varName": conn.reqs[0].varName,
-                            "varVal": conn.reqs[0].varVal.split(prompt)[0],
+                            "varVal": conn.reqs[0].varVal.split(prompt)[0].trim(),
                             "props": props,
                             "compVars": compData[ids[0]].variables
                         }
@@ -829,7 +929,7 @@ function streamEvents(conn, ws) {
                         let command = replaceVar(lines[ind], compData[ids[0]], props)
 
                         stream.write(command + '\n');
-                        // log("sent: ", command)
+                        log("sent: " + command)
                         conn.index++
                         ind = conn.index
                         while (lines[ind] && lines[ind].substring(0, 1) === '-') {
@@ -841,6 +941,7 @@ function streamEvents(conn, ws) {
                         }
                     } else {
                         conn.reqs.shift()
+                        log("conn.reqs.shift()")
                         conn.index = 0
                         stream.write('\n');
                         let mess = JSON.stringify({
@@ -852,9 +953,6 @@ function streamEvents(conn, ws) {
                     conn.reqs.shift()
                 }
             }
-
-
-
         } else {
             conn.atPrompt = false
             // log("no prompt " + lastLine)
@@ -898,7 +996,7 @@ function streamEvents(conn, ws) {
                 log("stream.stderr - delete connections[" + index + "] for " + element.name)
                 // delete connections[index]
                 connections.splice(index, 1)
-                
+
                 return false;
             }
             return true;
@@ -1085,7 +1183,6 @@ wsserver.on('connection', function connection(ws) {
             compData = compDataObj["0"]
         }
 
-
         if (!conn.token) {
             mess = JSON.stringify({
                 "token": "",
@@ -1104,25 +1201,13 @@ wsserver.on('connection', function connection(ws) {
                 let key = conn.key
                 conn.stream.write(key)
             } else if (conn.reqs[0].ids[0] && compData[conn.reqs[0].ids].script && conn.atPrompt) {
-                let ids = conn.reqs[0].ids
-                //We are sitting at prompt so lets send first script line
-                let script = compData[ids[0]].script
-                let lines = script.split('\n')
-                let props = conn.reqs[0].props
-                let command = replaceVar(lines[0], compData[ids[0]], props)
-                conn.stream.write(command + '\n');
-                conn.index = 1
-                ind = 1
-                while (lines[ind] && lines[ind].substring(0, 1) === '-') {
-                    command = replaceVar(lines[ind].substring(1), compData[ids[0]], props)
-                    conn.stream.write(command + '\n');
 
-                    conn.index++
-                    ind = conn.index
-                }
-
-            } else if (conn.reqs[0].ids[0]) {
                 conn.index = 0
+                conn.stream.write('\n')
+            } else if (conn.reqs[0].ids[0]) {
+
+                conn.index = 0
+                conn.stream.write('\n')
             } else {
                 // log("processMessage: Was not a key or a run ids req.")
                 conn.stream.write('\n');
@@ -1139,7 +1224,7 @@ wsserver.on('connection', function connection(ws) {
             console.error(error)
             return;
         }
-        
+
         conOptions = {
             "host": dataObj.settingsHostName,
             "port": '22',
@@ -1172,6 +1257,6 @@ wsserver.on('connection', function connection(ws) {
 
 });
 
-function log(line){
-    console.log( line)
+function log(line) {
+    console.log(line)
 }

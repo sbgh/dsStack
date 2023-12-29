@@ -281,7 +281,7 @@ div#consoleScrollx {
     height: 100%;
     min-height: 70px;
     height: 70px;
-    transition: min-height 0.5s;
+    transition: height 0.5s, min-height 0.5s;
 }
 
 div#console{
@@ -534,4 +534,8 @@ div#comp-id:hover {
     /* On OS X this is required in order for the scroll bar to appear fully opaque */
     background-color: #000;
     overflow-y: hidden;
+}
+
+.url a {
+    color: blue;
 }

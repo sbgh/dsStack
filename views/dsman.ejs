@@ -130,7 +130,7 @@
                     },
                     {
                         id: 'Created_at',
-                        name: 'Created_at',
+                        name: 'Created',
                         width: '110px',
                         formatter: (cell, row) =>
                             html(`<div class="created_atCell">${cell}</div>`)
@@ -231,7 +231,7 @@
                                             },
                                             {
                                                 id: 'Created_at',
-                                                name: 'Created_at',
+                                                name: 'Created',
                                                 width: '110px',
                                                 formatter: (cell, row) =>
                                                     html(`<div class="created_atCell">${cell}</div>`)
@@ -1006,7 +1006,7 @@
 
             $('#grid').on('mouseenter', function () {
                 $("#grid").css({
-                    "width": ($("table.gridjs-table").width() + 5) + 'px'
+                    "width": ($("table.gridjs-table").width() + 7) + 'px'
                 })
 
             })

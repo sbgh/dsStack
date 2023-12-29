@@ -52,15 +52,6 @@
 
     <link rel="stylesheet" href="/clientCSS/index.css">
 
-    <!-- <script type="text/javascript"
-        src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script> -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" /> -->
-
-    <!-- <link rel="stylesheet" type="text/css"
-        href="https://cdn.jsdelivr.net/npm/handsontable-pro@latest/dist/handsontable.full.min.css">
-    <link rel="stylesheet" type="text/css" href="https://handsontable.com/static/css/main.css"> -->
-
-
     <noscript>
         <link rel="stylesheet" href="/clientCSS/index.css">
     </noscript>
@@ -69,6 +60,8 @@
 
         $(document).ready(function () {
             var userID = "0"
+            var userName = ""
+            // var targets=[]
 
             //settings
             if (localStorage['settings']) {
@@ -79,6 +72,7 @@
                 $("#settingsKey1").val(settings.settingsKey1)
                 $("#userID").val(settings.userID)
                 userID = settings.userID
+                userName = settings.settingsYourName
 
             } else {
                 $('#newUserModal').modal('show')
@@ -97,15 +91,21 @@
             })
             $("#settingsSaveButton").on("click", function () {
 
+                
+
                 let settings =
                 {
                     "settingsYourName": $("#settingsYourName").val(),
+                    // "targets": targets,
                     "settingsHostName1": $("#settingsHostName1").val(),
                     "settingsLoginName1": $("#settingsLoginName1").val(),
                     "settingsKey1": $("#settingsKey1").val(),
                     "userID": $("#userID").val()
                 }
+
                 localStorage['settings'] = JSON.stringify(settings)
+                userID = settings.userID
+                userName = settings.settingsYourName
             })
 
             var scriptEditor = ace.edit("comp-script", {
@@ -232,7 +232,7 @@
                 let text = "New Component"
                 let script = ""
 
-                let mydata = { "userID": userID, "id": id, "parent": parent, "text": text, "script": script }
+                let mydata = { "userID": userID, "userName": userName, "id": id, "parent": parent, "text": text, "script": script }
 
                 $.ajax({
                     type: 'post',
@@ -334,22 +334,18 @@
                         placement: 'top',
                         template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
                     });
-
-
-
-
-                    //---------------------------
+                    
+                    
                     //load var table
                     var pCompHtml = "";
                     var x = 0;
                     //get variables obj and add an index number to each member
-                    // currentCompVarObj = data.variables
                     for (var varName in currentCompVarObj) {
                         currentCompVarObj[varName].idn = x.toString();
                         x++
                     }
                     $("#compVariables").html('');
-                    //load table and hide edit tools
+                    
                     loadVarTable(data.variables, false);
 
                     $("#compVariables").val(data.variables);
@@ -421,8 +417,8 @@
                             animation: true,
                             content: valTextPop,
                             delay: { "show": 500, "hide": 50 },
-                            trigger: 'hover',
-                            template: '<div class="popover clickPop" role="tooltip"><div class="arrow clickPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                            trigger: 'hover focus',
+                            template: '<div class="popover clickPop" role="tooltip"><div class="arrow clickPopArrow"></div><h3 class="popover-header"></h3><pre><div class="popover-body"></div></pre></div>'
 
                         }
                         $("#varValTd" + idn).popover(options);
@@ -521,7 +517,7 @@
 
 
 
-                let mydata = { "userID": userID, "id": id, "text": text, "description": description, "script": script }
+                let mydata = { "userID": userID, "userName": userName, "id": id, "text": text, "description": description, "script": script }
 
                 mydata.compVariables = currentCompVarObj;
 
@@ -702,6 +698,7 @@
                 mydata.parent = $('#copyModal_newParent').val();
                 mydata.pos = $('#copyModal_newPosition').val();
                 mydata.userID = userID
+                mydata.userName = userName
                 // mydata.lib = $('#copyModal_lib').val();
 
                 if (!$('#copyChildrenCb').is(':checked')) {
@@ -728,7 +725,7 @@
 
             $("#moveUpBtn").click(function (event) {
                 //console.log("up");
-                $.get('/Move', { id: selectedNode, userID: userID, direction: 'up' }, function (data) {
+                $.get('/Move', { id: selectedNode, userID: userID, userName: userName, direction: 'up' }, function (data) {
                     var newPos = data.newPos;
                     var oldPos = data.oldPos;
                     var otherId = data.otherId;
@@ -746,7 +743,7 @@
 
             $("#moveDnBtn").click(function (event) {
                 //console.log("down");
-                $.get('/Move', { id: selectedNode, userID: userID, direction: 'down' }, function (data) {
+                $.get('/Move', { id: selectedNode, userID: userID, userName: userName, direction: 'down' }, function (data) {
                     var newPos = data.newPos;
                     var oldPos = data.oldPos;
                     var otherId = data.otherId;
@@ -840,20 +837,14 @@
             //Set flag if mouse is down while hovering column resize handles
             $(function () {
                 var widthHandle = $('#tCol-handle');
-                // var widthCenterHandle = $('#iCol-handle');
                 widthHandle.on('mousedown', function (e) {
                     isResizingWidth = true;
                 });
-                // widthCenterHandle.on('mousedown', function (e) {
-                //     isResizingCenterWidth = true;
-                // });
             })
 
             var isResizingWidth = false
-            // var isResizingCenterWidth = false
             $(document).on('mousemove', function (e) {
                 const container = $('#tCol');
-                // const centerContainer = $('#iCol');
                 if (!isResizingWidth)
                     return;
 
@@ -870,37 +861,10 @@
 
                 }
 
-                // if (isResizingCenterWidth) {
-                //     e.preventDefault();
-
-                //     var centerWidth = e.pageX - $("#tCol").width() - 18
-
-                //     centerContainer.css("flex", "0 0 " + centerWidth + "px")
-
-                //     localStorage['locCenterWidth'] = JSON.stringify({ width: centerWidth });
-
-                //     fitAddon.fit();
-
-                // }
-
             }).on('mouseup', function (e) {
                 isResizingWidth = false;
-                // isResizingCenterWidth = false;
             });
-
-            // if (!localStorage['locTreeWidth']) {
-            //     $('#tCol').css("flex", "0 0 330px")
-            // } else {
-            //     let w = JSON.parse(localStorage['locTreeWidth']).width
-            //     $('#tCol').css("flex", "0 0 " + w + "px")
-            // }
-            // if (!localStorage['locCenterWidth']) {
-            //     $('#iCol').css("flex", "0 0 330px")
-            // } else {
-            //     let w = JSON.parse(localStorage['locCenterWidth']).width
-            //     $('#iCol').css("flex", "0 0 " + w + "px")
-            // }
-
+            
             function hideThings(fields) {
                 fields.split(';').forEach(function (field) {
                     var fieldObj = $("#" + field);
@@ -916,6 +880,7 @@
                 var mydata = {};
                 mydata.ids = selectedNode
                 mydata.userID = userID
+                mydata.userName = userName
 
                 var tree = $('#jstree_div');
 
@@ -1015,9 +980,8 @@
                 $("#consoleScrollx").css({
                     "min-height": '400px',
                     "height": '400px'
-                    // ,
-                    // "transition": "height .5s swing"
                 })
+                term.focus()
                 timeoutId = setTimeout(
 
                     function () {
@@ -1028,8 +992,6 @@
                 $("#consoleScrollx").css({
                     "min-height": '70px',
                     "height": '70px'
-                    // ,
-                    // "transition": "height .5s swing"
                 })
                 timeoutId = setTimeout(
 
@@ -1266,10 +1228,16 @@
                         if (varName == "useList") {
                             try {
                                 const varVal = JSON.parse(data.varVal)
-                                a = 1
+                                
                             } catch (e) {
                                 alert("Error: ws json could not be parsed")
                             }
+                        }
+                        if (varName == "url") {
+                                const varVal = data.varVal
+                                let h="<div class='url'><a href='"+varVal+"' target='_new'>"+varVal+"</a></div>"
+                                $("#urls").append(h)
+                            
                         }
 
                     }
@@ -1480,6 +1448,7 @@
                     </div>
                     <div class="iCol-scroll">
                         <div id="dashCompDescription"></div>
+                        <div id="urls"></div>
 
                         <div id="compVariablesForm" class="form-group">
                             <label class="build-label">Component
