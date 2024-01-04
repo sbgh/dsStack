@@ -2,10 +2,14 @@ body {
     font-family: "Open Sans", Arial, sans-serif;
 }
 
-html,
+html {
+    overflow: hidden;
+}
+
+/* html,
 body {
     overscroll-behavior-x: contain;
-}
+} */
 
 .main {
     display: flex;
@@ -388,14 +392,47 @@ table.gridjs-table {
     max-width: 30vw !important;
 }
 
-/* .nameCell{
-    width: 270px;
+.gridjs-tr td{
+    transition: background-color 0.2s ease-in, text-shadow 0.5s ease-out;
+    cursor: pointer;
 }
-.enabledCell{
+
+
+/* .enabledCell{
     width: 50px;
 } */
 
 th.gridjs-th.gridjs-th-sort {
     border-bottom: 2px solid rgb(93 93 93);
     background: #7b7b7b;
+}
+
+div#settingsDownloadBtn, div#settingsUploadBtn {
+    height: 32px;
+    padding: 3px 10px;
+    margin: 5px 5px;
+}
+
+#uploadFileLine{
+    display: none;
+}
+
+.label.settingsLabel {
+    display: inline-block;
+    width: 100px;
+    font-weight: 800;
+    vertical-align: top;
+}
+
+.settingsInput {
+    display: inline-block;
+    width: 75%;
+}
+
+.settingsLn {
+    margin: 5px;
+}
+
+div#settingMsg {
+    font-weight: 800;
 }

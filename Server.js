@@ -261,9 +261,9 @@ router.post("/saveComp", function (req, res) {
             compData[id].description = reqJSON.description
             compData[id].variables = reqJSON.compVariables
             var ds = new Date().toISOString();
-            if(compData[id].hist ){
+            if (compData[id].hist) {
                 compData[id].hist.push({ ds: ds, event: "save", userName: userName })
-            }else{
+            } else {
                 let hist = [{ ds: ds, event: "save", userName: userName }]
                 compData[id].hist = hist
             }
@@ -759,13 +759,10 @@ function getConn(conOptions, callback) {
                                 } else {
                                     callback(conObj)
                                 }
-
                             })
                         } else {
                             callback(conObj)
                         }
-
-
                     })
                 });
             } catch (error) {
@@ -777,33 +774,31 @@ function getConn(conOptions, callback) {
                 ws.send(mess)
             }
         }
-
-
     }
 }
 
-function jump(newHost, conn){
+function jump(newHost, conn) {
 
     const jumpConn = new Client()
 
     // let host=conn.conn._chanMgr._client.config.host
-    let privKey=conn.conn._chanMgr._client.config.privateKey
-    
-    const destinationSSH = {
-       host: newHost,
-       port: 22,
-       username: 'ubuntu',
-       privateKey: privKey
-    }
-    
-    const forwardConfig = {
-       srcHost: 'localhost', // source host
-       srcPort: 8000, // source port
-       dstHost: destinationSSH.host, // destination host
-       dstPort: destinationSSH.port // destination port
-     };
+    let privKey = conn.conn._chanMgr._client.config.privateKey
 
-     conn.conn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, stream) => {
+    const destinationSSH = {
+        host: newHost,
+        port: 22,
+        username: 'ubuntu',
+        privateKey: privKey
+    }
+
+    const forwardConfig = {
+        srcHost: 'localhost', // source host
+        srcPort: 8000, // source port
+        dstHost: destinationSSH.host, // destination host
+        dstPort: destinationSSH.port // destination port
+    };
+
+    conn.conn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, stream) => {
         if (err) {
             log('FIRST :: forwardOut error: ' + err);
             // ssh1.end();
@@ -859,10 +854,10 @@ function streamEvents(conn, ws) {
                 }
                 return found
             });
-            if (found){
+            if (found) {
                 jump(remainder, conn)
             }
-            
+
         }
 
         if (lines.some(substr => substr.startsWith('var:'))) {

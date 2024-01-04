@@ -176,4 +176,19 @@ th.gridjs-th.gridjs-th-sort {
     background: #f0f0f0;
 }
 
+.gridjs-tr td{
+    background-color: #ffffff;
+    text-shadow: rgb(0, 0, 0) 0px 0px 0px
+}
+.gridjs-tr td.clicked{
+    background-color: #e2e2e2;
+}
+.gridjs-tr:hover td{
+    background-color: #e2e2e2;
+
+}
+
+div#settingsDownloadBtn, div#settingsUploadBtn {
+    background: #0275ff;
+}
 

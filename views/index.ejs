@@ -88,10 +88,12 @@
             }
             $("#settingsBtn").on("click", function () {
                 $('#settingsModal').modal('show');
+
+                $("#settingMsg").text("")
+                $("#uploadFile").val("")
+                $("#uploadFileLine").css({ "display": "none" })
             })
             $("#settingsSaveButton").on("click", function () {
-
-                
 
                 let settings =
                 {
@@ -334,8 +336,8 @@
                         placement: 'top',
                         template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
                     });
-                    
-                    
+
+
                     //load var table
                     var pCompHtml = "";
                     var x = 0;
@@ -345,7 +347,7 @@
                         x++
                     }
                     $("#compVariables").html('');
-                    
+
                     loadVarTable(data.variables, false);
 
                     $("#compVariables").val(data.variables);
@@ -864,7 +866,7 @@
             }).on('mouseup', function (e) {
                 isResizingWidth = false;
             });
-            
+
             function hideThings(fields) {
                 fields.split(';').forEach(function (field) {
                     var fieldObj = $("#" + field);
@@ -1228,16 +1230,16 @@
                         if (varName == "useList") {
                             try {
                                 const varVal = JSON.parse(data.varVal)
-                                
+
                             } catch (e) {
                                 alert("Error: ws json could not be parsed")
                             }
                         }
                         if (varName == "url") {
-                                const varVal = data.varVal
-                                let h="<div class='url'><a href='"+varVal+"' target='_new'>"+varVal+"</a></div>"
-                                $("#urls").append(h)
-                            
+                            const varVal = data.varVal
+                            let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
+                            $("#urls").append(h)
+
                         }
 
                     }
@@ -1359,6 +1361,65 @@
             // $("#comp-id").on("hover", function () {
             //     $("#comp-id").css({"opcity":"100"})
             // })
+
+            function downloadSettings() {
+
+                let settingsArr = []
+
+                settingsArr.push({ "yourName": $("#settingsYourName").val() })
+                settingsArr.push({ "hostName1": $("#settingsHostName1").val() })
+                settingsArr.push({ "loginName1": $("#settingsLoginName1").val() })
+                settingsArr.push({ "key1": $("#settingsKey1").val() })
+                settingsArr.push({ "userID": $("#userID").val() })
+
+                var file = new File([JSON.stringify(settingsArr)], "ds_backup.txt", {
+                    type: "text/plain",
+                });
+
+                const link = document.createElement('a')
+                const url = URL.createObjectURL(file)
+
+                link.href = url
+                link.download = file.name
+                document.body.appendChild(link)
+                link.click()
+
+                document.body.removeChild(link)
+                window.URL.revokeObjectURL(url)
+            }
+
+            $("#settingsDownloadBtn").click(function (e) {
+                downloadSettings()
+            })
+
+            $("#settingsUploadBtn").click(function (e) {
+                $("#uploadFileLine").css({ "display": "block" })
+            })
+
+            const $file = document.getElementById('uploadFile')
+            const fetchFile = async e => {
+                const [file] = e.target.files
+                if ([file]) {
+                    const text = await file.text()
+                    try {
+                        const settings = JSON.parse(text)
+
+                        for (ln in settings) {
+                            if (settings[ln].yourName) { $("#settingsYourName").val(settings[ln].yourName) }
+                            if (settings[ln].hostName1) { $("#settingsHostName1").val(settings[ln].hostName1) }
+                            if (settings[ln].loginName1) { $("#settingsLoginName1").val(settings[ln].loginName1) }
+                            if (settings[ln].key1) { $("#settingsKey1").val(settings[ln].key1) }
+                            if (settings[ln].userID) { $("#userID").val(settings[ln].userID) }
+                            $("#settingMsg").text("Settings have been restored. Click save to save changes.")
+                        }
+                    } catch (error) {
+                        alert("Error: Cannot parse settings backup")
+                    }
+                }
+
+            }
+
+            $file.onchange = fetchFile
         });
 
         var cssTxt = "";
@@ -1393,7 +1454,7 @@
 
             <div id="console-button-row">
                 <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
-            <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
+                <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
             </div>
         </nav>
     </div>
@@ -1617,6 +1678,13 @@
                     <div class="">
                         <div class="settingsInput"><textarea id="userID"></textarea></div>
                     </div>
+
+                    <div id="settingsDownloadBtn" class="btn settingsDownloadBtn">Create Backup</div>
+                    <div id="settingsUploadBtn" class="btn settingsUploadBtn">Restore Backup</div>
+
+                    <div id="uploadFileLine"><input type="file" id="uploadFile"></div>
+                    <div id="settingMsg"></div>
+
                     <br />
                     <div class="label">Theme</div>
                     <div id="stylePickMenu">

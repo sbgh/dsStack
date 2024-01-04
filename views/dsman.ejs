@@ -93,6 +93,10 @@
             }
             $("#settingsBtn").on("click", function () {
                 $('#settingsModal').modal('show');
+                $("#settingMsg").text("")
+                $("#uploadFile").val("")
+                $("#uploadFileLine").css({ "display": "none" })
+                
             })
             $("#settingsSaveButton").on("click", function () {
                 let settings =
@@ -118,8 +122,7 @@
                         id: 'Name',
                         name: 'Name',
                         width: '270px',
-                        formatter: (cell, row) =>
-                            html(`<div class="nameCell">${cell}</div>`)
+                        formatter: (cell, row) => html(`<div class="nameCell">${cell}</div>`)
                     },
                     {
                         id: 'Enabled',
@@ -157,6 +160,10 @@
             grid.on('rowClick', (...args) => {
                 let id = args[1].cells[0].data
                 listClick(id)
+                $(args[0].currentTarget).find(".gridjs-td").css({
+                    "text-shadow": "rgb(141, 141, 141) 50px 5px 73px"
+                })
+                $(args[0].currentTarget).find(".gridjs-td").addClass(("clicked"))
 
             })
 
@@ -1033,7 +1040,7 @@
 
                         $('#btn-' + element.id).on('click', function () {
                             // console.log("user list clicked")
-                            onclickJob = ocj
+                            if (ocj !== "") { onclickJob = ocj }
 
                             runJob([element.id], false)
                         })
@@ -1054,6 +1061,66 @@
 
                 }
             })
+
+            function downloadSettings() {
+
+                let settingsArr = []
+
+                settingsArr.push({ "yourName": $("#settingsYourName").val() })
+                settingsArr.push({ "hostName1": $("#settingsHostName1").val() })
+                settingsArr.push({ "loginName1": $("#settingsLoginName1").val() })
+                settingsArr.push({ "key1": $("#settingsKey1").val() })
+                settingsArr.push({ "userID": $("#userID").val() })
+
+                var file = new File([JSON.stringify(settingsArr)], "ds_backup.txt", {
+                    type: "text/plain",
+                });
+
+                const link = document.createElement('a')
+                const url = URL.createObjectURL(file)
+
+                link.href = url
+                link.download = file.name
+                document.body.appendChild(link)
+                link.click()
+
+                document.body.removeChild(link)
+                window.URL.revokeObjectURL(url)
+            }
+
+            $("#settingsDownloadBtn").click(function (e) {
+                downloadSettings()
+            })
+
+            $("#settingsUploadBtn").click(function (e) {
+                $("#uploadFileLine").css({ "display": "block" })
+            })
+
+            const $file = document.getElementById('uploadFile')
+            const fetchFile = async e => {
+                const [file] = e.target.files
+                if ([file]) {
+                    const text = await file.text()
+                    try {
+                        const settings = JSON.parse(text)
+
+                        for(ln in settings){
+                            if(settings[ln].yourName){ $("#settingsYourName").val(settings[ln].yourName) }
+                            if(settings[ln].hostName1){ $("#settingsHostName1").val(settings[ln].hostName1) }
+                            if(settings[ln].loginName1){ $("#settingsLoginName1").val(settings[ln].loginName1) }
+                            if(settings[ln].key1){ $("#settingsKey1").val(settings[ln].key1) }
+                            if(settings[ln].userID){ $("#userID").val(settings[ln].userID) }
+                            $("#settingMsg").text("Settings have been restored. Click save to save changes.")
+                        }
+                    } catch (error) {
+                        alert("Error: Cannot parse settings backup")
+                    }
+                }
+
+            }
+
+            $file.onchange = fetchFile
+
 
         });
 
@@ -1159,21 +1226,24 @@
             <div id='settingsConfirmationBody' class="modal-body">
                 <div id="settingsInfoText" class="text-info"></div>
                 <form class="form" id="settingsModalForm">
-                    <div class="label">Your Name</div>
-                    <div class="settingsInput"><input id="settingsYourName" type="text"></div>
-                    <div class="label">Login Name</div>
-                    <div class="settingsInput"><input id="settingsLoginName1" type="text"></div>
-                    <div class="label">Host Name</div>
-                    <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
-                    <div class="label">Private Key</div>
-                    <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
-                    <div class="label">User ID</div>
-                    <div class="">
-                        <div class="settingsInput"><textarea id="userID"></textarea></div>
-                        <!-- <div id="userID"></div> -->
-                    </div>
+                    <div class="settingsLn"><div class="label settingsLabel">Your Name</div>
+                    <div class="settingsInput"><input id="settingsYourName" type="text"></div></div>
+                    <div class="settingsLn"><div class="label settingsLabel">Login Name</div>
+                    <div class="settingsInput"><input id="settingsLoginName1" type="text"></div></div>
+                    <div class="settingsLn"><div class="label settingsLabel">Host Name</div>
+                    <div class="settingsInput"><input id="settingsHostName1" type="text"></div></div>
+                    <div class="settingsLn"><div class="label settingsLabel">Private Key</div>
+                    <div class="settingsInput"><textarea id="settingsKey1"></textarea></div></div>
+                    <div class="settingsLn"><div class="label settingsLabel">User ID</div>
+                    <div class="settingsInput"><textarea id="userID"></textarea>
+                    </div></div>
 
                 </form>
+                <div id="settingsDownloadBtn" class="btn settingsDownloadBtn">Create Backup</div>
+                <div id="settingsUploadBtn" class="btn settingsUploadBtn">Restore Backup</div>
+
+                <div id="uploadFileLine"><input type="file" id="uploadFile"></div>
+                <div id="settingMsg"></div>
                 <br />
                 <div class="label">Theme</div>
                 <div id="stylePickMenu">
