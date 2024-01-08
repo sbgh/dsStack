@@ -338,6 +338,34 @@ td.gridjs-td {
     background-color: #2c2c2c;
 }
 
+.gridjs-tr td.clicked{
+    background-color: #2c2c2c;
+}
+
 div#settingsDownloadBtn, div#settingsUploadBtn {
     background: #0275ff;
+}
+
+::-webkit-scrollbar-track
+{
+  background-color: #000000;
+}
+
+::-webkit-scrollbar
+{
+  background-color: #F5F5F5;
+}
+
+::-webkit-scrollbar-thumb
+{
+  background-color: #000000;
+  border: 2px solid #555555;
+}
+
+::-webkit-scrollbar-corner { 
+    background: #323232;
+ }
+
+ div#backups {
+    border-top: 2px solid  #989898;
 }

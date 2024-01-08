@@ -782,7 +782,7 @@
 
             var term = new Terminal({
                 fontSize: 14,
-                cols: 200,
+                cols: 80,
                 fontFamily: 'Ubuntu Mono, courier-new, courier, monospace',
             });
 
@@ -1013,13 +1013,13 @@
 
             $('#grid').on('mouseenter', function () {
                 $("#grid").css({
-                    "width": ($("table.gridjs-table").width() + 7) + 'px'
+                    "width": ($("table.gridjs-table").width() + 25) + 'px'
                 })
 
             })
             $('#grid').on('mouseleave', function () {
                 $("#grid").css({
-                    "width": 'calc(274px)'
+                    "width": 'calc(290px)'
                 })
             })
 

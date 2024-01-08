@@ -192,3 +192,7 @@ div#settingsDownloadBtn, div#settingsUploadBtn {
     background: #0275ff;
 }
 
+div#backups {
+    border-top: 2px solid  #989898;
+}
+

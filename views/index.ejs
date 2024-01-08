@@ -120,6 +120,16 @@
             scriptEditor.session.setMode("ace/mode/sh");
             scriptEditor.setReadOnly(true);
 
+            var scriptEditorBackup = ace.edit("comp-script-backup", {
+                theme: "ace/theme/textmate",
+                mode: "ace/mode/sh",
+                value: ""
+            });
+
+            scriptEditorBackup.setTheme("ace/theme/clouds");
+            scriptEditorBackup.session.setMode("ace/mode/sh");
+            scriptEditorBackup.setReadOnly(true);
+
             var term = new Terminal({
                 fontSize: 14,
                 cols: 200,
@@ -147,6 +157,14 @@
                     "toolbar": true
                 }
             });
+
+            dashCompDescriptionBackup = new Quill('#dashCompDescription-backup', {
+                theme: 'snow',
+                modules: {
+                    "toolbar": true
+                }
+            });
+            dashCompDescriptionBackup.enable(false);
             $(".ql-toolbar").hide()
 
             var selectedNode
@@ -350,10 +368,13 @@
 
                     loadVarTable(data.variables, false);
 
+                    $("#backups").html("")
+                    if (data.backups) {
+                        loadBackups(data.backups, userID, id)
+                    }
+
+
                     $("#compVariables").val(data.variables);
-                    //--------------------------
-
-
 
                 } else {
                     console.log("Error: No render data for component")
@@ -366,7 +387,112 @@
                 saveComp()
             });
 
+            function loadBackups(backups, userid, id) {
+                if (backups && backups.length > 0) {
+                    $("#backups").append("<div class='backupTable'>")
+                    $("#backups").append("<div class='backupLabel'>Backups</div>")
+                    for (idx in backups) {
+                        const ds = new Date(backups[idx].ds).toLocaleString()
+                        const el = $("<div class='backupDs' idx='" + idx + "'>" + ds + "</div>")
+                        $("#backups").append(el)
+                        el.click(function (e) {
+                            $('#backupModal').modal('show')
+
+                            const idx = e.target.attributes["idx"].value
+                            $.get('/getBackup', { id: id, "userID": userID, "idx": idx }, function (data) {
+                                const backup = data.data
+                                const ds = data.ds
+
+                                $("#comp-name-backup").text(backup.text)
+
+                                const description = backup.description
+                                if (description.hasOwnProperty("ops")) {
+                                    dashCompDescriptionBackup.setContents(description.ops)
+                                } else {
+                                    dashCompDescriptionBackup.setContents(
+                                        [{ insert: description },
+                                        { insert: '\n' }]
+                                    );
+                                };
+
+                                currentCompVarObj = backup.variables
+
+                                $("#compVariables-backup").html("")
+                                for (var varName in currentCompVarObj) {
+                                    //new row
+                                    var idn = currentCompVarObj[varName].idn
+                                    pCompHtml = "<tr id='varRow_" + idn + "'" + " class='d-flex varRow'>";
+
+                                    //add name col
+                                    pCompHtml += "<td class='col-3 varNameTd'>";
+                                    pCompHtml += "<span id = 'varNameTd-backup" + idn + "'></span>";
+                                    pCompHtml += "</td>";
+
+                                    //add flag col
+                                    pCompHtml += "<td class='col-2 center compVarButtonRow'>"
+                                    pCompHtml += '<div class="compVarButton">' + (currentCompVarObj[varName].private ? "Yes" : "No") + '</div>';
+
+                                    pCompHtml += '<div class="compVarButton">' + (currentCompVarObj[varName].ask ? "Yes" : "No") + '</div>';
+                                    pCompHtml += "</td>"
+
+                                    //add type col
+                                    var typeTxt = currentCompVarObj[varName].type;
+                                    pCompHtml += "<td class='col-2 center'>" + (typeTxt === "" ? "Text" : typeTxt) + "</td>";
+
+                                    //add value col
+                                    pCompHtml += "<td class='col-5 varValTd'>"
+                                    pCompHtml += "<span tabindex='0' id = 'varValTd-backup" + idn + "'></span>"
+                                    if (typeTxt === "Color") {
+
+                                        pCompHtml += '<input id = "varValColor' + idn + '" type="color" class="colorPickerView" disabled="true" >'
+                                    }
+
+                                    pCompHtml += "</td>";
+
+                                    pCompHtml += "</tr>";
+
+                                    $("#compVariables-backup").append(pCompHtml);
+
+                                    $("#varNameTd-backup" + idn).text(varName);
+                                    var valText = currentCompVarObj[varName].value;
+                                    if (currentCompVarObj[varName].private) {
+                                        valText = currentCompVarObj[varName].value === "" ? "" : "************"
+                                    }
+                                    if (valText.split("\n")[0].length > 40 || valText.split("\n").length > 1) {
+                                        valText = valText.substring(0, 37) + "...";
+                                    }
+                                    var valTextPop = currentCompVarObj[varName].value;
+
+                                    if (!currentCompVarObj[varName].private) {
+                                        const options = {
+                                            animation: true,
+                                            content: valTextPop,
+                                            delay: { "show": 500, "hide": 50 },
+                                            trigger: 'hover focus',
+                                            template: '<div class="popover clickPop" role="tooltip"><div class="arrow clickPopArrow"></div><h3 class="popover-header"></h3><pre><div class="popover-body"></div></pre></div>'
+
+                                        }
+                                        $("#varValTd-backup" + idn).popover(options);
+                                    }
+
+
+                                    $("#varValTd-backup" + idn).text(valText);
+                                    $("#varValColor-backup" + idn).val(valText);
+                                }
+
+                                scriptEditorBackup.session.setValue(backup.script)
+                            });
+
+
+                        })
+                    }
+                    $("#backups").append("</div>")
+                }
+
+            }
+
             function loadVarTable(variables, showTools) {
+
                 for (var varName in variables) {
                     //new row
                     var idn = currentCompVarObj[varName].idn
@@ -1070,9 +1196,11 @@
             function setEditorsStyle(styleName) {
                 if (styleName === "dark") {
                     scriptEditor.setTheme("ace/theme/twilight");
+                    scriptEditorBackup.setTheme("ace/theme/twilight");
                     term.options.theme = termDarkTheme
                 } else {
                     scriptEditor.setTheme("ace/theme/clouds");
+                    scriptEditorBackup.setTheme("ace/theme/clouds");
                     term.options.theme = termLightTheme
                 }
             }
@@ -1211,7 +1339,7 @@
 
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {
-                    // console.log('received:', e.data);
+                    console.log('received:', e.data);
                     const data = JSON.parse(e.data)
                     accessToken = data.token ? data.token : accessToken
 
@@ -1482,6 +1610,7 @@
 
                     <div id="jstree_div" class="jstree-default">
                     </div>
+                    <div id="backups"></div>
                 </div>
 
                 <div id="tCol-handle" class="tCol-handle">
@@ -1552,6 +1681,7 @@
                             <i id="runBtn" class="fa fa-play fa-fw"></i>
                         </div>
                         <div id="comp-script" style="height: 400px"></div>
+                        <!-- <div id="backups"></div> -->
 
                     </div>
 
@@ -1588,6 +1718,55 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
             </div>
+        </nav>
+    </div>
+</div>
+<div id="backupModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-del-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <!-- <h4 class="modal-title">dsStack</h4> -->
+            </div>
+
+            <div id='newUserBody' class="modal-body">
+
+                <div id="comp-name-backup"></div>
+
+                <div class="iCol-scroll">
+                    <div id="dashCompDescription-backup"></div>
+                    <div id="urls-backup"></div>
+
+                    <div id="compVariablesForm-backup" class="form-group">
+                        <label class="build-label">Component Properties</label>
+
+                        <table class="table varTable">
+                            <thead>
+                                <tr class="d-flex">
+                                    <th class="col-3 varLabel varLabelName">
+                                        Name</th>
+                                    <th class="col-2 varLabel varFlagLabels center">
+                                        <div class="varFlagLabel varFlagLabel-pri">
+                                            Pri</div>
+                                        <div class="varFlagLabel varFlagLabel-ask">
+                                            Ask</div>
+                                    </th>
+
+                                    <th class="col-2 varLabel center">Type
+                                    </th>
+                                    <th class="col-5 varLabel">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compVariables-backup" class="varTbody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="comp-script-backup" style="height: 200px"></div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
+                </div>
         </nav>
     </div>
 </div>
@@ -1666,43 +1845,52 @@
             <div id='settingsConfirmationBody' class="modal-body">
                 <div id="settingsInfoText" class="text-info"></div>
                 <form class="form" id="settingsModalForm">
-                    <div class="label">Your Name</div>
-                    <div class="settingsInput"><input id="settingsYourName" type="text"></div>
-                    <div class="label">Login Name</div>
-                    <div class="settingsInput"><input id="settingsLoginName1" type="text"></div>
-                    <div class="label">Host Name</div>
-                    <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
-                    <div class="label">Private Key</div>
-                    <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
-                    <div class="label">User ID</div>
-                    <div class="">
-                        <div class="settingsInput"><textarea id="userID"></textarea></div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Your Name</div>
+                        <div class="settingsInput"><input id="settingsYourName" type="text"></div>
                     </div>
-
-                    <div id="settingsDownloadBtn" class="btn settingsDownloadBtn">Create Backup</div>
-                    <div id="settingsUploadBtn" class="btn settingsUploadBtn">Restore Backup</div>
-
-                    <div id="uploadFileLine"><input type="file" id="uploadFile"></div>
-                    <div id="settingMsg"></div>
-
-                    <br />
-                    <div class="label">Theme</div>
-                    <div id="stylePickMenu">
-                        <span class="radio stylePickTop" data-id="default">
-                            <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
-                                    class='fa fa-sun-o fa-fw '></i></label>
-                        </span>
-                        <span class="radio stylePickTop" data-id="dark">
-                            <label><input type="radio" id="darkStyleRadioTop" name="setupRadio"> <i
-                                    class='fa  fa-moon-o fa-fw '></i></label>
-                        </span>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Login Name</div>
+                        <div class="settingsInput"><input id="settingsLoginName1" type="text"></div>
                     </div>
-                    <!-- <div class="label">Save Host</div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Host Name</div>
+                        <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
+                    </div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Private Key</div>
+                        <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
+                    </div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">User ID</div>
+                        <div class="settingsInput"><textarea id="userID"></textarea>
+                        </div>
+                    </div>
+                </form>
+                <div id="settingsDownloadBtn" class="btn settingsDownloadBtn">Create Backup</div>
+                <div id="settingsUploadBtn" class="btn settingsUploadBtn">Restore Backup</div>
+
+                <div id="uploadFileLine"><input type="file" id="uploadFile"></div>
+                <div id="settingMsg"></div>
+
+                <br />
+                <div class="label">Theme</div>
+                <div id="stylePickMenu">
+                    <span class="radio stylePickTop" data-id="default">
+                        <label><input type="radio" id="defaultStyleRadioTop" name="setupRadio" checked><i
+                                class='fa fa-sun-o fa-fw '></i></label>
+                    </span>
+                    <span class="radio stylePickTop" data-id="dark">
+                        <label><input type="radio" id="darkStyleRadioTop" name="setupRadio"> <i
+                                class='fa  fa-moon-o fa-fw '></i></label>
+                    </span>
+                </div>
+                <!-- <div class="label">Save Host</div>
                     <div class="settingsInput"><input id="saveHost1"></textarea></div>
                     <div class="label">Save Path</div>
                     <div class="settingsInput"><input id="savePath1"></textarea></div> -->
 
-                </form>
+
                 <br />
             </div>
             <div class="modal-footer">

@@ -112,14 +112,15 @@ a {
 }
 
 div#tCol {
-    /* width: 255px; */
     flex: 0 0 300px;
     overflow-x: auto;
-    max-width: 30%
+    max-width: 30%;
+    display: flex;
+    flex-direction: column;
 }
 
 div#jstree_div {
-    max-height: calc(100vh - 115px);
+    height: calc(100vh - 115px);
     overflow-y: auto;
     margin: 0 4px;
     padding-bottom: 60px;
@@ -568,5 +569,14 @@ div#settingsDownloadBtn, div#settingsUploadBtn {
 
 div#settingMsg {
     font-weight: 800;
+}
+
+div#backups {
+    font-size: 14px;
+    max-height: 69px;
+    overflow-y: auto;
+}
+.backupDs {
+    cursor: pointer;
 }
 
