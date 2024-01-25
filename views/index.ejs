@@ -206,6 +206,11 @@
                         // "a_attr": { class: " systemRow " }
                         //  "li_attr": { class: "  " }
                     },
+                    "disabled": {
+                        "icon": "fa fa-close ",
+                        // "a_attr": { class: " systemRow " }
+                        //  "li_attr": { class: "  " }
+                    },
                 },
                 "sort": function (a, b) {
                     a1 = this.get_node(a);
@@ -328,7 +333,17 @@
                     let name = data.hasOwnProperty('text') ? data.text : ""
                     let script = data.hasOwnProperty('script') ? data.script : ""
                     let description = data.hasOwnProperty('description') ? data.description : ""
+                    let enabled = !data.hasOwnProperty('enabled') ? "false" : data.enabled 
+                    
                     scriptEditor.session.setValue(script)
+
+                    if(enabled == "true"){
+                        $("#enableBtn").show()
+                        $("#disableBtn").hide()
+                    }else{
+                        $("#enableBtn").hide()
+                        $("#disableBtn").show()
+                    }
 
                     $("#comp-id").text(id)
                     $("#comp-parent").text(parent)
@@ -700,6 +715,22 @@
                 editComp()
             });
 
+            $("#enableBtn").on("click", function(e){
+                $.get('/SetAttrib', { id: selectedNode, "userID": userID, "attrib": "enabled", "value":"false" }, function (data) {
+                    $("#enableBtn").hide()
+                    $("#disableBtn").show()
+                    $('#jstree_div').jstree("refresh");
+                })
+            })
+            
+            $("#disableBtn").on("click", function(e){
+                $.get('/SetAttrib', { id: selectedNode, "userID": userID, "attrib": "enabled", "value":"true" }, function (data) {
+                    $("#enableBtn").show()
+                    $("#disableBtn").hide()
+                    $('#jstree_div').jstree("refresh");
+                })
+            })
+
             $("#cancelSaveBtn").on("click", function () {
                 $('#jstree_div').jstree(true).refresh(true)
                 readComp()
@@ -960,6 +991,22 @@
                     placement: 'top',
                     template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
                 });
+                $("#enableBtn").popover('dispose').popover({
+                    animation: true,
+                    content: "Disable Component",
+                    delay: { "show": 500, "hide": 100 },
+                    trigger: 'hover',
+                    placement: 'top',
+                    template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                });
+                $("#disableBtn").popover('dispose').popover({
+                    animation: true,
+                    content: "Enable Component",
+                    delay: { "show": 500, "hide": 100 },
+                    trigger: 'hover',
+                    placement: 'top',
+                    template: '<div class="popover hoverPop" role="tooltip"><div class="arrow hoverPopArrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+                });
             }) //setup popups
 
             //Set flag if mouse is down while hovering column resize handles
@@ -1208,6 +1255,12 @@
             //run
             $("#runBtn").click(function (event) {
                 $("#idToBeRun").val(selectedNode)
+                let childrens = $('#jstree_div').jstree("get_children_dom", selectedNode)
+                if (childrens.length > 0) {
+                    $('#runChildrenGroup').show()
+                } else {
+                    $('#runChildrenGroup').hide()
+                }
                 $("#buildModalTitleName").text($("#comp-name").text());
                 $('#runModal').modal('show');
             });
@@ -1250,14 +1303,35 @@
 
             $("#runConfirmButton").click(function (event) {
 
+                // let selected = $("#idToBeRun").val()
+
+
+                var treeNode = $('#jstree_div').jstree(true).get_node(selectedNode)
+                var childrens = treeNode.children_d
+
+
+                // let selected = $('#jstree_div').get_selected()[0];
+
+                // let childrens = $('#jstree_div').get_node(selected).children
+                // let childrensIDs = []
+                // childrens.each(
+                //     function (i, element) {
+                //         childrensIDs.push($(element).attr("id"));
+                //     }
+                // );
+
+                let ids = []
                 let rc = true
-                if ($('#runChildrenCb').is(':checked')) {
+                if ($('#runChildrenCb').is(':checked') && childrens.length > 0) {
                     rc = true
+                    ids.push(selectedNode)
+                    ids = ids.concat(childrens)
                 } else {
                     rc = false
+                    ids.push(selectedNode)
                 }
 
-                runJob([$("#idToBeRun").val()], rc);
+                runJob(ids, rc);
                 $('#runModal').modal('toggle');
                 term.focus()
             });
@@ -1548,6 +1622,8 @@
             }
 
             $file.onchange = fetchFile
+
+            
         });
 
         var cssTxt = "";
@@ -1625,6 +1701,8 @@
                         <i id="cancelSaveBtn" class="fa fa-close fa-fw"></i>
                         <i id="copyBtn" class="fa fa-copy fa-fw"></i>
                         <i id="pasteBtn" class="fa fa-paste fa-fw"></i>
+                        <i id="enableBtn" class="fa fa-check fa-fw"></i>
+                        <i id="disableBtn" class="fa fa-close fa-fw"></i>
                     </div>
 
 
@@ -1721,6 +1799,7 @@
         </nav>
     </div>
 </div>
+
 <div id="backupModal" class="modal fade" role="dialog">
     <div class="modal-dialog modal-del-dialog">
         <nav class="modal-content">
@@ -1770,6 +1849,7 @@
         </nav>
     </div>
 </div>
+
 <div id="varEditModal" class="modal fade" role="dialog">
     <div class="modal-dialog modal-dialog-VarEdit">
 
@@ -1784,7 +1864,6 @@
             </div>
         </nav>
     </div>
-
 </div>
 
 <div id="delModal" class="modal fade" role="dialog">
@@ -1913,10 +1992,10 @@
                 <form class="form">
                     <input name="idToBeRun" id="idToBeRun" type="hidden" />
                     <label id="buildModalTitleName"></label>
-                    <!-- <div class="form-group" id="runChildrenGroup">
+                    <div class="form-group" id="runChildrenGroup">
                         <span class="model-label"><input name="runChildrenCb" id="runChildrenCb" value="yes"
                                 type="checkbox" checked />Run children?</span>
-                    </div> -->
+                    </div>
                 </form>
             </div>
 

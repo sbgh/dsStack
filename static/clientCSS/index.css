@@ -287,15 +287,9 @@ div#consoleScrollx {
 
 div#console{
     background: #ebebeb;
-    padding: 5px;
     height: 100%;
     width: 2000px;
-    /* transition: height 0.5s; */
 }
-
-/* div#console.consoleWrap{
-    width: 100%
-} */
 
 div#cCol {
     width: 1px;
@@ -325,8 +319,6 @@ i.fa {
 }
 
 .jstree-default .jstree-anchor {
-    /* line-height: 24px; */
-    /* height: 24px; */
     font-size: 13px;
     color: #424242;
 }
@@ -575,6 +567,7 @@ div#backups {
     font-size: 14px;
     max-height: 69px;
     overflow-y: auto;
+    margin: 0 4px
 }
 .backupDs {
     cursor: pointer;

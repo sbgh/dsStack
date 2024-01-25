@@ -365,7 +365,15 @@ div#settingsDownloadBtn, div#settingsUploadBtn {
 ::-webkit-scrollbar-corner { 
     background: #323232;
  }
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px
+}
 
  div#backups {
     border-top: 2px solid  #989898;
+}
+
+.jsonBlock {
+    border: 1px solid #79bdf3;
 }

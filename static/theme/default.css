@@ -196,3 +196,7 @@ div#backups {
     border-top: 2px solid  #989898;
 }
 
+.jsonBlock {
+    border: 1px solid #79bdf3;
+}
+

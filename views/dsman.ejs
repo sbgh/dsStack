@@ -96,7 +96,7 @@
                 $("#settingMsg").text("")
                 $("#uploadFile").val("")
                 $("#uploadFileLine").css({ "display": "none" })
-                
+
             })
             $("#settingsSaveButton").on("click", function () {
                 let settings =
@@ -665,15 +665,24 @@
                             if (varName == "json") {
                                 try {
                                     const varVal = JSON.parse(data.varVal)
-
+                                    
                                     var myString = '<div class="json"></div>';
                                     var jsonRet = $($.parseHTML(myString));
                                     jsonRet.insertBefore("#spinner")
+                                    function buildKeyLine(obj) {
 
-                                    for (const key in varVal) {
-
-                                        jsonRet.append(`<div class="jsonItem"><div class="jsonKey">${key}:</div><div class="jsonVal">${varVal[key]}</div></div>`);
+                                        let block = $(`<div class="jsonBlock"></div>`)
+                                        jsonRet.append(block)
+                                        for (const key in obj) {
+                                            if (typeof obj[key] === 'object' && !Array.isArray(obj[key]) && obj[key] !== null) {
+                                                buildKeyLine(obj[key])
+                                            } else {
+                                                block.append(`<div class="jsonItem"><div class="jsonKey">${key}:</div><div class="jsonVal">${obj[key]}</div></div>`)
+                                            }
+                                        }
+                                        jsonRet.append(`</div>`)
                                     }
+                                    buildKeyLine(varVal)
 
 
                                     let timeoutId = setTimeout(
@@ -1104,12 +1113,12 @@
                     try {
                         const settings = JSON.parse(text)
 
-                        for(ln in settings){
-                            if(settings[ln].yourName){ $("#settingsYourName").val(settings[ln].yourName) }
-                            if(settings[ln].hostName1){ $("#settingsHostName1").val(settings[ln].hostName1) }
-                            if(settings[ln].loginName1){ $("#settingsLoginName1").val(settings[ln].loginName1) }
-                            if(settings[ln].key1){ $("#settingsKey1").val(settings[ln].key1) }
-                            if(settings[ln].userID){ $("#userID").val(settings[ln].userID) }
+                        for (ln in settings) {
+                            if (settings[ln].yourName) { $("#settingsYourName").val(settings[ln].yourName) }
+                            if (settings[ln].hostName1) { $("#settingsHostName1").val(settings[ln].hostName1) }
+                            if (settings[ln].loginName1) { $("#settingsLoginName1").val(settings[ln].loginName1) }
+                            if (settings[ln].key1) { $("#settingsKey1").val(settings[ln].key1) }
+                            if (settings[ln].userID) { $("#userID").val(settings[ln].userID) }
                             $("#settingMsg").text("Settings have been restored. Click save to save changes.")
                         }
                     } catch (error) {
@@ -1226,17 +1235,27 @@
             <div id='settingsConfirmationBody' class="modal-body">
                 <div id="settingsInfoText" class="text-info"></div>
                 <form class="form" id="settingsModalForm">
-                    <div class="settingsLn"><div class="label settingsLabel">Your Name</div>
-                    <div class="settingsInput"><input id="settingsYourName" type="text"></div></div>
-                    <div class="settingsLn"><div class="label settingsLabel">Login Name</div>
-                    <div class="settingsInput"><input id="settingsLoginName1" type="text"></div></div>
-                    <div class="settingsLn"><div class="label settingsLabel">Host Name</div>
-                    <div class="settingsInput"><input id="settingsHostName1" type="text"></div></div>
-                    <div class="settingsLn"><div class="label settingsLabel">Private Key</div>
-                    <div class="settingsInput"><textarea id="settingsKey1"></textarea></div></div>
-                    <div class="settingsLn"><div class="label settingsLabel">User ID</div>
-                    <div class="settingsInput"><textarea id="userID"></textarea>
-                    </div></div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Your Name</div>
+                        <div class="settingsInput"><input id="settingsYourName" type="text"></div>
+                    </div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Login Name</div>
+                        <div class="settingsInput"><input id="settingsLoginName1" type="text"></div>
+                    </div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Host Name</div>
+                        <div class="settingsInput"><input id="settingsHostName1" type="text"></div>
+                    </div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">Private Key</div>
+                        <div class="settingsInput"><textarea id="settingsKey1"></textarea></div>
+                    </div>
+                    <div class="settingsLn">
+                        <div class="label settingsLabel">User ID</div>
+                        <div class="settingsInput"><textarea id="userID"></textarea>
+                        </div>
+                    </div>
 
                 </form>
                 <div id="settingsDownloadBtn" class="btn settingsDownloadBtn">Create Backup</div>

@@ -436,3 +436,8 @@ div#settingsDownloadBtn, div#settingsUploadBtn {
 div#settingMsg {
     font-weight: 800;
 }
+
+.jsonBlock {
+    padding: 10px;
+    margin: 10px;
+}

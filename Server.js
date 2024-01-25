@@ -37,7 +37,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 function customHeaders(req, res, next) {
-    res.setHeader('X-Powered-By', 'ezstack.systems');
+    res.setHeader('X-Powered-By', 'dsStack');
     res.setHeader('x-content-type-options', 'nosniff');
     next()
 }
@@ -124,9 +124,9 @@ router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
     var userID = req.query.userID;
-    if (userID !== "0") {
-        var b = 0
-    }
+    // if (userID !== "0") {
+    //     var b = 0
+    // }
     var compData = {}
     if (!compDataObj[userID]) {
         // log("! compDataObj[userID]")
@@ -219,7 +219,13 @@ router.get("/getTree", function (req, res) {
                         }
 
                         rowdata.id = key
-                        rowdata.type = "code"
+
+                        if (!rowdata.hasOwnProperty("enabled") || rowdata.enabled !== "true") {
+                            rowdata.type = "disabled"
+                        } else {
+                            rowdata.type = "code"
+                        }
+
                         resJSON.push(rowdata)
                         foundIds.push(key)
                     } else {
@@ -323,38 +329,12 @@ router.post("/remove", function (req, res) {
                 }
             });
 
-            //Remove children
-            // if (ids.length == 1) {
-
-            //     var results = []
-            //     findAllChildren(userID, ids[0], results, 0)
-
-            //     results.forEach(function (id) { //Loop throu all ids
-            //         if (compData.hasOwnProperty(id)) {
-            //             delete compData[id];
-            //         }
-            //     });
-            // }
-
-
             saveAllJSON(true, userID, []);
         }
     }
     res.end('');
 });
-function findAllChildren(userID, id, results, depth) {
-    if (depth < 100) {
-        compData = compDataObj[userID]
-        for (d in compData) {
-            if (compData[d].parent == id) {
-                results.push(compData[d])
-                findAllChildren(data[d].id, results, depth + 1)
-            }
-        }
-    } else {
-        log("Depth violation 'findAllChildren' 100")
-    }
-}
+
 router.post("/copy", function (req, res) {
     var reqJSON = req.body;
 
@@ -655,6 +635,29 @@ router.get("/getPromoted", function (req, res) {
 
 })
 
+router.get("/SetAttrib", function (req, res) {
+
+    var userID = req.query.userID ? req.query.userID : ""
+    var id = req.query.id ? req.query.id : ""
+    var attrib = req.query.attrib ? req.query.attrib : ""
+    var value = req.query.value ? req.query.value : ""
+
+    if (!compDataObj[userID] || userID == 0) {
+        log("SetAttrib error: compDataObj does not have property userID")
+        res.end("SetAttrib error: compDataObj does not have property userID")
+    } else {
+
+        if (attrib == "enabled") {
+            compDataObj[userID][id].enabled = value
+        }
+
+        saveAllJSON(false, userID, []);
+
+        res.end("");
+    }
+
+});
+
 function fixChildsSort(parentId, userID) {
     if (!compDataObj[userID]) {
         log("fixChildsSort error: compDataObj does not have property userID")
@@ -706,9 +709,12 @@ function getConn(conOptions, callback) {
     if (conn) {
         conn.key = key
         if (ids) {
-            const req = { "ids": ids, "varName": "", "varVal": "", "props": props }
-
+            const req = { "id": ids[0], "varName": "", "varVal": "", "props": props }
             conn.reqs.push(req)
+            ids.shift()
+            for (id in ids) {
+                conn.reqs.push({ "id": ids[id], "varName": "", "varVal": "", "props": "" })
+            }
         }
         callback(conn)
     } else {
@@ -768,7 +774,12 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "ids": ids, "varName": "", "varVal": "", "props": props }] }
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "id": ids[0], "varName": "", "varVal": "", "props": props }] }
+
+                        ids.shift()
+                        for (id in ids) {
+                            conObj.reqs.push({ "id": ids[id], "varName": "", "varVal": "", "props": "" })
+                        }
 
                         connections.push(conObj)
 
@@ -808,6 +819,8 @@ function getConn(conOptions, callback) {
 
 function jump(newHost, conn) {
 
+    log('Jump to: ' + newHost + " for " + conn.name);
+    conn.jStream = true
     const jumpConn = new Client()
 
     // let host=conn.conn._chanMgr._client.config.host
@@ -830,12 +843,18 @@ function jump(newHost, conn) {
     conn.conn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, fwdStream) => {
         if (err) {
             log('FIRST :: forwardOut error: for ' + conn.name + ": " + err.message);
-            // ssh1.end();
+            let mess = JSON.stringify({
+                "message": "\r\n# Jump error: " + err.message
+            })
+            conn.ws.send(mess)
+            delete conn.jStream
+            conn.stream.write('\n')
         } else {
             jumpConn.connect({
                 sock: fwdStream,
                 username: destinationSSH.username,
                 privateKey: destinationSSH.privateKey,
+                readyTimeout: 5000
             });
         }
         jumpConn.on('ready', function () {
@@ -847,31 +866,32 @@ function jump(newHost, conn) {
                 conn.jStream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
             })
         });
+        jumpConn.on('error', function (err) {
+            log("Error connecting to jump server: " + forwardConfig.dstHost);
+            let mess = JSON.stringify({
+                "message": "\r\nError connecting to jump server: " + forwardConfig.dstHost + "\r\n"
+            })
+            conn.ws.send(mess)
+        });
         jumpConn.on('end', function () {
             log('SSH - Jump connection ended');
             let mess = JSON.stringify({
-                "message": "\r\n# SSH jump connection ended\r\n"
+                "message": "\r\n# SSH jump connection closed\r\n"
             })
             conn.ws.send(mess)
             delete conn.jConn
-            // connections.every((element, index, array) => {
-            //     if (element.token === token) {
-            //         log("connection end - delete jump connections[" + index + "] for " + element.name)
-                    
-            //         return false;
-            //     }
-            //     return true;
-            // });
+
+            conn.stream.write('\n')
         });
     });
 
 }
 
-function jumpEvents(conn){
+function jumpEvents(conn) {
     let stream = conn.jStream
 
     stream.on('data', function (data) {
-        
+
         processStreamData(conn, data)
 
     });
@@ -881,20 +901,21 @@ function jumpEvents(conn){
         log('Jump stream close: ' + dsString);
 
         let mess = JSON.stringify({
-            "message": "\r\n# SSH Jump Stream closed\r\n"
+            "message": "\r\n# SSH Jump stream closed\r\n"
         })
         conn.ws.send(mess)
         delete conn.jStream
         conn.jConn.end()
-       
+
     });
 
     stream.stderr.on('data', function (data) {
         var dsString = new Date().toISOString(); //date stamp
-        log('Jump stream close: ' + dsString);
+        log('Jump stream stderr: ' + dsString);
+        log(data.toString())
 
         let mess = JSON.stringify({
-            "message": "\r\n# SSH Jump Stream closed\r\n"
+            "message": "\r\n# SSH Jump stream stderr\r\n"
         })
         conn.ws.send(mess)
         delete conn.jStream
@@ -908,8 +929,9 @@ function streamEvents(conn) {
     let ws = conn.ws
 
     stream.on('data', function (data) {
-        
-        processStreamData(conn, data)
+        if (!conn.jStream) {
+            processStreamData(conn, data)
+        }
     });
 
     stream.on('close', function (code, signal) {
@@ -956,18 +978,17 @@ function streamEvents(conn) {
     });
 }
 
-function processStreamData(conn, data){
+function processStreamData(conn, data) {
     var userID = conn.userID
     var data = data.toString()
     const ws = conn.ws
 
     let stream
-    if(conn.jStream){
+    if (conn.jStream) {
         stream = conn.jStream
-    }else{
+    } else {
         stream = conn.stream
     }
-    
 
     var compData
 
@@ -990,23 +1011,32 @@ function processStreamData(conn, data){
 
 
     if (lines.some(substr => substr.startsWith('jump:'))) {
-        let remainder = ""
-        let found = false
+        if (!conn.jStream) {
+            let remainder = ""
+            let found = false
 
+            lines = lines.filter(s => {
+                if (s.startsWith('jump:')) {
 
-        lines = lines.filter(s => {
-            if (s.startsWith('jump:')) {
-                let dataParts = lines.join("\n").split(":")
-                dataParts.shift()
-                remainder = dataParts.join(":").trim()
-                found = true
+                    let dataParts = s.split(":")
+                    dataParts.shift()
+                    remainder = dataParts.join(":").trim()
+                    if (remainder.split(" ").length == 1) { //remainder should be host/ip. Shoud not contain spaces
+                        found = true
+                    } else {
+                        let mess = JSON.stringify({
+                            "message": "Jump cancelled. Host malformed (" + remainder + ")."
+                        })
+                        ws.send(mess)
+                    }
+
+                }
+                return found
+            });
+            if (found) {
+                jump(remainder, conn)
             }
-            return found
-        });
-        if (found) {
-            jump(remainder, conn)
         }
-
     }
 
     if (lines.some(substr => substr.startsWith('var:'))) {
@@ -1042,7 +1072,7 @@ function processStreamData(conn, data){
 
         if (conn.reqs.length > 0) {
             let props = conn.reqs[0].props ? conn.reqs[0].props : ""
-            let ids = conn.reqs[0].ids
+            let ids = conn.reqs[0].id
 
             if (conn.reqs[0].varName !== "") {
                 mess = JSON.stringify(
@@ -1050,7 +1080,7 @@ function processStreamData(conn, data){
                         "varName": conn.reqs[0].varName,
                         "varVal": conn.reqs[0].varVal.split(prompt)[0].trim(),
                         "props": props,
-                        "compVars": compData[ids[0]].variables
+                        "compVars": compData[ids].variables
                     }
                 )
                 // log(mess)
@@ -1060,8 +1090,8 @@ function processStreamData(conn, data){
             }
             let ind = conn.index
             // log("found conn", ids[0], ind)
-            if (compData[ids[0]] && compData[ids[0]].script) {
-                let script = compData[ids[0]].script
+            if (compData[ids] && compData[ids].script) {
+                let script = compData[ids].script
                 let lines = script.split('\n')
                 // log("conn.index", conn.index, "lines.length", lines.length)
                 if (conn.index < lines.length) {
@@ -1070,14 +1100,14 @@ function processStreamData(conn, data){
                     })
                     ws.send(mess)
 
-                    let command = replaceVar(lines[ind], compData[ids[0]], props)
+                    let command = replaceVar(lines[ind], compData[ids], props)
 
                     stream.write(command + '\n');
                     log("sent: " + command)
                     conn.index++
                     ind = conn.index
                     while (lines[ind] && lines[ind].substring(0, 1) === '-') {
-                        command = replaceVar(lines[ind].substring(1), compData[ids[0]], props)
+                        command = replaceVar(lines[ind].substring(1), compData[ids], props)
                         stream.write(command + '\n');
 
                         conn.index++
@@ -1103,7 +1133,7 @@ function processStreamData(conn, data){
     }
 }
 
-function replaceVar(commandStr, job, props) {// find and replace inserted command vars eg. {{c.mVar4}}
+function replaceVar(commandStr, job, props) { // find and replace inserted command vars eg. {{c.mVar4}}
 
     const items = commandStr.split(new RegExp('{{', 'g'));
     items.forEach(function (item) {
@@ -1272,7 +1302,7 @@ app.use("*", function (req, res) {
 
 // http.createServer(app).listen('80');
 // log("Express server listening on port 80");
-
+// steal certs from [ root@jira /etc/ssl/certs ]
 var secureServer = https.createServer({
     key: fs.readFileSync('/home/ubuntu/.ssh/privkey.pem'),
     cert: fs.readFileSync('/home/ubuntu/.ssh/fullchain.pem'),
@@ -1313,35 +1343,33 @@ wsserver.on('connection', function connection(ws) {
 
             if (conn.key) {
                 let key = conn.key
-                if(conn.jStream){
+                if (conn.jStream && conn.jConn) {
                     conn.jStream.write(key)
-                }else{
+                } else {
                     conn.stream.write(key)
                 }
-            } else if (conn.reqs[0].ids[0] && compData[conn.reqs[0].ids].script && conn.atPrompt) {
-
+            } else if (conn.reqs[0].id && compData[conn.reqs[0].id].script && conn.atPrompt) {
                 conn.index = 0
-                if(conn.jStream){
+                if (conn.jStream && conn.jConn) {
                     conn.jStream.write('\n')
-                }else{
+                } else {
                     conn.stream.write('\n')
                 }
-            } else if (conn.reqs[0].ids[0]) {
-
+            } else if (conn.reqs[0].id) {
                 conn.index = 0
-                if(conn.jStream){
+                if (conn.jStream && conn.jConn) {
                     conn.jStream.write('\n')
-                }else{
+                } else {
                     conn.stream.write('\n')
                 }
             } else {
                 // log("processMessage: Was not a key or a run ids req.")
-                if(conn.jStream){
+                if (conn.jStream && conn.jConn) {
                     conn.jStream.write('\n')
-                }else{
+                } else {
                     conn.stream.write('\n')
                 }
-                
+
             }
 
         }
@@ -1369,8 +1397,20 @@ wsserver.on('connection', function connection(ws) {
             "key": dataObj.key,
             "props": dataObj.props
         }
-        getConn(conOptions, processMessage)
 
+        if (conOptions.ids && conOptions.ids.length > 0) {
+            conOptions.ids = SortIDsHy(conOptions.userID, conOptions.ids)
+            removeDisabledAndDescendants(conOptions.userID, conOptions.ids)
+            if (conOptions.ids && conOptions.ids.length == 0) {
+                let mess = JSON.stringify({
+                    "message": "No enabled components to be run"
+                })
+                ws.send(mess)
+            }
+
+        }
+
+        getConn(conOptions, processMessage)
     });
 
     ws.addEventListener('close', function (event) {
@@ -1394,4 +1434,94 @@ function log(line) {
 
 function randomIntFromInterval(min, max) { // min and max included 
     return Math.floor(Math.random() * (max - min + 1) + min)
-  }
+}
+
+//Recursive functipn to update specified array with ids of all descendants of a specified component
+// Provide userID, id of component, results array to update, starting depth (0)
+function findAllDescendants(userID, id, results, depth) {
+    if (depth < 100) {
+        compData = compDataObj[userID] ? compDataObj[userID] : []
+        for (d in compData) {
+            if (compData[d].parent == id) {
+                results.push(d)
+                findAllDescendants(userID, d, results, depth + 1)
+            }
+        }
+    } else {
+        log("Depth violation 'findAllChildren' 100")
+    }
+}
+
+//Function to remove disabled ids and their decendants from an array of ids
+function removeDisabledAndDescendants(userID, idArray) {
+
+    compData = compDataObj[userID] ? compDataObj[userID] : []
+    let disabledArr = []
+
+    //Build array of ids that are disabled and their decendants
+    for (idx in idArray) {
+        if (compData[idArray[idx]]) {
+            if (compData[idArray[idx]].enabled && compData[idArray[idx]].enabled !== "true" && !disabledArr.includes(idArray[idx])) {
+                disabledArr.push(idArray[idx])
+                findAllDescendants(userID, idArray[idx], disabledArr, 0)
+            }
+        }
+    }
+    // remove the disabled ids from the array of ids to be run
+    for (idx in disabledArr) {
+        const index = idArray.indexOf(disabledArr[idx]);
+        if (index > -1) { // only splice array when item is found
+            idArray.splice(index, 1); // 2nd parameter means remove one item only
+        }
+    }
+}
+
+function SortIDsHy(userID, IDsArr) {
+
+    var compData
+    if (compDataObj[userID]) {
+        compData = compDataObj[userID]
+    } else {
+        compData = compDataObj["0"]
+    }
+
+    function hierarchySortFunc(a, b) {
+        return a.sort - b.sort
+        // return a.sort.localeCompare(b.sort, 'en', { numeric: true })
+    }
+
+    function hierarhySort(hashArr, key, result) {
+
+        if (hashArr[key] == undefined) return;
+        var arr = hashArr[key].sort(hierarchySortFunc);
+        for (var i = 0; i < arr.length; i++) {
+            result.push(arr[i]);
+            hierarhySort(hashArr, arr[i].id, result);
+        }
+
+        return result;
+    }
+    let arr = []
+
+    for (idx in IDsArr) {
+        if (compData[IDsArr[idx]]) {
+            arr.push({ "id": IDsArr[idx], "parent": compData[IDsArr[idx]].parent, "sort": compData[IDsArr[idx]].sort })
+        }
+
+    }
+    var hashArr = {};
+
+    for (var i = 0; i < arr.length; i++) {
+        if (hashArr[arr[i].parent] == undefined) hashArr[arr[i].parent] = [];
+        hashArr[arr[i].parent].push(arr[i]);
+    }
+
+    const result = hierarhySort(hashArr, Object.keys(hashArr)[0], []);
+
+    const ids = []
+    for (idx in result) {
+        ids.push(result[idx].id)
+    }
+    return ids
+
+}
