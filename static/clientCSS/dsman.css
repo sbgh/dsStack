@@ -215,6 +215,7 @@ div#console {
     padding: 5px;
     height: calc(40px);
     width: 2000px;
+    min-width: 100%;
     transition: height 0.5s;
 }
 
@@ -222,6 +223,7 @@ div#workingSection {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 div#consoleScrollx {

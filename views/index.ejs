@@ -110,6 +110,9 @@
                 userName = settings.settingsYourName
             })
 
+            $("#alertBtn").on("click", function () {
+                $('#alertModal').modal('show');
+            })
             var scriptEditor = ace.edit("comp-script", {
                 theme: "ace/theme/textmate",
                 mode: "ace/mode/sh",
@@ -207,7 +210,7 @@
                         //  "li_attr": { class: "  " }
                     },
                     "disabled": {
-                        "icon": "fa fa-close ",
+                        "icon": "fa fa-ban ",
                         // "a_attr": { class: " systemRow " }
                         //  "li_attr": { class: "  " }
                     },
@@ -333,19 +336,21 @@
                     let name = data.hasOwnProperty('text') ? data.text : ""
                     let script = data.hasOwnProperty('script') ? data.script : ""
                     let description = data.hasOwnProperty('description') ? data.description : ""
-                    let enabled = !data.hasOwnProperty('enabled') ? "false" : data.enabled 
-                    
+                    let enabled = !data.hasOwnProperty('enabled') ? "false" : data.enabled
+
                     scriptEditor.session.setValue(script)
 
-                    if(enabled == "true"){
+                    if (enabled == "true") {
                         $("#enableBtn").show()
                         $("#disableBtn").hide()
-                    }else{
+                    } else {
                         $("#enableBtn").hide()
                         $("#disableBtn").show()
                     }
 
                     $("#comp-id").text(id)
+                    selectedNode = id
+                    $("#comp-enabled").text(enabled)
                     $("#comp-parent").text(parent)
                     $("#comp-name").text(name)
 
@@ -390,6 +395,21 @@
 
 
                     $("#compVariables").val(data.variables);
+
+
+                    $("#urls").html("")
+                    if (data.results) {
+                        for (idx in data.results) {
+                            let props = Object.getOwnPropertyNames(data.results[idx])
+                            if (props.length > 0 && props[0] == "url") {
+                                let h = "<div class='url'><a href='" + data.results[idx].url + "' target='_new'>" + data.results[idx].url + "</a></div>"
+                                $("#urls").append(h)
+                            }
+
+                        }
+
+                    }
+
 
                 } else {
                     console.log("Error: No render data for component")
@@ -715,16 +735,16 @@
                 editComp()
             });
 
-            $("#enableBtn").on("click", function(e){
-                $.get('/SetAttrib', { id: selectedNode, "userID": userID, "attrib": "enabled", "value":"false" }, function (data) {
+            $("#enableBtn").on("click", function (e) {
+                $.get('/SetAttrib', { id: selectedNode, "userID": userID, "attrib": "enabled", "value": "false" }, function (data) {
                     $("#enableBtn").hide()
                     $("#disableBtn").show()
                     $('#jstree_div').jstree("refresh");
                 })
             })
-            
-            $("#disableBtn").on("click", function(e){
-                $.get('/SetAttrib', { id: selectedNode, "userID": userID, "attrib": "enabled", "value":"true" }, function (data) {
+
+            $("#disableBtn").on("click", function (e) {
+                $.get('/SetAttrib', { id: selectedNode, "userID": userID, "attrib": "enabled", "value": "true" }, function (data) {
                     $("#enableBtn").show()
                     $("#disableBtn").hide()
                     $('#jstree_div').jstree("refresh");
@@ -828,14 +848,14 @@
 
                     var childs = treeNode.children_d;
                     var listOfIds = [node.original.id];
-                    $("#copyInfoText").html("<b>" + node.original.text + "</b> will be copied to <b>" + targetNode.text + "</b>");
+                    $("#copyInfoText").html("<b>" + node.original.text + "</b><span> will be copied to </span><b>" + targetNode.text + "</b>");
 
                     if (childs.length > 0) {
                         listOfIds += ';' + childs.join(';');
                         $('#copyModal_listOfIds').val(listOfIds);
-                        $('#copyModalForm').show()
+                        $('#copyChildrenRadio').show()
                     } else {
-                        $('#copyModalForm').hide()
+                        $('#copyChildrenRadio').hide()
                     }
 
                     if (targetNode.id === "local") {
@@ -847,9 +867,37 @@
                     $('#copyModal').modal('show');
                     $('#copyChildrenCb').prop('checked', false);
 
+                    if ($('#moveCb').is(':checked')) {
+                        $("#moveModalTitle").text("Move")
+                        $("#copyConfirmButton").text("Move")
+                        $("#copyInfoText span").text(" will be moved to ")
+                        $("#copyChildrenRadioHolder").hide()
+
+                    } else {
+                        $("#moveModalTitle").text("Copy")
+                        $("#copyConfirmButton").text("Copy")
+                        $("#copyInfoText span").text(" will be copied to ")
+                        $("#copyChildrenRadioHolder").show()
+                    }
+
                     return false;
                 }
             }
+
+            $('#moveCb').on('click', function (evt) {
+                if ($('#moveCb').is(':checked')) {
+                    $("#moveModalTitle").text("Move")
+                    $("#copyConfirmButton").text("Move")
+                    $("#copyInfoText span").text(" will be moved to ")
+                    $("#copyChildrenRadioHolder").hide()
+
+                } else {
+                    $("#moveModalTitle").text("Copy")
+                    $("#copyConfirmButton").text("Copy")
+                    $("#copyInfoText span").text(" will be copied to ")
+                    $("#copyChildrenRadioHolder").show()
+                }
+            });
 
             $("#copyConfirmButton").on("click", function () {
                 var mydata = {};
@@ -858,6 +906,7 @@
                 mydata.pos = $('#copyModal_newPosition').val();
                 mydata.userID = userID
                 mydata.userName = userName
+                mydata.move = $('#moveCb').is(':checked') ? "true" : "false"
                 // mydata.lib = $('#copyModal_lib').val();
 
                 if (!$('#copyChildrenCb').is(':checked')) {
@@ -1151,30 +1200,56 @@
 
             currentStyleName = localStorage['theme'] ? localStorage['theme'] : 'default'
 
-            $('#consoleScrollx').on('mouseenter', function () {
+            // $('#consoleScrollx').on('mouseenter', function () {
+            //     $("#consoleScrollx").css({
+            //         "min-height": '400px',
+            //         "height": '400px'
+            //     })
+            //     term.focus()
+            //     timeoutId = setTimeout(
+
+            //         function () {
+            //             fitAddon.fit()
+            //         }, 1100)
+            // })
+            // $('#consoleScrollx').on('mouseleave', function () {
+            //     $("#consoleScrollx").css({
+            //         "min-height": '70px',
+            //         "height": '70px'
+            //     })
+            //     timeoutId = setTimeout(
+
+            //         function () {
+            //             fitAddon.fit()
+            //         }, 600)
+            // })
+            $('#consoleExpand').on('click', function () {
+                $('#consoleExpand').hide()
+                $('#consoleClose').show()
                 $("#consoleScrollx").css({
                     "min-height": '400px',
                     "height": '400px'
                 })
                 term.focus()
                 timeoutId = setTimeout(
-
                     function () {
                         fitAddon.fit()
-                    }, 1100)
+                    }, 300)
             })
-            $('#consoleScrollx').on('mouseleave', function () {
+            $('#consoleClose').on('click', function () {
+                $('#consoleExpand').show()
+                $('#consoleClose').hide()
                 $("#consoleScrollx").css({
                     "min-height": '70px',
                     "height": '70px'
                 })
+                term.focus()
                 timeoutId = setTimeout(
-
                     function () {
                         fitAddon.fit()
-                    }, 600)
+                    }, 300)
             })
-
+            $('#consoleClose').hide()
 
             if (currentStyleName === "dark") {
                 $("#darkStyleRadioTop").prop('checked', true)
@@ -1254,15 +1329,31 @@
 
             //run
             $("#runBtn").click(function (event) {
-                $("#idToBeRun").val(selectedNode)
-                let childrens = $('#jstree_div').jstree("get_children_dom", selectedNode)
-                if (childrens.length > 0) {
-                    $('#runChildrenGroup').show()
-                } else {
+
+                if ($("#comp-enabled").text() == "false") {
                     $('#runChildrenGroup').hide()
+                    $("#cantBuildMsg").text("This component is disabled and can not be run");
+                    $("#cantBuildModalTitleName").text($("#comp-name").text());
+                    $('#cantRunModal').modal('show');
+                } else {
+                    var tree = $('#jstree_div');
+                    var treeNode = tree.jstree(true).get_node(selectedNode)
+                    var childs = treeNode.children_d
+                    var listOfIds = selectedNode
+                    if (childs.length > 0) {
+                        listOfIds += ';' + childs.join(';');
+                    }
+                    $("#idToBeRun").val(listOfIds)
+
+                    if (childs.length > 0) {
+                        $('#runChildrenGroup').show()
+                    } else {
+                        $('#runChildrenGroup').hide()
+                    }
+                    $("#buildModalTitleName").text($("#comp-name").text());
+                    $('#runModal').modal('show');
                 }
-                $("#buildModalTitleName").text($("#comp-name").text());
-                $('#runModal').modal('show');
+
             });
 
             $("#connectBtn").click(function (event) {
@@ -1303,32 +1394,13 @@
 
             $("#runConfirmButton").click(function (event) {
 
-                // let selected = $("#idToBeRun").val()
-
-
-                var treeNode = $('#jstree_div').jstree(true).get_node(selectedNode)
-                var childrens = treeNode.children_d
-
-
-                // let selected = $('#jstree_div').get_selected()[0];
-
-                // let childrens = $('#jstree_div').get_node(selected).children
-                // let childrensIDs = []
-                // childrens.each(
-                //     function (i, element) {
-                //         childrensIDs.push($(element).attr("id"));
-                //     }
-                // );
-
-                let ids = []
+                let ids = $("#idToBeRun").val().split(";")
                 let rc = true
-                if ($('#runChildrenCb').is(':checked') && childrens.length > 0) {
+                if ($('#runChildrenCb').is(':checked') && ids.length > 1) {
                     rc = true
-                    ids.push(selectedNode)
-                    ids = ids.concat(childrens)
                 } else {
                     rc = false
-                    ids.push(selectedNode)
+                    ids = [ids[0]]
                 }
 
                 runJob(ids, rc);
@@ -1429,21 +1501,44 @@
                     }
                     if (data.varName) {
                         const varName = data.varName
-                        if (varName == "useList") {
-                            try {
-                                const varVal = JSON.parse(data.varVal)
+                        // if (varName == "useList") {
+                        //     try {
+                        //         const varVal = JSON.parse(data.varVal)
 
-                            } catch (e) {
-                                alert("Error: ws json could not be parsed")
-                            }
-                        }
+                        //     } catch (e) {
+                        //         alert("Error: ws json could not be parsed")
+                        //     }
+                        // }
                         if (varName == "url") {
                             const varVal = data.varVal
                             let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
                             $("#urls").append(h)
 
                         }
+                        if (varName == "alert") {
+                            const varVal = data.varVal
 
+
+                            $('#alertModal').modal('show');
+                            const cnt = $('#msgText').children().length
+                            const rowh = $("<div id='alertRow_" + cnt + "' class='alertRow'><span class='alertTxt'></span><i class='fa fa-copy fa-fw alertRowCopyIcon'></i></div>")
+                            $('#msgText').append(rowh)
+                            rowh.find(".alertTxt").text(varVal)
+                            rowh.on("click", function (rowh) {
+                                const t = $(this)
+                                navigator.clipboard.writeText(t.text())
+                                currentColor=t.css("color")
+                                t.css({ "transition": "color 0s","color": "blue","font-weight": "800" })
+                                
+                                timeoutId = setTimeout(
+                                    function (t, currentColor) {
+                                        t.css({ "transition": "color 1s", "color": currentColor })
+                                    }, 100, t, currentColor)
+                            })
+
+                            // alert(varVal)
+
+                        }
                     }
                 })
             })
@@ -1623,7 +1718,7 @@
 
             $file.onchange = fetchFile
 
-            
+
         });
 
         var cssTxt = "";
@@ -1657,6 +1752,7 @@
             <span><a class="navbar-brand" href="/"><b><span id="navTitle">dsStack</span></b></a></span>
 
             <div id="console-button-row">
+                <i id="alertBtn" class="fa fa-comment fa-fw"></i>
                 <i id="connectBtn" class="fa fa-power-off fa-fw"></i>
                 <i id="settingsBtn" class="fa fa-gear fa-fw"></i>
             </div>
@@ -1702,7 +1798,7 @@
                         <i id="copyBtn" class="fa fa-copy fa-fw"></i>
                         <i id="pasteBtn" class="fa fa-paste fa-fw"></i>
                         <i id="enableBtn" class="fa fa-check fa-fw"></i>
-                        <i id="disableBtn" class="fa fa-close fa-fw"></i>
+                        <i id="disableBtn" class="fa fa-ban fa-fw"></i>
                     </div>
 
 
@@ -1711,12 +1807,12 @@
                         <div id="nameHolder">
                             <div id="comp-name"></div>
                             <div id="comp-id"></div>
+                            <div id="comp-enabled" style="display:none;"></div>
                         </div>
                         <input type="text" id="comp-name-edit" style="display:none;">
                     </div>
                     <div class="iCol-scroll">
                         <div id="dashCompDescription"></div>
-                        <div id="urls"></div>
 
                         <div id="compVariablesForm" class="form-group">
                             <label class="build-label">Component
@@ -1754,6 +1850,8 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="urls"></div>
+
 
                         <div class="button-row button-row-script">
                             <i id="runBtn" class="fa fa-play fa-fw"></i>
@@ -1763,10 +1861,15 @@
 
                     </div>
 
-                    <div id="consoleScrollx">
-                        <div id="console"></div>
+                    <div id="consoleSection">
+                        <div id="consoleScrollx">
+                            <div id="console"></div>
+                        </div>
+                        <div id="consoleBtns">
+                            <div id="consoleExpand"><i class="fa fa-window-maximize fa-fw"></i></div>
+                            <div id="consoleClose"><i class="fa fa-window-minimize fa-fw"></i></div>
+                        </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -1888,15 +1991,21 @@
     <div class="modal-dialog modal-run-dialog">
         <nav class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title"><i class="fa fa-code-fork fa-fw"></i>Copy</h4>
+                <h4 class="modal-title" id="moveModalTitle"><i class="fa fa-code-fork fa-fw"></i>Copy</h4>
             </div>
             <div id='copyConfirmationBody' class="modal-body">
                 <div id="copyInfoText" class="text-info"></div>
                 <form class="form" id="copyModalForm">
                     <div class="form-group">
-                        <div class="radio">
-                            <label class="build-label"><input name="copyChildrenCb" id="copyChildrenCb" value="yes"
-                                    type="checkbox" />Copy all children?</label>
+                        <div class="radio" id="moveRadio">
+                            <label class="build-label"><input name="moveCb" id="moveCb" value="no" type="checkbox"
+                                    class="modalCheckBox" />move?</label>
+                        </div>
+                        <div id="copyChildrenRadioHolder">
+                            <div class="radio" id="copyChildrenRadio">
+                                <label class="build-label"><input name="copyChildrenCb" id="copyChildrenCb" value="yes"
+                                        type="checkbox" class="modalCheckBox" />Copy all children?</label>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -2002,6 +2111,43 @@
             <div class="modal-footer">
                 <button type="button" id="runConfirmButton" class="btn btn-default jobFormbtn">Run</button>
                 <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">Cancel</button>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div id="cantRunModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-run-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-play fa-fw"></i>Run Script</h4>
+            </div>
+            <div id='cantRunConfirmationBody' class="modal-body run-model-body">
+                <form class="form">
+                    <label id="cantBuildMsg"></label>
+                    <div><label id="cantBuildModalTitleName"></label></div>
+                </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div id="alertModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-run-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-comment fa-fw"></i>Server messages</h4>
+            </div>
+            <div id='cantRunConfirmationBody' class="modal-body run-model-body">
+                <div id="msgText">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
+                </div>
             </div>
         </nav>
     </div>

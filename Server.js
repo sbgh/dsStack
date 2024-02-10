@@ -83,7 +83,7 @@ router.use(function (req, res, next) {
         referrer: req.headers.referrer || req.headers.referer
     };
 
-    fs.appendFile('access.log', JSON.stringify(log) + "\n", function (err) {
+    fs.appendFile('dsStack_access.log', JSON.stringify(log) + "\n", function (err) {
         if (err) throw err;
     });
 
@@ -124,20 +124,20 @@ router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
     var userID = req.query.userID;
-    // if (userID !== "0") {
-    //     var b = 0
-    // }
+    
     var compData = {}
+    //if compDataObj does not contain user's component data, attenpt to load user's component file if it exists
     if (!compDataObj[userID]) {
         // log("! compDataObj[userID]")
         fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
             if (!err && data) {
                 // log("!err && data")
+                log("Loaded /compData/compData." + userID + ".json")
                 compDataObj[userID] = JSON.parse(data)
                 compData = compDataObj[userID]
                 buildTree(id, compData)
             } else {
-                // log("!err && data else")
+                log("Did not load /compData/compData." + userID + ".json")
                 compData = compDataObj["0"]
                 buildTree(id, compData)
             }
@@ -301,7 +301,7 @@ router.post("/saveComp", function (req, res) {
 
         saveAllJSON(true, userID, [id])
 
-        log("Saved ")
+        log("Saved " + userID + " for " + userName)
         res.end(retId);
     }
 });
@@ -311,6 +311,8 @@ router.post("/saveComp", function (req, res) {
 router.post("/remove", function (req, res) {
 
     var reqJSON = req.body;
+
+    log("Remove comp(s) " + reqJSON.ids + " for "+ reqJSON.userName)
     if (reqJSON.ids && reqJSON.userID) {
         var userID = reqJSON.userID
         if (userID === "0" || !compDataObj[userID]) {
@@ -340,9 +342,12 @@ router.post("/copy", function (req, res) {
 
     var userID = reqJSON.userID
     var userName = reqJSON.userName
+    var errorMsg = ""
+
+
     if (userID === "0" || !compDataObj[userID]) {
         log("copy error: compDataObj does not have property userID")
-        res.end("copy error: compDataObj does not have property userID")
+        errorMsg = "copy error: compDataObj does not have property userID"
     } else {
         var compData = compDataObj[userID]
 
@@ -358,131 +363,160 @@ router.post("/copy", function (req, res) {
         if ((!compData.hasOwnProperty(targetId)) && (targetId !== '#')) {
             error = true;
             errorID = targetId;
+            errorMsg = "target not exist"
         }
 
-        //set error flag if from ID not exist
+        //set error flag if from ID(s) not exist
         fromIds.forEach(function (id) {
             if (!compData.hasOwnProperty(id) && error === false) {
                 error = true;
                 errorID = id;
             }
+            errorMsg = "from ID(s) not exist"
         });
+
+        //Ensure move flag is present
+        if (!reqJSON.move) {
+            log("copy error: move flag is absent in request")
+            res.end("copy error:  move flag is absent in request")
+            error = true;
+            errorID = targetId;
+            errorMsg = "move flag is absent in request"
+        }
 
         //If no error
         if (error === false) {
 
-            //build id map of old parents and new parents
-            var idMap = {};
+            if (reqJSON.move === "true") {
 
-            //add from parent and new parent to id map
-            idMap[compData[fromIds[0]].parent] = targetId;
 
-            //loop through all fromIds and copy
-            fromIds.forEach(function (fromId) {
-                var fromNode = compData[fromId];
-                var id = generateUUID();
+                compData[fromIds[0]].parent = targetId
 
-                //update parent id map
-                idMap[fromId] = id;
-                var newParentId = idMap[compData[fromId].parent];
-                //log('move to:'+compData[newParentId].name);
 
-                //initial history json
-                var ds = new Date().toISOString();
-                // var hist = [{ username: config.username, ds: ds, fromId: fromId }];
-                var hist = [{ ds: ds, fromId: fromId, userName: userName }];
+                fixChildsSort(targetId, userID);
 
-                //Build new component obj. Version 1
-                var NewRow = {
-                    parent: newParentId,
-                    text: fromNode.text,
-                    description: fromNode.description,
-                    // ver: 1,
-                    // comType: fromNode.comType,
-                    // sort: fromNode.sort,
-                    // text: fromNode.name,
-                    hist: hist
-                };
+                //Save compData and backup
+                saveAllJSON(true, userID, []);
 
-                //if 1st component append "new" to name
-                if (fromIds[0] === fromNode.id) {
-                    NewRow.text = "new " + NewRow.text
-                }
+                //Return OK status
+                res.sendStatus(200);
+                res.end('');
+            } else {
+                //build id map of old parents and new parents
+                var idMap = {};
 
-                //Add new family tree
-                // if (newParentId === "#") {
-                //     NewRow.ft = "#"
-                // } else {
-                //     NewRow.ft = compData[newParentId].ft + '/' + newParentId;
-                // }
+                //add from parent and new parent to id map
+                idMap[compData[fromIds[0]].parent] = targetId;
 
-                //Add more properties to the new component obj if type = 'job' (ie component)
-                // if (fromNode.comType === 'job') {
-                // NewRow.enabled = fromNode.enabled;
-                // NewRow.promoted = fromNode.promoted;
+                //loop through all fromIds and copy
+                fromIds.forEach(function (fromId) {
+                    var fromNode = compData[fromId];
+                    var id = generateUUID();
 
-                NewRow.variables = {};
-                //copy vars that are not private
-                for (var ind in compData[fromId].variables) {
-                    if (compData[fromId].variables.hasOwnProperty(ind)) {
-                        if (!fromNode.variables[ind].private) {
-                            NewRow.variables[ind] = fromNode.variables[ind]
-                        } else {
-                            NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
-                            NewRow.variables[ind].value = "";
+                    //update parent id map
+                    idMap[fromId] = id;
+                    var newParentId = idMap[compData[fromId].parent];
+                    //log('move to:'+compData[newParentId].name);
+
+                    //initial history json
+                    var ds = new Date().toISOString();
+                    // var hist = [{ username: config.username, ds: ds, fromId: fromId }];
+                    var hist = [{ ds: ds, fromId: fromId, userName: userName }];
+
+                    //Build new component obj. Version 1
+                    var NewRow = {
+                        parent: newParentId,
+                        text: fromNode.text,
+                        description: fromNode.description,
+                        // ver: 1,
+                        // comType: fromNode.comType,
+                        // sort: fromNode.sort,
+                        // text: fromNode.name,
+                        hist: hist
+                    };
+
+                    //if 1st component append "new" to name
+                    if (fromIds[0] === fromNode.id) {
+                        NewRow.text = "new " + NewRow.text
+                    }
+
+                    //Add new family tree
+                    // if (newParentId === "#") {
+                    //     NewRow.ft = "#"
+                    // } else {
+                    //     NewRow.ft = compData[newParentId].ft + '/' + newParentId;
+                    // }
+
+                    //Add more properties to the new component obj if type = 'job' (ie component)
+                    // if (fromNode.comType === 'job') {
+                    // NewRow.enabled = fromNode.enabled;
+                    // NewRow.promoted = fromNode.promoted;
+
+                    NewRow.variables = {};
+                    //copy vars that are not private
+                    for (var ind in compData[fromId].variables) {
+                        if (compData[fromId].variables.hasOwnProperty(ind)) {
+                            if (!fromNode.variables[ind].private) {
+                                NewRow.variables[ind] = fromNode.variables[ind]
+                            } else {
+                                NewRow.variables[ind] = JSON.parse(JSON.stringify(fromNode.variables[ind]));
+                                NewRow.variables[ind].value = "";
+                            }
+                        }
+                    }
+
+                    // NewRow.icon = fromNode.icon;
+
+                    NewRow.script = fromNode.script;
+
+                    // if (fromNode.hasOwnProperty('thumbnail')) {
+                    //     NewRow.thumbnail = fromNode.thumbnail;
+                    // }
+                    // }
+
+                    compData[id] = NewRow;
+
+                    //Copy file resources
+                    // if (fs.existsSync(filesPath + fromId)) { //copy file resources if they exist
+                    //     fs.mkdirSync(filesPath + id);
+                    //     const files = fs.readdirSync(filesPath + fromId);
+                    //     files.forEach(function (file) {
+                    //         if (!fs.lstatSync(filesPath + fromId + '/' + file).isDirectory()) {
+                    //             const targetFile = filesPath + id + '/' + file;
+                    //             const source = filesPath + fromId + '/' + file;
+                    //             fs.writeFileSync(targetFile, fs.readFileSync(source))
+                    //         }
+                    //     })
+                    // }
+                });
+
+                //add new sort order value to the 1st id
+                var posInt = parseInt(position, 10);
+                for (var key in compData) {
+                    if (compData[key].parent === targetId) {
+                        if (compData[key].sort >= posInt) {
+                            compData[key].sort = compData[key].sort + 1;
                         }
                     }
                 }
+                compData[idMap[fromIds[0]]].sort = posInt;
+                fixChildsSort(targetId, userID);
 
-                // NewRow.icon = fromNode.icon;
+                //Save compData and backup
+                saveAllJSON(true, userID, []);
 
-                NewRow.script = fromNode.script;
+                //Return OK status
+                res.sendStatus(200);
+                res.end('');
+                //log("saving script"+ JSON.stringify(foundRow));
 
-                // if (fromNode.hasOwnProperty('thumbnail')) {
-                //     NewRow.thumbnail = fromNode.thumbnail;
-                // }
-                // }
-
-                compData[id] = NewRow;
-
-                //Copy file resources
-                // if (fs.existsSync(filesPath + fromId)) { //copy file resources if they exist
-                //     fs.mkdirSync(filesPath + id);
-                //     const files = fs.readdirSync(filesPath + fromId);
-                //     files.forEach(function (file) {
-                //         if (!fs.lstatSync(filesPath + fromId + '/' + file).isDirectory()) {
-                //             const targetFile = filesPath + id + '/' + file;
-                //             const source = filesPath + fromId + '/' + file;
-                //             fs.writeFileSync(targetFile, fs.readFileSync(source))
-                //         }
-                //     })
-                // }
-            });
-
-            //add new sort order value to the 1st id
-            var posInt = parseInt(position, 10);
-            for (var key in compData) {
-                if (compData[key].parent === targetId) {
-                    if (compData[key].sort >= posInt) {
-                        compData[key].sort = compData[key].sort + 1;
-                    }
-                }
             }
-            compData[idMap[fromIds[0]]].sort = posInt;
-            fixChildsSort(targetId, userID);
 
-            //Save compData and backup
-            saveAllJSON(true, userID, []);
-
-            //Return OK status
-            res.sendStatus(200);
-            res.end('');
-            //log("saving script"+ JSON.stringify(foundRow));
 
         } else {
             //error detected. Return error message
             res.sendStatus(500);
-            res.end("Error:System ID not found - " + errorID)
+            res.end(errorMsg + " - " + errorID)
         }
     }
 
@@ -703,8 +737,16 @@ function getConn(conOptions, callback) {
     connections.forEach(function (value, index, array) {
         if (value.token === token) {
             conn = connections[index]
+            log("Found connection for " + name)
         }
     });
+
+    //clear results from all components to be run
+    if (compDataObj[userID]) {
+        for (idx in ids) {
+            compDataObj[userID][ids[idx]].results = []
+        }
+    }
 
     if (conn) {
         conn.key = key
@@ -712,8 +754,8 @@ function getConn(conOptions, callback) {
             const req = { "id": ids[0], "varName": "", "varVal": "", "props": props }
             conn.reqs.push(req)
             ids.shift()
-            for (id in ids) {
-                conn.reqs.push({ "id": ids[id], "varName": "", "varVal": "", "props": "" })
+            for (idx in ids) {
+                conn.reqs.push({ "id": ids[idx], "varName": "", "varVal": "", "props": "" })
             }
         }
         callback(conn)
@@ -777,8 +819,8 @@ function getConn(conOptions, callback) {
                         let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "id": ids[0], "varName": "", "varVal": "", "props": props }] }
 
                         ids.shift()
-                        for (id in ids) {
-                            conObj.reqs.push({ "id": ids[id], "varName": "", "varVal": "", "props": "" })
+                        for (idx in ids) {
+                            conObj.reqs.push({ "id": ids[idx], "varName": "", "varVal": "", "props": "" })
                         }
 
                         connections.push(conObj)
@@ -819,7 +861,12 @@ function getConn(conOptions, callback) {
 
 function jump(newHost, conn) {
 
-    log('Jump to: ' + newHost + " for " + conn.name);
+    var currentUser = conn.conn._chanMgr._client.config.username
+    if (newHost.includes("@")) {
+        currentUser = newHost.split("@")[0]
+        newHost = newHost.split("@")[1]
+    }
+    log('Jump to: ' + currentUser+"@"+newHost + " for " + conn.name);
     conn.jStream = true
     const jumpConn = new Client()
 
@@ -829,7 +876,7 @@ function jump(newHost, conn) {
     const destinationSSH = {
         host: newHost,
         port: 22,
-        username: 'ubuntu',
+        username: currentUser,
         privateKey: privKey
     }
 
@@ -839,7 +886,7 @@ function jump(newHost, conn) {
         dstHost: destinationSSH.host, // destination host
         dstPort: destinationSSH.port // destination port
     };
-
+    // echo "jump:root@hnl-rc01.cloud.cybera.ca"
     conn.conn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, fwdStream) => {
         if (err) {
             log('FIRST :: forwardOut error: for ' + conn.name + ": " + err.message);
@@ -911,7 +958,7 @@ function jumpEvents(conn) {
 
     stream.stderr.on('data', function (data) {
         var dsString = new Date().toISOString(); //date stamp
-        log('Jump stream stderr: ' + dsString);
+        log('Jump stream stderr: ' + dsString + " for " + conn.name);
         log(data.toString())
 
         let mess = JSON.stringify({
@@ -1075,16 +1122,24 @@ function processStreamData(conn, data) {
             let ids = conn.reqs[0].id
 
             if (conn.reqs[0].varName !== "") {
+                const varName = conn.reqs[0].varName
+                const varVal = conn.reqs[0].varVal.split(prompt)[0].trim()
                 mess = JSON.stringify(
                     {
-                        "varName": conn.reqs[0].varName,
-                        "varVal": conn.reqs[0].varVal.split(prompt)[0].trim(),
+                        "varName": varName,
+                        "varVal": varVal,
                         "props": props,
                         "compVars": compData[ids].variables
                     }
                 )
-                // log(mess)
                 ws.send(mess)
+
+                if (!compData[ids].results) {
+                    compData[ids].results = []
+                }
+
+                compData[ids].results.push({ [varName]: varVal })
+
                 conn.reqs[0].varName = ""
                 conn.reqs[0].varVal = ""
             }
@@ -1103,7 +1158,7 @@ function processStreamData(conn, data) {
                     let command = replaceVar(lines[ind], compData[ids], props)
 
                     stream.write(command + '\n');
-                    log("sent: " + command)
+                    // log("sent: " + command)
                     conn.index++
                     ind = conn.index
                     while (lines[ind] && lines[ind].substring(0, 1) === '-') {
@@ -1430,6 +1485,10 @@ wsserver.on('connection', function connection(ws) {
 
 function log(line) {
     console.log(line)
+    const dt = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-')
+    fs.appendFile( "dsStack_access.log", dt + " - " + line+"\n", function(){
+
+    } )
 }
 
 function randomIntFromInterval(min, max) { // min and max included 
