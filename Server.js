@@ -6,7 +6,7 @@ var fs = require('fs');
 var bodyParser = require("body-parser");
 var cors = require('cors');
 
-var http = require('http');
+// var http = require('http');
 const https = require('https');
 
 const Client = require('ssh2').Client
@@ -1359,8 +1359,8 @@ app.use("*", function (req, res) {
 // log("Express server listening on port 80");
 // steal certs from [ root@jira /etc/ssl/certs ]
 var secureServer = https.createServer({
-    key: fs.readFileSync('/home/ubuntu/.ssh/privkey.pem'),
-    cert: fs.readFileSync('/home/ubuntu/.ssh/fullchain.pem'),
+    key: fs.readFileSync('/etc/letsencrypt/live/dsstack.cybera.ca/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/dsstack.cybera.ca/fullchain.pem'),
     rejectUnauthorized: false
 }, app).listen('8443', function () {
     log("Secure Express server listening on port 8443");

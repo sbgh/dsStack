@@ -1481,7 +1481,8 @@
 
             });
 
-            var ws = new WebSocket('wss://dsstack.cybera.ca:8443');
+            const lhost = location.host
+            var ws = new WebSocket('wss://' + lhost);
 
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {
