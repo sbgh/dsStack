@@ -377,3 +377,7 @@ div#settingsDownloadBtn, div#settingsUploadBtn {
 .jsonBlock {
     border: 1px solid #79bdf3;
 }
+
+pre#pfText {
+    color: #b0b0b0;
+}

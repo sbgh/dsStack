@@ -626,3 +626,7 @@ div#msgText {
     max-width: 700px;
 }
 
+#preformattedModal .modal-dialog {
+    max-width: 1000px;
+}
+

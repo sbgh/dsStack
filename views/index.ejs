@@ -1501,19 +1501,10 @@
                     }
                     if (data.varName) {
                         const varName = data.varName
-                        // if (varName == "useList") {
-                        //     try {
-                        //         const varVal = JSON.parse(data.varVal)
-
-                        //     } catch (e) {
-                        //         alert("Error: ws json could not be parsed")
-                        //     }
-                        // }
                         if (varName == "url") {
                             const varVal = data.varVal
                             let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
                             $("#urls").append(h)
-
                         }
                         if (varName == "alert") {
                             const varVal = data.varVal
@@ -1538,6 +1529,13 @@
 
                             // alert(varVal)
 
+                        }
+
+                        if (varName == "preformatted") {
+                            const varVal = data.varVal
+
+                            $('#preformattedModal').modal('show');
+                            $('#pfText').text(varVal)
                         }
                     }
                 })
@@ -2141,8 +2139,25 @@
             <div class="modal-header">
                 <h4 class="modal-title"><i class="fa fa-comment fa-fw"></i>Server messages</h4>
             </div>
-            <div id='cantRunConfirmationBody' class="modal-body run-model-body">
+            <div class="modal-body run-model-body">
                 <div id="msgText">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+<div id="preformattedModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-run-dialog">
+        <nav class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-comment fa-fw"></i>Server messages</h4>
+            </div>
+            <div class="modal-body run-model-body">
+                <pre id="pfText"></pre>
 
                 </div>
                 <div class="modal-footer">
