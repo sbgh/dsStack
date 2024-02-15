@@ -1482,7 +1482,7 @@
             });
 
             const lhost = location.host
-            var ws = new WebSocket('wss://' + lhost);
+            var ws = new WebSocket('wss://' + lhost); 
 
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {

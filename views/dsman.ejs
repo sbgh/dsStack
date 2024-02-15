@@ -171,7 +171,8 @@
                 runJob([onclickJob], false, { "id": id })
             }
 
-            var ws = new WebSocket('wss://dsstack.cybera.ca:8443')
+            const lhost = location.host
+            var ws = new WebSocket('wss://' + lhost); 
 
             function wsEvents(ws) {
 

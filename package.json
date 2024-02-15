@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "Server.js",
   "scripts": {
-    "debug": "node Server.js"
+    "debug": "sudo node Server.js"
   },
   "keywords": [],
   "author": "",
