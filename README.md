@@ -5,7 +5,9 @@
 ![dsStack](https://raw.githubusercontent.com/cybera/dsStack/master/static/images/dsStack-1000.png)
 
 dsStack is a Node.js browser application that helps you to learn about data scince tools, platforms and utilities. dsStack includes a set of small scripts, called components, that can be stacked and organised into chains of functionality.
+
 Eg:
+
 [create keypair] -> [create instance] -> [create volume] -> [attach volume] -> [install Streamlit] -> etc...
 
 ### Setup:
