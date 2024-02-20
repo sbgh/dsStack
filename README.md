@@ -6,7 +6,7 @@ Setup:
 
 Create a public/private key-pair.
 
-Create a security group allowing ingress of ssh port 22, https port 8443.
+Create a security group allowing ingress traffic of ssh port 22, https port 8443.
 
 Create an instance in the Rapid Access Cloud or AWS with these stats:
 * Ubuntu 20.04 or later
@@ -34,3 +34,5 @@ The setup installs pm2 (A utility to start and stop dsStack)
 When the setup is complete the dsSack application should be running. You should be able to open it in your browser. Eg. https://ipaddress:8443
 
 Note that since a self signed https (SSL) certificate was installed you will see a warning on your browser saying that your connection is not secure. You can ignore this warning and proceed.
+
+The setup will provide you with a new user id. Enter this string into settings.
