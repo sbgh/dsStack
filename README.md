@@ -2,6 +2,8 @@
 
 ## A service and graphical user interface to build data science environments in the cloud
 
+![dsStack](https://raw.githubusercontent.com/cybera/dsStack/master/static/images/dsStack-1000.png)
+
 dsStack is a Node.js browser application that helps you to learn about data scince tools, platforms and utilities. dsStack includes a set of small scripts that can be stacked and organised into chains of functionality.
 
 Setup:
