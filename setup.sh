@@ -17,6 +17,7 @@ npm install -y
 
 echo "setup component Data"
 mkdir compData
+mkdir backup
 userID=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo)
 cp compData.json compData/compData.$userID.json
 
