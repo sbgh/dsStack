@@ -25,8 +25,8 @@ sudo su
 cd ~
 curl https://raw.githubusercontent.com/cybera/dsStack/master/setup.sh -o setup.sh
 chmod +x setup.sh
+./setup.sh
 ```
-
 The setup will install a self signed https (SSL) certificate. This will require you to answer some questions during the setup. (Your location, email, etc)
 
 The setup installs pm2 (A utility to start and stop dsStack)
