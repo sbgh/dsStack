@@ -1360,7 +1360,7 @@ app.use("*", function (req, res) {
 // steal certs from [ root@jira /etc/ssl/certs ]
 var secureServer = https.createServer({
     key: fs.readFileSync('/etc/ssl/private/privkey.pem'),
-    cert: fs.readFileSync('/etc/ssl/private/fullchain.pem'),
+    cert: fs.readFileSync('/etc/ssl/private/fullchain.pem'), 
     rejectUnauthorized: false
 }, app).listen('8443', function () {
     log("Secure Express server listening on port 8443");

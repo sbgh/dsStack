@@ -13,11 +13,12 @@ apt install -y certbot
 
 mkdir -p /etc/ssl/private
 
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/privkey.pem -out /etc/ssl/private/fullchain.pem
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/privkey.pem -out /etc/ssl/private/fullchain.pem
 
-sudo npm install -g pm2 
-sudo pm2 start -n "dsStack" Server.js
-sudo pm2 startup
+npm install -g pm2 
+pm2 start -n "dsStack" Server.js
+pm2 startup
 
-sudo env PATH=$PATH:/usr/bin /usr/local/bin/pm2 startup systemd -u ubuntu --hp /root
-sudo pm2 save
+env PATH=$PATH:/usr/bin /usr/local/bin/pm2 startup systemd -u ubuntu --hp /root
+pm2 save
+
