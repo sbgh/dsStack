@@ -2,6 +2,8 @@
 
 ## A service and graphical user interface to build data science environments in the cloud
 
+dsStack is a Node.js browser application that helps you to learn about data scince tools, platforms and utilities. dsStack includes a set of small scripts that can be stacked and organised into chains of functionality.
+
 Setup:
 
 Create a public/private key-pair.
@@ -35,4 +37,4 @@ When the setup is complete the dsSack application should be running. You should 
 
 Note that since a self signed https (SSL) certificate was installed you will see a warning on your browser saying that your connection is not secure. You can ignore this warning and proceed.
 
-The setup will provide you with a new user id. Enter this string into settings.
+The setup will provide you with a new "user id". Enter this user id string into settings. 
