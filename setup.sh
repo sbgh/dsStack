@@ -23,7 +23,8 @@ cp compData.json compData/compData.$userID.json
 
 echo "Make a self-signed SSL certificate"
 mkdir -p /etc/ssl/private
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/privkey.pem -out /etc/ssl/private/fullchain.pem
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/privkey.pem -out /etc/ssl/private/fullchain.pem
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/C=CA/ST=Alberta/L=Calgary/O=Dis/CN=dsStack.cybera.ca"  -keyout /etc/ssl/private/privkey.pem -out /etc/ssl/private/fullchain.pem
 
 echo "install certbot incase you need it in the future"
 apt install -y certbot

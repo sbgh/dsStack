@@ -1,6 +1,6 @@
 # dsStack
 
-## A service and graphical user interface to build data science environments in the cloud
+## A self-hosted service and graphical user interface to build data science environments in the cloud
 
 ![dsStack](https://raw.githubusercontent.com/cybera/dsStack/master/static/images/dsStack-1000.png)
 
@@ -35,7 +35,7 @@ curl https://raw.githubusercontent.com/cybera/dsStack/master/setup.sh -o setup.s
 chmod +x setup.sh
 ./setup.sh
 ```
-The setup will install a self signed https (SSL) certificate. This will require you to answer some questions during the setup. (Your location, email, etc)
+The setup will install a self signed https (SSL) certificate. 
 
 The setup installs pm2 (A utility to start and stop dsStack)
 
@@ -45,3 +45,18 @@ Eg. https://ipaddress:8443
 Note that since a self signed https (SSL) certificate was installed, you will see a warning on your browser saying that your connection is not secure. You can ignore this warning and proceed.
 
 The setup will provide you with a new "user id". Enter this user id string into settings. 
+
+### Settings
+
+In the upper right corner of the dsStack web application there is a settings button. Click this button to open settings.
+In settings there are a set of fields that are required for regular operations;
+
+Your Name - Enter your name or a test string that will uniquely identify you in the logs.
+
+Login Name - The SSH user name (Eg ubuntu) to log into your target server.
+
+Host Name - The host name of IP address of the target server.
+
+Private Key - The SSH private key user to SSH into the target server.
+
+User ID - The alpha numeric string to uniquely identify the datastore you will be saving to.
