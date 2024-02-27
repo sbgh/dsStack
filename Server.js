@@ -124,7 +124,7 @@ router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
     var userID = req.query.userID;
-    
+
     var compData = {}
     //if compDataObj does not contain user's component data, attenpt to load user's component file if it exists
     if (!compDataObj[userID]) {
@@ -312,7 +312,7 @@ router.post("/remove", function (req, res) {
 
     var reqJSON = req.body;
 
-    log("Remove comp(s) " + reqJSON.ids + " for "+ reqJSON.userName)
+    log("Remove comp(s) " + reqJSON.ids + " for " + reqJSON.userName)
     if (reqJSON.ids && reqJSON.userID) {
         var userID = reqJSON.userID
         if (userID === "0" || !compDataObj[userID]) {
@@ -866,7 +866,7 @@ function jump(newHost, conn) {
         currentUser = newHost.split("@")[0]
         newHost = newHost.split("@")[1]
     }
-    log('Jump to: ' + currentUser+"@"+newHost + " for " + conn.name);
+    log('Jump to: ' + currentUser + "@" + newHost + " for " + conn.name);
     conn.jStream = true
     const jumpConn = new Client()
 
@@ -1360,7 +1360,7 @@ app.use("*", function (req, res) {
 // steal certs from [ root@jira /etc/ssl/certs ]
 var secureServer = https.createServer({
     key: fs.readFileSync('/etc/ssl/private/privkey.pem'),
-    cert: fs.readFileSync('/etc/ssl/private/fullchain.pem'), 
+    cert: fs.readFileSync('/etc/ssl/private/fullchain.pem'),
     rejectUnauthorized: false
 }, app).listen('8443', function () {
     log("Secure Express server listening on port 8443");
@@ -1431,41 +1431,46 @@ wsserver.on('connection', function connection(ws) {
     }
 
     ws.on('message', function (data, isBinary) {
-        var dataObj
-        try {
-            dataObj = JSON.parse(data.toString())
-        } catch (error) {
-            console.error(error)
-            return;
-        }
-
-        conOptions = {
-            "host": dataObj.settingsHostName,
-            "port": '22',
-            "name": dataObj.settingsYourName,
-            "username": dataObj.settingsLoginName,
-            "privateKey": dataObj.settingsKey,
-            "token": dataObj.token,
-            "userID": dataObj.userID,
-            "ids": dataObj.ids,
-            "ws": ws,
-            "key": dataObj.key,
-            "props": dataObj.props
-        }
-
-        if (conOptions.ids && conOptions.ids.length > 0) {
-            conOptions.ids = SortIDsHy(conOptions.userID, conOptions.ids)
-            removeDisabledAndDescendants(conOptions.userID, conOptions.ids)
-            if (conOptions.ids && conOptions.ids.length == 0) {
-                let mess = JSON.stringify({
-                    "message": "No enabled components to be run"
-                })
-                ws.send(mess)
+        if (data.toString() === "ping") {
+            ws.send("pong")
+        } else {
+            var dataObj
+            try {
+                dataObj = JSON.parse(data.toString())
+            } catch (error) {
+                console.error(error)
+                return;
             }
 
+            conOptions = {
+                "host": dataObj.settingsHostName,
+                "port": '22',
+                "name": dataObj.settingsYourName,
+                "username": dataObj.settingsLoginName,
+                "privateKey": dataObj.settingsKey,
+                "token": dataObj.token,
+                "userID": dataObj.userID,
+                "ids": dataObj.ids,
+                "ws": ws,
+                "key": dataObj.key,
+                "props": dataObj.props
+            }
+
+            if (conOptions.ids && conOptions.ids.length > 0) {
+                conOptions.ids = SortIDsHy(conOptions.userID, conOptions.ids)
+                removeDisabledAndDescendants(conOptions.userID, conOptions.ids)
+                if (conOptions.ids && conOptions.ids.length == 0) {
+                    let mess = JSON.stringify({
+                        "message": "No enabled components to be run"
+                    })
+                    ws.send(mess)
+                }
+
+            }
+
+            getConn(conOptions, processMessage)
         }
 
-        getConn(conOptions, processMessage)
     });
 
     ws.addEventListener('close', function (event) {
@@ -1486,9 +1491,9 @@ wsserver.on('connection', function connection(ws) {
 function log(line) {
     console.log(line)
     const dt = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-')
-    fs.appendFile( "dsStack_access.log", dt + " - " + line+"\n", function(){
+    fs.appendFile("dsStack_access.log", dt + " - " + line + "\n", function () {
 
-    } )
+    })
 }
 
 function randomIntFromInterval(min, max) { // min and max included 

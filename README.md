@@ -51,7 +51,7 @@ The setup will provide you with a new "user id". Enter this user id string into 
 In the upper right corner of the dsStack web application there is a settings button. Click this button to open settings.
 In settings there are a set of fields that are required for regular operations;
 
-Your Name - Enter your name or a test string that will uniquely identify you in the logs.
+Your Name - Enter your name or a text string that will uniquely identify you in the logs.
 
 Login Name - The SSH user name (Eg ubuntu) to log into your target server.
 
@@ -59,4 +59,4 @@ Host Name - The host name of IP address of the target server.
 
 Private Key - The SSH private key user to SSH into the target server.
 
-User ID - The alpha numeric string to uniquely identify the datastore you will be saving to.
+User ID - The alpha numeric string to uniquely identify the datastore you will be saving to. 

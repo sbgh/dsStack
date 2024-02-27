@@ -1482,69 +1482,86 @@
             });
 
             const lhost = location.host
-            var ws = new WebSocket('wss://' + lhost); 
+            var ws = new WebSocket('wss://' + lhost);
 
+            var pingTimeoutId
             ws.addEventListener('open', function (e) {
                 ws.addEventListener('message', function (e) {
                     console.log('received:', e.data);
-                    const data = JSON.parse(e.data)
-                    accessToken = data.token ? data.token : accessToken
+                    if (e.data === "pong") {
 
-                    if (data.message) {
-                        term.write(data.message)
-                    }
-                    if (data.status) {
-                        if (data.status === "up") {
-                            $("#connectBtn").addClass("up").removeClass("down")
-                        } else {
-                            $("#connectBtn").addClass("down").removeClass("up")
+                    } else {
+                        const data = JSON.parse(e.data)
+                        accessToken = data.token ? data.token : accessToken
+
+                        if (data.message) {
+                            term.write(data.message)
                         }
-                    }
-                    if (data.varName) {
-                        const varName = data.varName
-                        if (varName == "url") {
-                            const varVal = data.varVal
-                            let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
-                            $("#urls").append(h)
+                        if (data.status) {
+                            if (data.status === "up") {
+                                $("#connectBtn").addClass("up").removeClass("down")
+                            } else {
+                                $("#connectBtn").addClass("down").removeClass("up")
+                            }
                         }
-                        if (varName == "alert") {
-                            const varVal = data.varVal
+                        if (data.varName) {
+                            const varName = data.varName
+                            if (varName == "url") {
+                                const varVal = data.varVal
+                                let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
+                                $("#urls").append(h)
+                            }
+                            if (varName == "alert") {
+                                const varVal = data.varVal
 
 
-                            $('#alertModal').modal('show');
-                            const cnt = $('#msgText').children().length
-                            const rowh = $("<div id='alertRow_" + cnt + "' class='alertRow'><span class='alertTxt'></span><i class='fa fa-copy fa-fw alertRowCopyIcon'></i></div>")
-                            $('#msgText').append(rowh)
-                            rowh.find(".alertTxt").text(varVal)
-                            rowh.on("click", function (rowh) {
-                                const t = $(this)
-                                navigator.clipboard.writeText(t.text())
-                                currentColor=t.css("color")
-                                t.css({ "transition": "color 0s","color": "blue","font-weight": "800" })
-                                
-                                timeoutId = setTimeout(
-                                    function (t, currentColor) {
-                                        t.css({ "transition": "color 1s", "color": currentColor })
-                                    }, 100, t, currentColor)
-                            })
+                                $('#alertModal').modal('show');
+                                const cnt = $('#msgText').children().length
+                                const rowh = $("<div id='alertRow_" + cnt + "' class='alertRow'><span class='alertTxt'></span><i class='fa fa-copy fa-fw alertRowCopyIcon'></i></div>")
+                                $('#msgText').append(rowh)
+                                rowh.find(".alertTxt").text(varVal)
+                                rowh.on("click", function (rowh) {
+                                    const t = $(this)
+                                    navigator.clipboard.writeText(t.text())
+                                    currentColor = t.css("color")
+                                    t.css({ "transition": "color 0s", "color": "blue", "font-weight": "800" })
 
-                            // alert(varVal)
+                                    timeoutId = setTimeout(
+                                        function (t, currentColor) {
+                                            t.css({ "transition": "color 1s", "color": currentColor })
+                                        }, 100, t, currentColor)
+                                })
 
+                                // alert(varVal)
+
+                            }
+
+                            if (varName == "preformatted") {
+                                const varVal = data.varVal
+
+                                $('#preformattedModal').modal('show');
+                                $('#pfText').text(varVal)
+                            }
                         }
 
-                        if (varName == "preformatted") {
-                            const varVal = data.varVal
-
-                            $('#preformattedModal').modal('show');
-                            $('#pfText').text(varVal)
-                        }
                     }
                 })
             })
 
             ws.onclose = function (e) {
+                clearTimeout(pingTimeoutId)
+                console.log("ws closed")
                 $("#connectBtn").addClass("up").removeClass("down")
             };
+
+            function pingpong() {
+                pingTimeoutId = setTimeout(
+                    function () {
+                        ws.send("ping")
+                        pingpong()
+                    }, 1000 * 30)
+            }
+            pingpong()
 
             //function to create a block of var input html for new vars and edits. provide index str eg "0" or "1" ...
             function createVarEditHtml(currentRowCntStr) {
@@ -2160,13 +2177,13 @@
             <div class="modal-body run-model-body">
                 <pre id="pfText"></pre>
 
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
-                </div>
             </div>
-        </nav>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default jobFormbtn" data-dismiss="modal">OK</button>
+            </div>
     </div>
+    </nav>
+</div>
 </div>
 
 
