@@ -172,7 +172,7 @@
             }
 
             const lhost = location.host
-            var ws = new WebSocket('wss://' + lhost); 
+            var ws = new WebSocket('wss://' + lhost);
 
             var pingTimeoutId
             function wsEvents(ws) {
@@ -181,525 +181,530 @@
                     ws.addEventListener('message', function (e) {
 
                         // console.log('received:', e.data);
-                        const data = JSON.parse(e.data)
-                        accessToken = data.token ? data.token : accessToken
+                        if (e.data === "pong") {
 
-                        if (data.busy) {
-                            if (data.busy === "true") {
-                                $("#spinner").css({
-                                    "opacity": "1"
-                                })
-                            } else {
-                                $("#spinner").css({
-                                    "opacity": "0"
-                                })
-                            }
-                        }
-                        if (data.message) {
-                            term.write(data.message)
-                        }
-                        if (data.status) {
-                            if (data.status === "up") {
-                                $("#connectBtn").addClass("up").removeClass("down")
-                            } else {
-                                $("#connectBtn").addClass("down").removeClass("up")
-                            }
-                        }
-                        if (data.varName) {
-                            const varName = data.varName
-                            if (varName == "userList") {
-                                try {
+                        } else {
+                            const data = JSON.parse(e.data)
+                            accessToken = data.token ? data.token : accessToken
+
+                            if (data.busy) {
+                                if (data.busy === "true") {
                                     $("#spinner").css({
-                                        "transition": "opacity .5s",
+                                        "opacity": "1"
+                                    })
+                                } else {
+                                    $("#spinner").css({
                                         "opacity": "0"
                                     })
-
-                                    const varVal = JSON.parse(data.varVal)
-                                    const compVars = data.compVars
-
-                                    grid.updateConfig({
-                                        columns: [
-                                            {
-                                                id: 'ID',
-                                                name: 'ID',
-                                                hidden: true
-                                            },
-                                            {
-                                                id: 'Name',
-                                                name: 'Name',
-                                                width: '270px',
-                                                formatter: (cell, row) =>
-                                                    html(`<div class="nameCell">${cell}</div>`)
-                                            },
-                                            {
-                                                id: 'Enabled',
-                                                name: 'En',
-                                                width: '50px',
-                                                formatter: (cell, row) =>
-                                                    html(`<div class="enabledCell">${cell}</div>`)
-                                            },
-                                            {
-                                                id: 'Created_at',
-                                                name: 'Created',
-                                                width: '110px',
-                                                formatter: (cell, row) =>
-                                                    html(`<div class="created_atCell">${cell}</div>`)
-                                            }
-                                        ],
-                                        data: varVal.sort(function (a, b) {
-                                            if (a.Created_at < b.Created_at) {
-                                                return 1;
-                                            }
-                                            if (a.Created_at > b.Created_at) {
-                                                return -1;
-                                            }
-                                            return 0;
-                                        })
-                                    }).forceRender();
-
-                                    $("#userListSection").css({
-                                        "transition": "opacity .5s",
-                                        "opacity": "1"
-                                    })
-
-                                    const title = compVars["listTitle"] ? compVars["listTitle"].value : ""
-                                    $("#gridTitle").text(title)
-                                    $("#gridButtons").html('')
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
                                 }
                             }
-                            if (varName == "userShow") {
-                                try {
-                                    const varVal = JSON.parse(data.varVal)
-                                    if (varVal.id) {
-                                        let ele = $('#userShow-' + varVal.id)
-
-                                        if (ele.length < 1) {
-                                            ele = $("#userShowTemplateOuter").clone(false)
-                                            ele.insertBefore("#spinner")
-                                            ele.find(".userShow").removeClass("hidden")
-                                            ele.attr('id', 'userShow-' + varVal.id)
-                                        } else {
-                                            // ele.insertBefore("#spinner")
-                                            moveAnimate(ele, "#spinner")
-                                        }
-
-                                        let timeoutId = setTimeout(
-                                            function () {
-                                                ele[0].scrollIntoView({
-                                                    behavior: 'auto',
-                                                    block: 'center',
-                                                    inline: 'center'
-                                                });
-                                            }, 800)
-
-                                        ele.find(".userShowName").text(varVal.name)
-                                        ele.find(".userShowEmail").text(varVal.email)
-                                        ele.find(".userShowEnabled").text(varVal.enabled)
-                                        ele.find(".userShowID").text(varVal.id)
-
-                                    } else {
-                                        ele.find(".userShowName").text("Error returned")
-                                    }
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
+                            if (data.message) {
+                                term.write(data.message)
+                            }
+                            if (data.status) {
+                                if (data.status === "up") {
+                                    $("#connectBtn").addClass("up").removeClass("down")
+                                } else {
+                                    $("#connectBtn").addClass("down").removeClass("up")
                                 }
                             }
-                            if (varName == "userProjectList") {
-                                try {
-                                    const varVal = JSON.parse(data.varVal)
-                                    const props = data.props
-                                    const compVars = data.compVars
-                                    const userid = props.id
-                                    let userEle = $("#userShow-" + userid)
-
-                                    userEle.find(".projectListLabel").text("Project List:")
-                                    userEle.find(".projectListPanel").html()
-                                    varVal.every((element, index, array) => {
-
-                                        projshowid = compVars["projShowID"] ? compVars["projShowID"].value : ""
-                                        userEle.find(".projectListPanel").append(
-                                            '<div id="userProjRow">' +
-                                            '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
-                                            '<div id="userProjID-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjID" data-runJob="' + projshowid + '"></div>' +
-                                            '</div>'
-                                        )
-                                        $('#userProj-' + userid + '-' + element.ID).text(element.Name)
-                                        $('#userProjID-' + userid + '-' + element.ID).text(element.ID)
-
-                                        $('#userProjID-' + userid + '-' + element.ID).on("click", function (event) {
-                                            let jobID = $(this).attr('data-runJob');
-                                            let projID = $(this).attr('data-projID');
-                                            runJob([jobID], false, { "id": projID })
+                            if (data.varName) {
+                                const varName = data.varName
+                                if (varName == "userList") {
+                                    try {
+                                        $("#spinner").css({
+                                            "transition": "opacity .5s",
+                                            "opacity": "0"
                                         })
 
-                                        return true
-                                    });
+                                        const varVal = JSON.parse(data.varVal)
+                                        const compVars = data.compVars
 
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "projectList") {
-                                try {
+                                        grid.updateConfig({
+                                            columns: [
+                                                {
+                                                    id: 'ID',
+                                                    name: 'ID',
+                                                    hidden: true
+                                                },
+                                                {
+                                                    id: 'Name',
+                                                    name: 'Name',
+                                                    width: '270px',
+                                                    formatter: (cell, row) =>
+                                                        html(`<div class="nameCell">${cell}</div>`)
+                                                },
+                                                {
+                                                    id: 'Enabled',
+                                                    name: 'En',
+                                                    width: '50px',
+                                                    formatter: (cell, row) =>
+                                                        html(`<div class="enabledCell">${cell}</div>`)
+                                                },
+                                                {
+                                                    id: 'Created_at',
+                                                    name: 'Created',
+                                                    width: '110px',
+                                                    formatter: (cell, row) =>
+                                                        html(`<div class="created_atCell">${cell}</div>`)
+                                                }
+                                            ],
+                                            data: varVal.sort(function (a, b) {
+                                                if (a.Created_at < b.Created_at) {
+                                                    return 1;
+                                                }
+                                                if (a.Created_at > b.Created_at) {
+                                                    return -1;
+                                                }
+                                                return 0;
+                                            })
+                                        }).forceRender();
 
-                                    const varVal = JSON.parse(data.varVal)
+                                        $("#userListSection").css({
+                                            "transition": "opacity .5s",
+                                            "opacity": "1"
+                                        })
 
-                                    const compVars = data.compVars
-
-                                    grid.updateConfig({
-                                        columns: [
-                                            {
-                                                id: 'ID',
-                                                name: 'ID',
-                                                hidden: true
-                                            },
-                                            {
-                                                id: 'Name',
-                                                name: 'Name',
-                                                width: '270px',
-                                                formatter: (cell, row) =>
-                                                    html(`<div class="nameCell">${cell}</div>`)
-                                            },
-                                            {
-                                                id: 'Enabled',
-                                                name: 'En',
-                                                width: '50px',
-                                                formatter: (cell, row) =>
-                                                    html(`<div class="enabledCell">${cell}</div>`)
-                                            },
-                                            {
-                                                id: 'Created_at',
-                                                name: 'Created_at',
-                                                hidden: true
-                                            }
-                                        ],
-
-                                        data: varVal.reverse()
-                                    }).forceRender();
-
-                                    $("#userListSection").css({
-                                        "transition": "opacity .5s",
-                                        "opacity": "1"
-                                    })
-
-                                    const title = compVars["listTitle"] ? compVars["listTitle"].value : ""
-
-                                    $("#gridTitle").text(title)
-
-                                    if (compVars["buttons"]) {
-                                        bList = compVars["buttons"].value.split("\n")
+                                        const title = compVars["listTitle"] ? compVars["listTitle"].value : ""
+                                        $("#gridTitle").text(title)
                                         $("#gridButtons").html('')
-                                        bList.every((element, index, array) => {
-                                            if (element.split(";").length = 2) {
-                                                const icon = element.split(";")[0]
-                                                const jobId = element.split(";")[1]
-                                                let html = '<i id="listBtn-' + index + '" class="fa fa-' + icon + ' fa-fw listIcon" data-jobId="' + jobId + '">'
-                                                $("#gridButtons").append(html)
 
-                                                $("#listBtn-" + index).click(function () {
-                                                    let ele
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "userShow") {
+                                    try {
+                                        const varVal = JSON.parse(data.varVal)
+                                        if (varVal.id) {
+                                            let ele = $('#userShow-' + varVal.id)
 
-                                                    if ($("#projectCreate").length > 0) {
-                                                        ele = $("#projectCreate")
+                                            if (ele.length < 1) {
+                                                ele = $("#userShowTemplateOuter").clone(false)
+                                                ele.insertBefore("#spinner")
+                                                ele.find(".userShow").removeClass("hidden")
+                                                ele.attr('id', 'userShow-' + varVal.id)
+                                            } else {
+                                                // ele.insertBefore("#spinner")
+                                                moveAnimate(ele, "#spinner")
+                                            }
 
-                                                        ele.insertBefore("#spinner")
-                                                    } else {
-                                                        ele = $("#projectCreateTemplateOuter").clone(false)
-                                                        ele.insertBefore("#spinner")
-                                                        ele.find(".projectCreate").removeClass("hidden")
-                                                        ele.attr('id', 'projectCreate')
-
-                                                        ele.find(".projCreate").attr('data-jobId', jobId)
-                                                        ele.find(".projCreate").click(function () {
-                                                            let jobId = this.attributes["data-jobId"].value
-                                                            let name = $(this).parent().find(".projectCreateInputName").val()
-                                                            let email = $(this).parent().find(".projectCreateInputEmail").val()
-                                                            let description = $(this).parent().find(".projectCreateInputDescription").val()
-                                                            runJob([jobId], false, { "name": name, "email": email, "description": description })
-                                                        })
-                                                    }
+                                            let timeoutId = setTimeout(
+                                                function () {
                                                     ele[0].scrollIntoView({
                                                         behavior: 'auto',
                                                         block: 'center',
                                                         inline: 'center'
                                                     });
+                                                }, 800)
 
+                                            ele.find(".userShowName").text(varVal.name)
+                                            ele.find(".userShowEmail").text(varVal.email)
+                                            ele.find(".userShowEnabled").text(varVal.enabled)
+                                            ele.find(".userShowID").text(varVal.id)
 
-                                                })
-                                            }
-                                            return true
-                                        })
-                                    }
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "projectShow") {
-                                try {
-                                    const varVal = JSON.parse(data.varVal)
-                                    const compVars = data.compVars
-                                    let ele
-                                    if (varVal.id) {
-                                        ele = $('#projectShow-' + varVal.id)
-                                        if (ele.length < 1) {
-                                            ele = $("#projectShowTemplateOuter").clone(false)
-                                            ele.insertBefore("#spinner")
-                                            ele.find(".projectShow").removeClass("hidden")
-                                            ele.attr('id', 'projectShow-' + varVal.id)
                                         } else {
-                                            // ele.insertBefore("#spinner")
-                                            moveAnimate(ele, "#spinner")
+                                            ele.find(".userShowName").text("Error returned")
                                         }
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "userProjectList") {
+                                    try {
+                                        const varVal = JSON.parse(data.varVal)
+                                        const props = data.props
+                                        const compVars = data.compVars
+                                        const userid = props.id
+                                        let userEle = $("#userShow-" + userid)
+
+                                        userEle.find(".projectListLabel").text("Project List:")
+                                        userEle.find(".projectListPanel").html()
+                                        varVal.every((element, index, array) => {
+
+                                            projshowid = compVars["projShowID"] ? compVars["projShowID"].value : ""
+                                            userEle.find(".projectListPanel").append(
+                                                '<div id="userProjRow">' +
+                                                '<div id="userProj-' + userid + '-' + element.ID + '" class="userProj"></div>' +
+                                                '<div id="userProjID-' + userid + '-' + element.ID + '"  data-projID="' + element.ID + '" class="userProj userProjID" data-runJob="' + projshowid + '"></div>' +
+                                                '</div>'
+                                            )
+                                            $('#userProj-' + userid + '-' + element.ID).text(element.Name)
+                                            $('#userProjID-' + userid + '-' + element.ID).text(element.ID)
+
+                                            $('#userProjID-' + userid + '-' + element.ID).on("click", function (event) {
+                                                let jobID = $(this).attr('data-runJob');
+                                                let projID = $(this).attr('data-projID');
+                                                runJob([jobID], false, { "id": projID })
+                                            })
+
+                                            return true
+                                        });
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "projectList") {
+                                    try {
+
+                                        const varVal = JSON.parse(data.varVal)
+
+                                        const compVars = data.compVars
+
+                                        grid.updateConfig({
+                                            columns: [
+                                                {
+                                                    id: 'ID',
+                                                    name: 'ID',
+                                                    hidden: true
+                                                },
+                                                {
+                                                    id: 'Name',
+                                                    name: 'Name',
+                                                    width: '270px',
+                                                    formatter: (cell, row) =>
+                                                        html(`<div class="nameCell">${cell}</div>`)
+                                                },
+                                                {
+                                                    id: 'Enabled',
+                                                    name: 'En',
+                                                    width: '50px',
+                                                    formatter: (cell, row) =>
+                                                        html(`<div class="enabledCell">${cell}</div>`)
+                                                },
+                                                {
+                                                    id: 'Created_at',
+                                                    name: 'Created_at',
+                                                    hidden: true
+                                                }
+                                            ],
+
+                                            data: varVal.reverse()
+                                        }).forceRender();
+
+                                        $("#userListSection").css({
+                                            "transition": "opacity .5s",
+                                            "opacity": "1"
+                                        })
+
+                                        const title = compVars["listTitle"] ? compVars["listTitle"].value : ""
+
+                                        $("#gridTitle").text(title)
+
+                                        if (compVars["buttons"]) {
+                                            bList = compVars["buttons"].value.split("\n")
+                                            $("#gridButtons").html('')
+                                            bList.every((element, index, array) => {
+                                                if (element.split(";").length = 2) {
+                                                    const icon = element.split(";")[0]
+                                                    const jobId = element.split(";")[1]
+                                                    let html = '<i id="listBtn-' + index + '" class="fa fa-' + icon + ' fa-fw listIcon" data-jobId="' + jobId + '">'
+                                                    $("#gridButtons").append(html)
+
+                                                    $("#listBtn-" + index).click(function () {
+                                                        let ele
+
+                                                        if ($("#projectCreate").length > 0) {
+                                                            ele = $("#projectCreate")
+
+                                                            ele.insertBefore("#spinner")
+                                                        } else {
+                                                            ele = $("#projectCreateTemplateOuter").clone(false)
+                                                            ele.insertBefore("#spinner")
+                                                            ele.find(".projectCreate").removeClass("hidden")
+                                                            ele.attr('id', 'projectCreate')
+
+                                                            ele.find(".projCreate").attr('data-jobId', jobId)
+                                                            ele.find(".projCreate").click(function () {
+                                                                let jobId = this.attributes["data-jobId"].value
+                                                                let name = $(this).parent().find(".projectCreateInputName").val()
+                                                                let email = $(this).parent().find(".projectCreateInputEmail").val()
+                                                                let description = $(this).parent().find(".projectCreateInputDescription").val()
+                                                                runJob([jobId], false, { "name": name, "email": email, "description": description })
+                                                            })
+                                                        }
+                                                        ele[0].scrollIntoView({
+                                                            behavior: 'auto',
+                                                            block: 'center',
+                                                            inline: 'center'
+                                                        });
+
+
+                                                    })
+                                                }
+                                                return true
+                                            })
+                                        }
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "projectShow") {
+                                    try {
+                                        const varVal = JSON.parse(data.varVal)
+                                        const compVars = data.compVars
+                                        let ele
+                                        if (varVal.id) {
+                                            ele = $('#projectShow-' + varVal.id)
+                                            if (ele.length < 1) {
+                                                ele = $("#projectShowTemplateOuter").clone(false)
+                                                ele.insertBefore("#spinner")
+                                                ele.find(".projectShow").removeClass("hidden")
+                                                ele.attr('id', 'projectShow-' + varVal.id)
+                                            } else {
+                                                // ele.insertBefore("#spinner")
+                                                moveAnimate(ele, "#spinner")
+                                            }
+
+                                            let timeoutId = setTimeout(
+                                                function () {
+                                                    ele[0].scrollIntoView({
+                                                        behavior: 'auto',
+                                                        block: 'center',
+                                                        inline: 'center'
+                                                    });
+                                                }, 800)
+
+
+                                            ele.find(".projectShowName").text(varVal.name)
+                                            ele.find(".projectShowDescription").text(varVal.description)
+                                            ele.find(".projectShowEmail").text(varVal.email)
+                                            ele.find(".projectShowEnabled").text(varVal.enabled)
+                                            ele.find(".projectShowID").text(varVal.id)
+
+                                        } else {
+                                            ele.find(".projectShowName").text("Error returned")
+                                        }
+
+                                        if (compVars["buttons"]) {
+                                            bList = compVars["buttons"].value.split("\n")
+                                            ele.find(".projButtons").html('')
+                                            bList.every((element, index, array) => {
+                                                if (element.split(";").length === 2) {
+                                                    const label = element.split(";")[0]
+                                                    const jobId = element.split(";")[1]
+                                                    let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
+                                                    ele.find(".projButtons").append(html)
+
+                                                    $("#projBtn-" + varVal.id + "-" + index).text(label)
+                                                    $("#projBtn-" + varVal.id + "-" + index).click(function () {
+                                                        let jobId = this.attributes["data-jobId"].value
+                                                        runJob([jobId], false, { "id": varVal.id })
+                                                    })
+                                                } else if (element.split(";").length === 3) {
+                                                    const label = element.split(";")[0]
+                                                    const jobId = element.split(";")[1]
+                                                    const inputs = element.split(";")[2]
+
+                                                    let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
+                                                    ele.find(".projButtons").append(html)
+
+                                                    $("#projBtn-" + varVal.id + "-" + index).text(label)
+                                                    $("#projBtn-" + varVal.id + "-" + index).click(function () {
+                                                        let projEle = $("#projectShow-" + varVal.id)
+                                                        let jobId = this.attributes["data-jobId"].value
+                                                        let html = ''
+                                                        let input
+
+                                                        projEle.find(".projInputs").html('')
+                                                        for (idx in inputs.split(",")) {
+                                                            input = inputs.split(",")[idx]
+                                                            html = '<div class="inputLabel">' + input + ':</div> <textarea id="projInput-' + input + "-" + varVal.id + '" class="projInput" data-jobId="' + jobId + '">'
+                                                            projEle.find(".projInputs").append(html)
+                                                        }
+                                                        html = '<div id="projInputBtn-' + jobId + "-" + varVal.id + '" class="projInputBtn" >do</div>'
+                                                        projEle.find(".projInputs").append(html)
+                                                        $('#projInputBtn-' + jobId + "-" + varVal.id).click(function () {
+                                                            let inputsObj = { "id": varVal.id }
+                                                            for (idx in inputs.split(",")) {
+                                                                inputsObj[inputs.split(",")[idx]] = $('#projInput-' + input + "-" + varVal.id).val()
+                                                            }
+                                                            runJob([jobId], false, inputsObj)
+
+                                                        })
+
+                                                    })
+                                                }
+                                                return true
+                                            })
+                                        }
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "projectServerList") {
+                                    try {
+                                        const serverLists = JSON.parse(data.varVal)
+                                        const varVal = serverLists[0]
+                                        const varVal2 = serverLists[1]
+                                        const props = data.props
+                                        const serverid = props.id
+                                        const compVars = data.compVars
+
+                                        let projEle = $("#projectShow-" + serverid)
+
+                                        projEle.find(".serverListLabel").text("Server List:")
+                                        projEle.find(".serverListPanel").html('')
+
+                                        function render(varVal, cloud) {
+                                            varVal.every((element, index, array) => {
+
+                                                servshowid = compVars["servshowid"] ? compVars["servshowid"].value : ""
+
+                                                projEle.find(".serverListPanel").append(
+                                                    '<div id="projectServRow">' +
+                                                    '<div id="projectServ-' + serverid + '-' + element.ID + '" class="projectServ"></div>' +
+                                                    // '<div id="projectServID-' + serverid + '-' + element.ID + '" class="projectServ projectServID"></div>' +
+                                                    '<div id="projectServID-' + serverid + '-' + element.ID + '"  data-servID="' + element.ID + '" class="projectServ projectServID" data-runJob="' + servshowid + '"></div>' +
+                                                    '</div>'
+                                                )
+                                                $('#projectServ-' + serverid + '-' + element.ID).text(cloud + " - " + element.Name)
+                                                $('#projectServID-' + serverid + '-' + element.ID).text(element.ID)
+                                                $('#projectServID-' + serverid + '-' + element.ID).on("click", function (event) {
+                                                    let jobID = $(this).attr('data-runJob');
+                                                    let servID = $(this).attr('data-servID');
+                                                    runJob([jobID], false, { "id": servID })
+                                                })
+                                                return true
+                                            });
+                                        }
+                                        render(varVal, "yyc")
+                                        render(varVal2, "yeg")
+
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "projectUserList") {
+                                    try {
+                                        const varVal = JSON.parse(data.varVal)
+                                        const props = data.props
+
+                                        const compVars = data.compVars
+                                        const projectid = props.id
+                                        let userEle = $("#projectShow-" + projectid)
+
+                                        userEle.find(".userListLabel").text("User List:")
+                                        userEle.find(".userListPanel").html()
+
+                                        function render(varVal) {
+                                            varVal.every((element, index, array) => {
+
+                                                usershowid = compVars["userShowID"] ? compVars["userShowID"].value : ""
+                                                userEle.find(".userListPanel").append(
+                                                    '<div class="projectUserRow">' +
+                                                    '<div id="projectUser-' + projectid + '-' + element.ID + '" class="projectUser"></div>' +
+                                                    '<div id="projectUserID-' + projectid + '-' + element.ID + '" data-userID="' + element.ID + '" class="projectUser projectUserID" data-runJob="' + usershowid + '"></div>' +
+                                                    '</div>'
+                                                )
+                                                $('#projectUser-' + projectid + '-' + element.ID).text(element.Name)
+                                                $('#projectUserID-' + projectid + '-' + element.ID).text(element.ID)
+
+                                                $('#projectUserID-' + projectid + '-' + element.ID)[0].scrollIntoView({
+                                                    behavior: 'auto',
+                                                    block: 'center',
+                                                    inline: 'center'
+                                                });
+
+                                                $('#projectUserID-' + projectid + '-' + element.ID).on("click", function (event) {
+                                                    let jobID = $(this).attr('data-runJob')
+                                                    let userID = $(this).attr('data-userID')
+                                                    runJob([jobID], false, { "id": userID })
+                                                })
+                                                return true
+                                            })
+                                        }
+                                        render(varVal)
+
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "createProj") {
+                                    try {
+                                        const ret = data.varVal
+
+                                        var myString = '<p class="preformatted"></p>';
+                                        var createProjRet = $($.parseHTML(myString));
+                                        createProjRet.insertBefore("#spinner")
+                                        createProjRet.text(ret)
+
+                                        createProjRet.scrollIntoView({
+                                            behavior: 'auto',
+                                            block: 'center',
+                                            inline: 'center'
+                                        });
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
+                                    }
+                                }
+                                if (varName == "preformatted") {
+                                    try {
+                                        const ret = data.varVal
+
+                                        var myString = '<p class="preformatted"></p>';
+                                        var preformattedRet = $($.parseHTML(myString));
+                                        preformattedRet.insertBefore("#spinner")
+                                        preformattedRet.text(ret)
 
                                         let timeoutId = setTimeout(
                                             function () {
-                                                ele[0].scrollIntoView({
+                                                preformattedRet[0].scrollIntoView({
                                                     behavior: 'auto',
                                                     block: 'center',
                                                     inline: 'center'
                                                 });
                                             }, 800)
 
-
-                                        ele.find(".projectShowName").text(varVal.name)
-                                        ele.find(".projectShowDescription").text(varVal.description)
-                                        ele.find(".projectShowEmail").text(varVal.email)
-                                        ele.find(".projectShowEnabled").text(varVal.enabled)
-                                        ele.find(".projectShowID").text(varVal.id)
-
-                                    } else {
-                                        ele.find(".projectShowName").text("Error returned")
+                                    } catch (e) {
+                                        console.log("Error: " + e)
                                     }
+                                }
+                                if (varName == "json") {
+                                    try {
+                                        const varVal = JSON.parse(data.varVal)
 
-                                    if (compVars["buttons"]) {
-                                        bList = compVars["buttons"].value.split("\n")
-                                        ele.find(".projButtons").html('')
-                                        bList.every((element, index, array) => {
-                                            if (element.split(";").length === 2) {
-                                                const label = element.split(";")[0]
-                                                const jobId = element.split(";")[1]
-                                                let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
-                                                ele.find(".projButtons").append(html)
+                                        var myString = '<div class="json"></div>';
+                                        var jsonRet = $($.parseHTML(myString));
+                                        jsonRet.insertBefore("#spinner")
+                                        function buildKeyLine(obj) {
 
-                                                $("#projBtn-" + varVal.id + "-" + index).text(label)
-                                                $("#projBtn-" + varVal.id + "-" + index).click(function () {
-                                                    let jobId = this.attributes["data-jobId"].value
-                                                    runJob([jobId], false, { "id": varVal.id })
-                                                })
-                                            } else if (element.split(";").length === 3) {
-                                                const label = element.split(";")[0]
-                                                const jobId = element.split(";")[1]
-                                                const inputs = element.split(";")[2]
-
-                                                let html = '<div id="projBtn-' + varVal.id + "-" + index + '" class="projButton" data-jobId="' + jobId + '"></div>'
-                                                ele.find(".projButtons").append(html)
-
-                                                $("#projBtn-" + varVal.id + "-" + index).text(label)
-                                                $("#projBtn-" + varVal.id + "-" + index).click(function () {
-                                                    let projEle = $("#projectShow-" + varVal.id)
-                                                    let jobId = this.attributes["data-jobId"].value
-                                                    let html = ''
-                                                    let input
-
-                                                    projEle.find(".projInputs").html('')
-                                                    for (idx in inputs.split(",")) {
-                                                        input = inputs.split(",")[idx]
-                                                        html = '<div class="inputLabel">' + input + ':</div> <textarea id="projInput-' + input + "-" + varVal.id + '" class="projInput" data-jobId="' + jobId + '">'
-                                                        projEle.find(".projInputs").append(html)
-                                                    }
-                                                    html = '<div id="projInputBtn-' + jobId + "-" + varVal.id + '" class="projInputBtn" >do</div>'
-                                                    projEle.find(".projInputs").append(html)
-                                                    $('#projInputBtn-' + jobId + "-" + varVal.id).click(function () {
-                                                        let inputsObj = { "id": varVal.id }
-                                                        for (idx in inputs.split(",")) {
-                                                            inputsObj[inputs.split(",")[idx]] = $('#projInput-' + input + "-" + varVal.id).val()
-                                                        }
-                                                        runJob([jobId], false, inputsObj)
-
-                                                    })
-
-                                                })
+                                            let block = $(`<div class="jsonBlock"></div>`)
+                                            jsonRet.append(block)
+                                            for (const key in obj) {
+                                                if (typeof obj[key] === 'object' && !Array.isArray(obj[key]) && obj[key] !== null) {
+                                                    buildKeyLine(obj[key])
+                                                } else {
+                                                    block.append(`<div class="jsonItem"><div class="jsonKey">${key}:</div><div class="jsonVal">${obj[key]}</div></div>`)
+                                                }
                                             }
-                                            return true
-                                        })
-                                    }
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "projectServerList") {
-                                try {
-                                    const serverLists = JSON.parse(data.varVal)
-                                    const varVal = serverLists[0]
-                                    const varVal2 = serverLists[1]
-                                    const props = data.props
-                                    const serverid = props.id
-                                    const compVars = data.compVars
-
-                                    let projEle = $("#projectShow-" + serverid)
-
-                                    projEle.find(".serverListLabel").text("Server List:")
-                                    projEle.find(".serverListPanel").html('')
-
-                                    function render(varVal, cloud) {
-                                        varVal.every((element, index, array) => {
-
-                                            servshowid = compVars["servshowid"] ? compVars["servshowid"].value : ""
-
-                                            projEle.find(".serverListPanel").append(
-                                                '<div id="projectServRow">' +
-                                                '<div id="projectServ-' + serverid + '-' + element.ID + '" class="projectServ"></div>' +
-                                                // '<div id="projectServID-' + serverid + '-' + element.ID + '" class="projectServ projectServID"></div>' +
-                                                '<div id="projectServID-' + serverid + '-' + element.ID + '"  data-servID="' + element.ID + '" class="projectServ projectServID" data-runJob="' + servshowid + '"></div>' +
-                                                '</div>'
-                                            )
-                                            $('#projectServ-' + serverid + '-' + element.ID).text(cloud + " - " + element.Name)
-                                            $('#projectServID-' + serverid + '-' + element.ID).text(element.ID)
-                                            $('#projectServID-' + serverid + '-' + element.ID).on("click", function (event) {
-                                                let jobID = $(this).attr('data-runJob');
-                                                let servID = $(this).attr('data-servID');
-                                                runJob([jobID], false, { "id": servID })
-                                            })
-                                            return true
-                                        });
-                                    }
-                                    render(varVal, "yyc")
-                                    render(varVal2, "yeg")
-
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "projectUserList") {
-                                try {
-                                    const varVal = JSON.parse(data.varVal)
-                                    const props = data.props
-
-                                    const compVars = data.compVars
-                                    const projectid = props.id
-                                    let userEle = $("#projectShow-" + projectid)
-
-                                    userEle.find(".userListLabel").text("User List:")
-                                    userEle.find(".userListPanel").html()
-
-                                    function render(varVal) {
-                                        varVal.every((element, index, array) => {
-
-                                            usershowid = compVars["userShowID"] ? compVars["userShowID"].value : ""
-                                            userEle.find(".userListPanel").append(
-                                                '<div class="projectUserRow">' +
-                                                '<div id="projectUser-' + projectid + '-' + element.ID + '" class="projectUser"></div>' +
-                                                '<div id="projectUserID-' + projectid + '-' + element.ID + '" data-userID="' + element.ID + '" class="projectUser projectUserID" data-runJob="' + usershowid + '"></div>' +
-                                                '</div>'
-                                            )
-                                            $('#projectUser-' + projectid + '-' + element.ID).text(element.Name)
-                                            $('#projectUserID-' + projectid + '-' + element.ID).text(element.ID)
-
-                                            $('#projectUserID-' + projectid + '-' + element.ID)[0].scrollIntoView({
-                                                behavior: 'auto',
-                                                block: 'center',
-                                                inline: 'center'
-                                            });
-
-                                            $('#projectUserID-' + projectid + '-' + element.ID).on("click", function (event) {
-                                                let jobID = $(this).attr('data-runJob')
-                                                let userID = $(this).attr('data-userID')
-                                                runJob([jobID], false, { "id": userID })
-                                            })
-                                            return true
-                                        })
-                                    }
-                                    render(varVal)
-
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "createProj") {
-                                try {
-                                    const ret = data.varVal
-
-                                    var myString = '<p class="preformatted"></p>';
-                                    var createProjRet = $($.parseHTML(myString));
-                                    createProjRet.insertBefore("#spinner")
-                                    createProjRet.text(ret)
-
-                                    createProjRet.scrollIntoView({
-                                        behavior: 'auto',
-                                        block: 'center',
-                                        inline: 'center'
-                                    });
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "preformatted") {
-                                try {
-                                    const ret = data.varVal
-
-                                    var myString = '<p class="preformatted"></p>';
-                                    var preformattedRet = $($.parseHTML(myString));
-                                    preformattedRet.insertBefore("#spinner")
-                                    preformattedRet.text(ret)
-
-                                    let timeoutId = setTimeout(
-                                        function () {
-                                            preformattedRet[0].scrollIntoView({
-                                                behavior: 'auto',
-                                                block: 'center',
-                                                inline: 'center'
-                                            });
-                                        }, 800)
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
-                                }
-                            }
-                            if (varName == "json") {
-                                try {
-                                    const varVal = JSON.parse(data.varVal)
-                                    
-                                    var myString = '<div class="json"></div>';
-                                    var jsonRet = $($.parseHTML(myString));
-                                    jsonRet.insertBefore("#spinner")
-                                    function buildKeyLine(obj) {
-
-                                        let block = $(`<div class="jsonBlock"></div>`)
-                                        jsonRet.append(block)
-                                        for (const key in obj) {
-                                            if (typeof obj[key] === 'object' && !Array.isArray(obj[key]) && obj[key] !== null) {
-                                                buildKeyLine(obj[key])
-                                            } else {
-                                                block.append(`<div class="jsonItem"><div class="jsonKey">${key}:</div><div class="jsonVal">${obj[key]}</div></div>`)
-                                            }
+                                            jsonRet.append(`</div>`)
                                         }
-                                        jsonRet.append(`</div>`)
+                                        buildKeyLine(varVal)
+
+
+                                        let timeoutId = setTimeout(
+                                            function () {
+                                                jsonRet[0].scrollIntoView({
+                                                    behavior: 'auto',
+                                                    block: 'center',
+                                                    inline: 'center'
+                                                });
+                                            }, 800)
+
+                                    } catch (e) {
+                                        console.log("Error: " + e)
                                     }
-                                    buildKeyLine(varVal)
-
-
-                                    let timeoutId = setTimeout(
-                                        function () {
-                                            jsonRet[0].scrollIntoView({
-                                                behavior: 'auto',
-                                                block: 'center',
-                                                inline: 'center'
-                                            });
-                                        }, 800)
-
-                                } catch (e) {
-                                    console.log("Error: " + e)
                                 }
                             }
+
                         }
                     })
                 })
