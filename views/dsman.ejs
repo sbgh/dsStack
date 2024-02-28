@@ -174,6 +174,7 @@
             const lhost = location.host
             var ws = new WebSocket('wss://' + lhost); 
 
+            var pingTimeoutId
             function wsEvents(ws) {
 
                 ws.addEventListener('open', function (e) {
@@ -704,10 +705,20 @@
                 })
 
                 ws.onclose = function (e) {
+                    clearTimeout(pingTimeoutId)
                     $("#connectBtn").addClass("up").removeClass("down")
                 };
             }
             wsEvents(ws)
+
+            function pingpong() {
+                pingTimeoutId = setTimeout(
+                    function () {
+                        ws.send("ping")
+                        pingpong()
+                    }, 1000 * 30)
+            }
+            pingpong()
 
             function moveAnimate(element, insertBeforeEle) {
                 insertBeforeEle = $(insertBeforeEle);
