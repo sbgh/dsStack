@@ -712,7 +712,7 @@
                 ws.onclose = function (e) {
                     clearTimeout(pingTimeoutId)
                     console.log("ws closed")
-                    $("#connectBtn").addClass("up").removeClass("down")
+                    $("#connectBtn").addClass("down").removeClass("up")
                 };
             }
             wsEvents(ws)
