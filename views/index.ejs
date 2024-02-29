@@ -1489,7 +1489,7 @@
                 ws.addEventListener('message', function (e) {
                     console.log('received:', e.data);
                     if (e.data === "pong") {
-
+                        
                     } else {
                         const data = JSON.parse(e.data)
                         accessToken = data.token ? data.token : accessToken
