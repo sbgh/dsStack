@@ -816,8 +816,8 @@ function getConn(conOptions, callback) {
                 c.on('ready', function () {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
-                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "id": ids[0], "varName": "", "varVal": "", "props": props }] }
-
+                        let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "id": ids[0], "varName": "", "varVal": "", "props": props }], "jConn": [], "jStream": [] }
+                        
                         ids.shift()
                         for (idx in ids) {
                             conObj.reqs.push({ "id": ids[idx], "varName": "", "varVal": "", "props": "" })
@@ -831,7 +831,7 @@ function getConn(conOptions, callback) {
                             "status": "up"
                         })
                         ws.send(mess)
-                        stream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
+                        stream.write(' stty cols 200' + '\n' + ' PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
 
                         if (!compDataObj[userID]) {
                             fs.readFile(__dirname + '/compData/compData.' + userID + '.json', (err, data) => {
@@ -867,10 +867,10 @@ function jump(newHost, conn) {
         newHost = newHost.split("@")[1]
     }
     log('Jump to: ' + currentUser + "@" + newHost + " for " + conn.name);
-    conn.jStream = true
+    conn.jConn.push(true)
+    conn.jStream.push(true)
     const jumpConn = new Client()
 
-    // let host=conn.conn._chanMgr._client.config.host
     let privKey = conn.conn._chanMgr._client.config.privateKey
 
     const destinationSSH = {
@@ -879,23 +879,37 @@ function jump(newHost, conn) {
         username: currentUser,
         privateKey: privKey
     }
+        srcHost = 'localhost'
+        forwardConfig = {
+            srcHost: srcHost, // source host
+            // srcPort: 8000 + randomIntFromInterval(700, 999), // source port
+            srcPort: 22, // source port
+            dstHost: destinationSSH.host, // destination host
+            dstPort: destinationSSH.port // destination port
+        };
 
-    const forwardConfig = {
-        srcHost: 'localhost', // source host
-        srcPort: 8000 + randomIntFromInterval(700, 999), // source port
-        dstHost: destinationSSH.host, // destination host
-        dstPort: destinationSSH.port // destination port
-    };
-    // echo "jump:root@hnl-rc01.cloud.cybera.ca"
-    conn.conn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, fwdStream) => {
+    var fConn
+    if (conn.jConn.length < 2) {
+        fConn = conn.conn
+    } else {
+        fConn = conn.jConn[conn.jConn.length - 2]
+    }
+
+
+    fConn.forwardOut(forwardConfig.srcHost, forwardConfig.srcPort, forwardConfig.dstHost, forwardConfig.dstPort, (err, fwdStream) => {
         if (err) {
-            log('FIRST :: forwardOut error: for ' + conn.name + ": " + err.message);
+            log('forwardOut error: for ' + conn.name + ": " + err.message);
             let mess = JSON.stringify({
                 "message": "\r\n# Jump error: " + err.message
             })
             conn.ws.send(mess)
-            delete conn.jStream
-            conn.stream.write('\n')
+            conn.jStream.pop()
+
+            if (conn.jConn.length < 1) {
+                conn.stream.write('\n')
+            } else {
+                conn.jStream[conn.jConn.length - 1].write('\n')
+            }
         } else {
             jumpConn.connect({
                 sock: fwdStream,
@@ -907,18 +921,30 @@ function jump(newHost, conn) {
         jumpConn.on('ready', function () {
             jumpConn.shell(function (err, stream) {
                 let ws = conn.ws
-                conn.jConn = jumpConn
-                conn.jStream = stream
-                jumpEvents(conn)
-                conn.jStream.write('stty cols 200' + '\n' + 'PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
+                conn.jConn.pop()
+                conn.jStream.pop()
+                conn.jConn.push(jumpConn)
+                conn.jStream.push(stream)
+                jumpEvents(conn, stream)
+                conn.jStream[conn.jStream.length - 1].write(' stty cols 200' + '\n' + ' PS1="[ceStack]$PS1"' + '\n'); //insert [ceStack] into the current prompt
             })
         });
         jumpConn.on('error', function (err) {
             log("Error connecting to jump server: " + forwardConfig.dstHost);
+            log(err.message);
             let mess = JSON.stringify({
-                "message": "\r\nError connecting to jump server: " + forwardConfig.dstHost + "\r\n"
+                "message": "\r\nError connecting to jump server: " + forwardConfig.dstHost + "\r\n" + err.message + "\r\n"
             })
             conn.ws.send(mess)
+            conn.jConn.pop()
+            conn.jStream.pop()
+
+            if (conn.jConn.length < 1) {
+                conn.stream.write('\n')
+            } else {
+                conn.jStream[conn.jConn.length - 1].write('\n')
+            }
+
         });
         jumpConn.on('end', function () {
             log('SSH - Jump connection ended');
@@ -926,20 +952,25 @@ function jump(newHost, conn) {
                 "message": "\r\n# SSH jump connection closed\r\n"
             })
             conn.ws.send(mess)
-            delete conn.jConn
+            conn.jConn.pop()
+            conn.jStream.pop()
 
-            conn.stream.write('\n')
+            if (conn.jConn.length < 1) {
+                conn.stream.write('\n')
+            } else {
+                conn.jStream[conn.jConn.length - 1].write('\n')
+            }
         });
     });
 
 }
 
-function jumpEvents(conn) {
-    let stream = conn.jStream
+function jumpEvents(conn, stream) {
+    // let stream = conn.jStream[conn.jStream.length - 1]
 
     stream.on('data', function (data) {
 
-        processStreamData(conn, data)
+        processStreamData(conn, data, stream)
 
     });
 
@@ -951,8 +982,8 @@ function jumpEvents(conn) {
             "message": "\r\n# SSH Jump stream closed\r\n"
         })
         conn.ws.send(mess)
-        delete conn.jStream
-        conn.jConn.end()
+        // conn.jStream.shift()
+        if(conn.jConn[conn.jConn.length - 1]){conn.jConn[conn.jConn.length - 1].end()}
 
     });
 
@@ -965,8 +996,8 @@ function jumpEvents(conn) {
             "message": "\r\n# SSH Jump stream stderr\r\n"
         })
         conn.ws.send(mess)
-        delete conn.jStream
-        conn.jConn.end()
+        // conn.jStream.pop() 
+        conn.jConn[conn.jConn.length - 1].end()
     });
 
 }
@@ -976,8 +1007,8 @@ function streamEvents(conn) {
     let ws = conn.ws
 
     stream.on('data', function (data) {
-        if (!conn.jStream) {
-            processStreamData(conn, data)
+        if (conn.jStream.length < 1) {
+            processStreamData(conn, data, stream)
         }
     });
 
@@ -1025,17 +1056,28 @@ function streamEvents(conn) {
     });
 }
 
-function processStreamData(conn, data) {
+function processStreamData(conn, data, stream) {
+
+
+    if (conn.jStream.length > 0) {
+        if (stream == conn.jStream[conn.jStream.length - 1]) {
+            console.log("last " + conn.jStream.length)
+        } else {
+            return
+            console.log("late " + conn.jStream.length)
+        }
+    }
+
     var userID = conn.userID
     var data = data.toString()
     const ws = conn.ws
 
-    let stream
-    if (conn.jStream) {
-        stream = conn.jStream
-    } else {
-        stream = conn.stream
-    }
+    // let stream
+    // if (conn.jStream.length > 0) {
+    //     stream = conn.jStream[conn.jStream.length - 1]
+    // } else {
+    //     stream = conn.stream
+    // }
 
     var compData
 
@@ -1058,31 +1100,30 @@ function processStreamData(conn, data) {
 
 
     if (lines.some(substr => substr.startsWith('jump:'))) {
-        if (!conn.jStream) {
-            let remainder = ""
-            let found = false
+        let remainder = ""
+        let found = false
 
-            lines = lines.filter(s => {
-                if (s.startsWith('jump:')) {
+        lines = lines.filter(s => {
+            if (s.startsWith('jump:')) {
 
-                    let dataParts = s.split(":")
-                    dataParts.shift()
-                    remainder = dataParts.join(":").trim()
-                    if (remainder.split(" ").length == 1) { //remainder should be host/ip. Shoud not contain spaces
-                        found = true
-                    } else {
-                        let mess = JSON.stringify({
-                            "message": "Jump cancelled. Host malformed (" + remainder + ")."
-                        })
-                        ws.send(mess)
-                    }
-
+                let dataParts = s.split(":")
+                dataParts.shift()
+                remainder = dataParts.join(":").trim()
+                if (remainder.split(" ").length == 1) { //remainder should be host/ip. Should not contain spaces
+                    found = true
+                } else {
+                    let mess = JSON.stringify({
+                        "message": "Jump cancelled. Host malformed (" + remainder + ")."
+                    })
+                    ws.send(mess)
                 }
-                return found
-            });
-            if (found) {
-                jump(remainder, conn)
+
             }
+            return found
+        });
+        if (found) {
+
+            jump(remainder, conn)
         }
     }
 
@@ -1281,7 +1322,7 @@ router.get("/newUser", function (req, res) {
     }
 });
 
-// Function to save all component data for a specified user. Data will also backedup if backup = true
+// Function to save all component data for a specified user. Data will also backed-up if backup = true
 function saveAllJSON(backup, userID, ids) {
     //log("saving");
 
@@ -1399,29 +1440,29 @@ wsserver.on('connection', function connection(ws) {
 
             if (conn.key) {
                 let key = conn.key
-                if (conn.jStream && conn.jConn) {
-                    conn.jStream.write(key)
+                if (conn.jStream.length > 0 && conn.jConn.length > 0) {
+                    conn.jStream[conn.jStream.length - 1].write(key)
                 } else {
                     conn.stream.write(key)
                 }
             } else if (conn.reqs[0].id && compData[conn.reqs[0].id].script && conn.atPrompt) {
                 conn.index = 0
-                if (conn.jStream && conn.jConn) {
-                    conn.jStream.write('\n')
+                if (conn.jStream.length > 0 && conn.jConn.length > 0) {
+                    conn.jStream[conn.jStream.length - 1].write('\n')
                 } else {
                     conn.stream.write('\n')
                 }
             } else if (conn.reqs[0].id) {
                 conn.index = 0
-                if (conn.jStream && conn.jConn) {
-                    conn.jStream.write('\n')
+                if (conn.jStream.length > 0 && conn.jConn.length > 0) {
+                    conn.jStream[conn.jStream.length - 1].write('\n')
                 } else {
                     conn.stream.write('\n')
                 }
             } else {
                 // log("processMessage: Was not a key or a run ids req.")
-                if (conn.jStream && conn.jConn) {
-                    conn.jStream.write('\n')
+                if (conn.jStream.length > 0 && conn.jConn.length > 0) {
+                    conn.jStream[conn.jStream.length - 1].write('\n')
                 } else {
                     conn.stream.write('\n')
                 }
