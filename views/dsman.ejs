@@ -880,6 +880,16 @@
             }
             term.options.theme = termLightTheme
 
+            term.onSelectionChange(() => {
+                let selectedText = term.getSelection()
+                var obj = {
+                    start: 0,
+                    end: selectedText.length,
+                    text: selectedText
+                }
+                navigator.clipboard.writeText(selectedText);
+            })
+
             $('#console').on('mouseenter', function () {
                 $("#console").css({
                     "height": 'calc(400px)',

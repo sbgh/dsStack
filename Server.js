@@ -27,14 +27,14 @@ var app = express();
     }
 })();
 
-const corsOptions = {
-    // origin: process.env.CORS_ALLOW_ORIGIN || '*',
-    origin: 'https://coonsol.cybera.ca/',
-    methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-};
+// const corsOptions = {
+//     // origin: process.env.CORS_ALLOW_ORIGIN || '*',
+//     origin: 'https://consol.cybera.ca/',
+//     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization']
+// };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 function customHeaders(req, res, next) {
     res.setHeader('X-Powered-By', 'dsStack');
@@ -817,7 +817,7 @@ function getConn(conOptions, callback) {
                     c.shell(function (err, stream) {
                         let token = generateUUID()
                         let conObj = { "err": err, "conn": c, "stream": stream, "token": token, "userID": userID, "key": key, "ws": ws, "name": name, "reqs": [{ "id": ids[0], "varName": "", "varVal": "", "props": props }], "jConn": [], "jStream": [] }
-                        
+
                         ids.shift()
                         for (idx in ids) {
                             conObj.reqs.push({ "id": ids[idx], "varName": "", "varVal": "", "props": "" })
@@ -879,14 +879,14 @@ function jump(newHost, conn) {
         username: currentUser,
         privateKey: privKey
     }
-        srcHost = 'localhost'
-        forwardConfig = {
-            srcHost: srcHost, // source host
-            // srcPort: 8000 + randomIntFromInterval(700, 999), // source port
-            srcPort: 22, // source port
-            dstHost: destinationSSH.host, // destination host
-            dstPort: destinationSSH.port // destination port
-        };
+    srcHost = 'localhost'
+    forwardConfig = {
+        srcHost: srcHost, // source host
+        // srcPort: 8000 + randomIntFromInterval(700, 999), // source port
+        srcPort: 22, // source port
+        dstHost: destinationSSH.host, // destination host
+        dstPort: destinationSSH.port // destination port
+    };
 
     var fConn
     if (conn.jConn.length < 2) {
@@ -958,7 +958,7 @@ function jump(newHost, conn) {
             if (conn.jConn.length < 1) {
                 conn.stream.write('\n')
             } else {
-                conn.jStream[conn.jConn.length - 1].write('\n')
+                if (conn.jStream[conn.jConn.length - 1]) { conn.jStream[conn.jConn.length - 1].write('\n') }
             }
         });
     });
@@ -983,7 +983,7 @@ function jumpEvents(conn, stream) {
         })
         conn.ws.send(mess)
         // conn.jStream.shift()
-        if(conn.jConn[conn.jConn.length - 1]){conn.jConn[conn.jConn.length - 1].end()}
+        if (conn.jConn[conn.jConn.length - 1]) { conn.jConn[conn.jConn.length - 1].end() }
 
     });
 
@@ -1334,6 +1334,7 @@ function saveAllJSON(backup, userID, ids) {
     } else {
         compData = compDataObj[userID]
 
+        // if backup = true, each of the comps, specified by [ids], will be updated in compData[id].backups array
         if (backup) {
             for (idx in ids) {
                 id = ids[idx]

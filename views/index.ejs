@@ -146,11 +146,15 @@
 
             fitAddon.fit();
 
-            // window.addEventListener("resize", handleResize);
-
-            // function handleResize() {
-            //     fitAddon.fit();
-            // };
+            term.onSelectionChange(() => {
+                let selectedText = term.getSelection()
+                var obj = {
+                    start: 0,
+                    end: selectedText.length,
+                    text: selectedText
+                }
+                navigator.clipboard.writeText(selectedText);
+            })
 
             term.write('Welcome to \x1B[1;3;31mdsStack\x1B[0m $ ')
 
@@ -1733,7 +1737,6 @@
             }
 
             $file.onchange = fetchFile
-
 
         });
 
