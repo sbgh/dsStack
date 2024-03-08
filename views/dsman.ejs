@@ -793,24 +793,11 @@
             }
 
             $("#connectBtn").click(function (event) {
-                //     term.focus()
-                if (isWsOpen(ws)) {
-                    term.write("connecting....\r\n")
-                    runJob([], false)
-                } else {
-                    term.write("reconnecting....\r\n")
-                    accessToken = ""
-                    runData["token"] = ""
-                    const lhost = location.host
-                    ws = new WebSocket('wss://' + lhost);
-                    wsEvents(ws)
-                    setTimeout(function () {
-                        wsSend(runData, ws)
-                    }, 2000)
-                }
-
-
+                term.focus()
+                term.write("connecting....\r\n")
+                runJob([], false)
             });
+            
             $("#connectBtn").popover('dispose').popover({
                 animation: true,
                 content: "Connect to host",

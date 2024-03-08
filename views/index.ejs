@@ -1455,9 +1455,10 @@
                 }
             }
 
-            function isWsOpen(ws) { 
+            function isWsOpen(ws) {
                 return ws.readyState === ws.OPEN || false
             }
+            
             function wsSend(sendObj, ws) {
                 if (isWsOpen(ws)) {
                     ws.send(JSON.stringify(sendObj))
@@ -1513,9 +1514,9 @@
                 }
 
                 // if (ws) {
-                    settingsYourName = settings.settingsYourName ? settings.settingsYourName : ""
-                    let sendObj = { "token": accessToken, "key": key.key, "settingsYourName":settingsYourName }
-                    wsSend(sendObj, ws)
+                settingsYourName = settings.settingsYourName ? settings.settingsYourName : ""
+                let sendObj = { "token": accessToken, "key": key.key, "settingsYourName": settingsYourName }
+                wsSend(sendObj, ws)
                 // }
                 // console.log("keypress " + key)
 
@@ -1525,75 +1526,79 @@
             var ws = new WebSocket('wss://' + lhost);
 
             var pingTimeoutId
-            ws.addEventListener('open', function (e) {
-                ws.addEventListener('message', function (e) {
-                    console.log('received:', e.data);
-                    if (e.data === "pong") {
+            function wsEvents(ws) {
 
-                    } else {
-                        const data = JSON.parse(e.data)
-                        accessToken = data.token ? data.token : accessToken
+                ws.addEventListener('open', function (e) {
+                    ws.addEventListener('message', function (e) {
+                        console.log('received:', e.data);
+                        if (e.data === "pong") {
 
-                        if (data.message) {
-                            term.write(data.message)
+                        } else {
+                            const data = JSON.parse(e.data)
+                            accessToken = data.token ? data.token : accessToken
+
+                            if (data.message) {
+                                term.write(data.message)
+                            }
+                            if (data.status) {
+                                if (data.status === "up") {
+                                    $("#connectBtn").addClass("up").removeClass("down")
+                                } else {
+                                    $("#connectBtn").addClass("down").removeClass("up")
+                                }
+                            }
+                            if (data.varName) {
+                                const varName = data.varName
+                                if (varName == "url") {
+                                    const varVal = data.varVal
+                                    let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
+                                    $("#urls").append(h)
+                                }
+                                if (varName == "alert") {
+                                    const varVal = data.varVal
+
+
+                                    $('#alertModal').modal('show');
+                                    const cnt = $('#msgText').children().length
+                                    const rowh = $("<div id='alertRow_" + cnt + "' class='alertRow'><span class='alertTxt'></span><i class='fa fa-copy fa-fw alertRowCopyIcon'></i></div>")
+                                    $('#msgText').append(rowh)
+                                    rowh.find(".alertTxt").text(varVal)
+                                    rowh.on("click", function (rowh) {
+                                        const t = $(this)
+                                        navigator.clipboard.writeText(t.text())
+                                        currentColor = t.css("color")
+                                        t.css({ "transition": "color 0s", "color": "blue", "font-weight": "800" })
+
+                                        timeoutId = setTimeout(
+                                            function (t, currentColor) {
+                                                t.css({ "transition": "color 1s", "color": currentColor })
+                                            }, 100, t, currentColor)
+                                    })
+
+                                    // alert(varVal)
+
+                                }
+
+                                if (varName == "preformatted") {
+                                    const varVal = data.varVal
+
+                                    $('#preformattedModal').modal('show');
+                                    $('#pfText').text(varVal)
+                                }
+                            }
+
                         }
-                        if (data.status) {
-                            if (data.status === "up") {
-                                $("#connectBtn").addClass("up").removeClass("down")
-                            } else {
-                                $("#connectBtn").addClass("down").removeClass("up")
-                            }
-                        }
-                        if (data.varName) {
-                            const varName = data.varName
-                            if (varName == "url") {
-                                const varVal = data.varVal
-                                let h = "<div class='url'><a href='" + varVal + "' target='_new'>" + varVal + "</a></div>"
-                                $("#urls").append(h)
-                            }
-                            if (varName == "alert") {
-                                const varVal = data.varVal
-
-
-                                $('#alertModal').modal('show');
-                                const cnt = $('#msgText').children().length
-                                const rowh = $("<div id='alertRow_" + cnt + "' class='alertRow'><span class='alertTxt'></span><i class='fa fa-copy fa-fw alertRowCopyIcon'></i></div>")
-                                $('#msgText').append(rowh)
-                                rowh.find(".alertTxt").text(varVal)
-                                rowh.on("click", function (rowh) {
-                                    const t = $(this)
-                                    navigator.clipboard.writeText(t.text())
-                                    currentColor = t.css("color")
-                                    t.css({ "transition": "color 0s", "color": "blue", "font-weight": "800" })
-
-                                    timeoutId = setTimeout(
-                                        function (t, currentColor) {
-                                            t.css({ "transition": "color 1s", "color": currentColor })
-                                        }, 100, t, currentColor)
-                                })
-
-                                // alert(varVal)
-
-                            }
-
-                            if (varName == "preformatted") {
-                                const varVal = data.varVal
-
-                                $('#preformattedModal').modal('show');
-                                $('#pfText').text(varVal)
-                            }
-                        }
-
-                    }
+                    })
                 })
-            })
 
-            ws.onclose = function (e) {
-                clearTimeout(pingTimeoutId)
-                console.log("ws closed")
-                $("#connectBtn").addClass("down").removeClass("up")
-            };
+                ws.onclose = function (e) {
+                    clearTimeout(pingTimeoutId)
+                    console.log("ws closed")
+                    $("#connectBtn").addClass("down").removeClass("up")
+                };
 
+            }
+            wsEvents(ws) 
             function pingpong() {
                 pingTimeoutId = setTimeout(
                     function () {
