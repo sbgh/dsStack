@@ -774,7 +774,22 @@
                 runData["userID"] = userID
                 runData["props"] = props ? props : {}
 
-                wsSend(runData, ws)
+                if (isWsOpen(ws)) {
+                    // term.write("connecting....\r\n")
+                    wsSend(runData, ws)
+                } else {
+                    term.write("reconnecting....\r\n")
+                    accessToken = ""
+                    runData["token"] = ""
+                    const lhost = location.host
+                    ws = new WebSocket('wss://' + lhost);
+                    wsEvents(ws)
+                    setTimeout(function () {
+                        wsSend(runData, ws)
+                    }, 2000)
+                }
+
+                
             }
 
             $("#connectBtn").click(function (event) {
@@ -783,11 +798,14 @@
                     term.write("connecting....\r\n")
                     runJob([], false)
                 } else {
+                    term.write("reconnecting....\r\n")
                     accessToken = ""
-                    ws = new WebSocket('wss://dsstack.cybera.ca:8443')
+                    runData["token"] = ""
+                    const lhost = location.host
+                    ws = new WebSocket('wss://' + lhost);
                     wsEvents(ws)
                     setTimeout(function () {
-                        runJob([], false)
+                        wsSend(runData, ws)
                     }, 2000)
                 }
 
@@ -947,15 +965,25 @@
 
             term.onKey((key, ev) => {
 
-                if (ws) {
-
-                    let sendObj = { "token": accessToken, "key": key.key }
-                    wsSend(sendObj, ws)
+                var settings
+                if (localStorage['settings']) {
+                    settings = JSON.parse(localStorage['settings'])
+                } else {
+                    console.log("ERROR: Local storage 'Settings' not found")
+                    return (1)
                 }
+
+                // if (ws) {
+                    settingsYourName = settings.settingsYourName ? settings.settingsYourName : ""
+                    let sendObj = { "token": accessToken, "key": key.key, "settingsYourName":settingsYourName }
+                    wsSend(sendObj, ws)
+                // }
                 // console.log("keypress " + key)
 
             });
-            function isWsOpen(ws) { return ws.readyState === ws.OPEN }
+            function isWsOpen(ws) { 
+                return ws.readyState === ws.OPEN || false
+            }
             function wsSend(sendObj, ws) {
                 if (isWsOpen(ws)) {
                     ws.send(JSON.stringify(sendObj))

@@ -1436,7 +1436,7 @@ wsserver.on('connection', function connection(ws) {
                 "token": conn.token,
                 "status": "up"
             })
-            log("Start connection for " + conn.name)
+            log("Process msg for " + conn.name)
             ws.send(mess)
 
             if (conn.key) {

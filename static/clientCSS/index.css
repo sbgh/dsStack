@@ -596,8 +596,9 @@ div#urls {
 }
 
 .xterm {
-    bottom: 0px;
+    /* bottom: 17px; */
     position: absolute;
+    /* padding-bottom: 10px; */
 }
 
 .xterm .xterm-screen {
@@ -628,5 +629,10 @@ div#msgText {
 
 #preformattedModal .modal-dialog {
     max-width: 1000px;
+}
+
+#preformattedModal .modal-body.run-model-body {
+    max-height: 60vh;
+    overflow: auto;
 }
 
