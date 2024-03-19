@@ -12,6 +12,8 @@ cd /root/
 git clone https://github.com/cybera/dsStack.git
 cd /root/dsStack
 
+chmod +x upgrade.sh
+
 echo "Install prerequisites"
 npm install -y
 
