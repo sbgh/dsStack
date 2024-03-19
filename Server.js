@@ -1061,7 +1061,7 @@ function processStreamData(conn, data, stream) {
 
     if (conn.jStream.length > 0) {
         if (stream == conn.jStream[conn.jStream.length - 1]) {
-            console.log("last " + conn.jStream.length)
+            // console.log("last " + conn.jStream.length)
         } else {
             return
             console.log("late " + conn.jStream.length)
@@ -1071,13 +1071,6 @@ function processStreamData(conn, data, stream) {
     var userID = conn.userID
     var data = data.toString()
     const ws = conn.ws
-
-    // let stream
-    // if (conn.jStream.length > 0) {
-    //     stream = conn.jStream[conn.jStream.length - 1]
-    // } else {
-    //     stream = conn.stream
-    // }
 
     var compData
 
@@ -1093,16 +1086,18 @@ function processStreamData(conn, data, stream) {
         "status": "up"
     })
     ws.send(mess)
-    // log("data: " + data.toString())
 
-    let lines = data.split("\n")
+    let lines = data.split("\r")
+
     let lastLine = lines[lines.length - 1]
 
-
+    for (x in lines) {
+        lines[x] = lines[x].trim()
+    }
     if (lines.some(substr => substr.startsWith('jump:'))) {
         let remainder = ""
         let found = false
-
+        // log("detected jump")
         lines = lines.filter(s => {
             if (s.startsWith('jump:')) {
 
@@ -1116,6 +1111,7 @@ function processStreamData(conn, data, stream) {
                         "message": "Jump cancelled. Host malformed (" + remainder + ")."
                     })
                     ws.send(mess)
+                    log("Jump cancelled. Host malformed [" + remainder + "].")
                 }
 
             }
