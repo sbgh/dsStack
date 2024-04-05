@@ -91,27 +91,6 @@ router.use(function (req, res, next) {
 
 });
 
-//redirect from consol 
-router.use(function (req, res, next) {
-
-    if (req.get('host') === "consol.cybera.ca:8443") {
-        res.redirect(301, 'https://dsstack.cybera.ca:8443');
-    } else {
-        next();
-    }
-
-});
-//redirect from dsman 
-router.use(function (req, res, next) {
-
-    if (req.get('host') === "dsman.cybera.ca:8443") {
-        res.redirect(301, 'https://dsstack.cybera.ca:8443/dsman');
-    } else {
-        next();
-    }
-
-});
-
 router.get("/", function (req, res) {
     res.render("index", { manager: false });
 });
@@ -123,7 +102,7 @@ router.get("/dsman", function (req, res) {
 router.get("/getTree", function (req, res) {
     var id = req.query.id;
 
-    var userID = req.query.userID;
+    var userID = req.query.userID.trim();
 
     var compData = {}
     //if compDataObj does not contain user's component data, attenpt to load user's component file if it exists
