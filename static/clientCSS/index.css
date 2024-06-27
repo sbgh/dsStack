@@ -293,6 +293,7 @@ div#consoleBtns {
 
 #consoleSection{
     position: relative;
+    margin-top: auto;
 }
 
 div#console{

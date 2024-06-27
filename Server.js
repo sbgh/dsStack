@@ -1374,9 +1374,7 @@ app.use("*", function (req, res) {
 
 // http.createServer(app).listen('80');
 // log("Express server listening on port 80");
-// steal certs from [ root@jira /etc/ssl/certs ]
 var secureServer = https.createServer({
-    // /etc/letsencrypt/live/dsstack.cybera.ca
     key: fs.readFileSync('/etc/ssl/private/privkey.pem'),
     cert: fs.readFileSync('/etc/ssl/private/fullchain.pem'),
     rejectUnauthorized: false
